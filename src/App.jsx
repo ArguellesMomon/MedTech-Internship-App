@@ -213,7 +213,7 @@ function AppLayout({ children }) {
           flex: 1;
           padding: 20px;
           /* Reserve space for bottom nav when it's visible */
-          padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 48px);
+          padding-bottom: calc(100px + env(safe-area-inset-bottom, 20px));
         }
 
         .main-content.no-nav {
@@ -228,8 +228,9 @@ function AppLayout({ children }) {
           right: 0;
           z-index: 200;
 
-          height: calc(64px + env(safe-area-inset-bottom, 0px));
-          padding-bottom: env(safe-area-inset-bottom, 0px);
+          height: calc(80px + env(safe-area-inset-bottom, 20px));
+          padding-bottom: env(safe-area-inset-bottom, 10px);
+          padding-top: 8px;
 
           background: rgba(255, 255, 255, 0.94);
           backdrop-filter: blur(20px);
@@ -237,8 +238,10 @@ function AppLayout({ children }) {
           border-top: 1px solid rgba(255, 200, 220, 0.4);
 
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           justify-content: space-around;
+          -webkit-user-select: none;
+          user-select: none;
         }
 
         .nav-item {
@@ -296,7 +299,7 @@ function AppLayout({ children }) {
 
           .main-content {
             padding: 28px 32px;
-            padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px) + 48px);
+            padding-bottom: calc(110px + env(safe-area-inset-bottom, 20px));
           }
 
           .main-content.no-nav {
@@ -304,12 +307,13 @@ function AppLayout({ children }) {
           }
 
           .bottom-nav {
-            height: calc(72px + env(safe-area-inset-bottom, 0px));
+            height: calc(90px + env(safe-area-inset-bottom, 20px));
+            padding-top: 12px;
           }
 
           .nav-item {
             gap: 5px;
-            padding: 16px 6px 10px;
+            padding: 12px 6px 8px;
           }
 
           .nav-label {
