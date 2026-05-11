@@ -294,7 +294,7 @@ export default function Login() {
                 type="password"
                 value={form.password}
                 onChange={updateField}
-                placeholder="••••••••"
+                placeholder="enter your password"
                 required
               />
             </div>
@@ -332,7 +332,7 @@ export default function Login() {
           </p>
 
           <p className="footer-note">
-            Designed with care for future healthcare heroes 💖
+            &copy; {new Date().getFullYear()} MedTech Mate. All rights reserved. 
           </p>
         </div>
       </div>

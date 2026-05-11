@@ -360,7 +360,7 @@ export default function Signup() {
                 name="password"
                 value={form.password}
                 onChange={updateField}
-                placeholder="••••••••"
+                placeholder="password must be at least 6 characters"
                 required
               />
             </div>
@@ -406,7 +406,6 @@ export default function Signup() {
           </p>
 
           <p className="footer-note">
-            Designed with care for future healthcare heroes 💖
           </p>
         </div>
       </div>

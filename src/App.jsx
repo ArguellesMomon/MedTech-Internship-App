@@ -320,12 +320,10 @@ function AppLayout({ children }) {
 
           .main-content {
   width: 100%;
-
-  padding: 24px;
-
-  padding-bottom: 80px;
-
   min-height: calc(100vh - 68px);
+
+  padding: 0px 20px 80px;
+  transform: translateY(-5px);
 }
 
           /* BACKDROP */
@@ -502,7 +500,7 @@ function AppLayout({ children }) {
         {/* TOP BAR */}
         <header className="top-bar">
           <Link to="/" className="brand-link">
-            💖 MedTech Intern
+            💖 MedTech Mate
           </Link>
 
           {user && !isAuthPage && (
