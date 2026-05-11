@@ -483,9 +483,8 @@ function AppLayout({ children }) {
             }
 
             .main-content {
-              padding: 40px;
-    padding-bottom: 115px;
-            }
+  padding: 8px 40px 115px;
+}
           }
 
           /* DESKTOP */
