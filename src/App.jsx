@@ -478,28 +478,24 @@ function AppLayout({ children }) {
           /* TABLET */
 
           @media (min-width: 768px) {
-  .top-bar {
-    padding: 0 30px;
-  }
+            .top-bar {
+              padding: 0 30px;
+            }
 
-  .main-content {
-    padding: 32px;
-    padding-bottom: 100px;
-  }
-}
+            .main-content {
+              padding: 40px;
+    padding-bottom: 115px;
+            }
+          }
 
-/* DESKTOP */
-@media (min-width: 1024px) {
-  .main-content {
-    width: 100%;
-    max-width: 1180px;
+          /* DESKTOP */
 
-    margin: 0 auto;
-
-    padding: 40px;
-    padding-bottom: 120px;
-  }
-}
+          @media (min-width: 1024px) {
+            .main-content {
+              max-width: 1180px;
+              margin: 0 auto;
+            }
+          }
         `}
       </style>
 
