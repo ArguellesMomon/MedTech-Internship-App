@@ -7,7 +7,6 @@ import {
   CalendarDays,
   ClipboardCheck,
   GraduationCap,
-  Plus,
 } from 'lucide-react';
 
 /* =========================================================
@@ -18,17 +17,6 @@ function CurrentRotation() {
   const { user } = useAuth();
 
   const [rotation, setRotation] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const [form, setForm] = useState({
-    section_name: '',
-    hospital_site: '',
-    start_date: '',
-    end_date: '',
-    supervisor_name: '',
-    notes: '',
-  });
 
   const fetchCurrentRotation = async () => {
     const today = new Date().toISOString().split('T')[0];
@@ -50,77 +38,11 @@ function CurrentRotation() {
 
   useEffect(() => {
     fetchCurrentRotation();
+    const interval = setInterval(fetchCurrentRotation, 5000);
+    return () => clearInterval(interval);
   }, [user.id]);
 
-  const openEditForm = () => {
-    if (rotation) {
-      setForm({
-        section_name: rotation.section_name || '',
-        hospital_site: rotation.hospital_site || '',
-        start_date: rotation.start_date || '',
-        end_date: rotation.end_date || '',
-        supervisor_name: rotation.supervisor_name || '',
-        notes: rotation.notes || '',
-      });
-    }
-    setShowForm(true);
-  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    setLoading(true);
-
-    if (rotation?.id) {
-      const { error } = await supabase
-        .from('rotations')
-        .update({ ...form })
-        .eq('id', rotation.id);
-
-      if (error) {
-        console.error(error);
-      } else {
-        setShowForm(false);
-        fetchCurrentRotation();
-      }
-    } else {
-      const { error } = await supabase
-        .from('rotations')
-        .insert([{ ...form, user_id: user.id }]);
-
-      if (error) {
-        console.error(error);
-      } else {
-        setShowForm(false);
-        fetchCurrentRotation();
-      }
-    }
-
-    setLoading(false);
-  };
-
-  const handleDelete = async () => {
-    if (!rotation?.id) return;
-    const { error } = await supabase
-      .from('rotations')
-      .delete()
-      .eq('id', rotation.id);
-
-    if (error) {
-      console.error(error);
-    } else {
-      setRotation(null);
-      setShowForm(false);
-      setForm({
-        section_name: '',
-        hospital_site: '',
-        start_date: '',
-        end_date: '',
-        supervisor_name: '',
-        notes: '',
-      });
-    }
-  };
 
   return (
     <div className="dashboard-card">
@@ -136,19 +58,10 @@ function CurrentRotation() {
       </div>
 
       {!rotation ? (
-        <>
-          <div className="empty-state">
-            <p>No active rotation yet ✨</p>
-          </div>
-
-          <button
-            className="primary-btn"
-            onClick={() => setShowForm(true)}
-          >
-            <Plus size={16} />
-            Add Rotation
-          </button>
-        </>
+        <div className="empty-state">
+          <p>No active rotation yet ✨</p>
+          <p style={{ fontSize: '13px', color: '#999', marginTop: '8px' }}>Manage rotations in the Rotation Guide</p>
+        </div>
       ) : (
         <div className="rotation-content">
           <h4>{rotation.section_name}</h4>
@@ -179,100 +92,6 @@ function CurrentRotation() {
             )}
           </div>
         </div>
-      )}
-
-      {showForm && (
-        <form onSubmit={handleSubmit} className="cute-form">
-          <input
-            type="text"
-            placeholder="Section Name"
-            value={form.section_name}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                section_name: e.target.value,
-              })
-            }
-            required
-          />
-
-          <input
-            type="text"
-            placeholder="Hospital Site"
-            value={form.hospital_site}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                hospital_site: e.target.value,
-              })
-            }
-          />
-
-          <input
-            type="date"
-            value={form.start_date}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                start_date: e.target.value,
-              })
-            }
-            required
-          />
-
-          <input
-            type="date"
-            value={form.end_date}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                end_date: e.target.value,
-              })
-            }
-            required
-          />
-
-          <input
-            type="text"
-            placeholder="Supervisor"
-            value={form.supervisor_name}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                supervisor_name: e.target.value,
-              })
-            }
-          />
-
-          <textarea
-            placeholder="Notes"
-            value={form.notes}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                notes: e.target.value,
-              })
-            }
-          />
-
-          <div className="form-actions">
-            <button
-              type="submit"
-              className="primary-btn"
-              disabled={loading}
-            >
-              {loading ? 'Saving...' : 'Save'}
-            </button>
-
-            <button
-              type="button"
-              className="secondary-btn"
-              onClick={() => setShowForm(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
       )}
     </div>
   );
@@ -359,19 +178,10 @@ function ExamDates() {
   const { user } = useAuth();
 
   const [exams, setExams] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingExam, setEditingExam] = useState(null);
   const [examError, setExamError] = useState(null);
 
-  const [form, setForm] = useState({
-    exam_name: '',
-    exam_date: '',
-    section_name: '',
-    notes: '',
-  });
-
   const isMissingTableError = (error) => {
-    return error?.code === 'PGRST205' || error?.message?.includes('Could not find the table');
+    return (error?.code === 'PGRST205' || error?.message?.includes('Could not find the table'));
   };
 
   const fetchExams = async () => {
@@ -397,87 +207,23 @@ function ExamDates() {
 
   useEffect(() => {
     fetchExams();
+    const interval = setInterval(fetchExams, 5000);
+    return () => clearInterval(interval);
   }, [user.id]);
 
-  const resetForm = () => {
-    setForm({
-      exam_name: '',
-      exam_date: '',
-      section_name: '',
-      notes: '',
-    });
-    setEditingExam(null);
+  const getExamStatus = (examDate) => {
+    const today = new Date();
+    const exam = new Date(examDate);
+    const daysUntil = Math.ceil((exam - today) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntil < 0) return { status: 'past', label: 'Past', color: '#4abf95' };
+    if (daysUntil === 0) return { status: 'today', label: 'Today', color: '#e05555' };
+    if (daysUntil === 1) return { status: 'tomorrow', label: 'Tomorrow', color: '#ff8c5a' };
+    if (daysUntil <= 7) return { status: 'week', label: `${daysUntil}d away`, color: '#ff8fb1' };
+    return { status: 'upcoming', label: `${daysUntil}d away`, color: '#5f8dff' };
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
 
-    if (editingExam) {
-      const { error } = await supabase
-        .from('exams')
-        .update({ ...form })
-        .eq('id', editingExam.id);
-
-      if (error) {
-        if (isMissingTableError(error)) {
-          setExamError(
-            'The exams table is not present in your Supabase project. Run supabase/schema.sql or create the table in Supabase.'
-          );
-        } else {
-          console.error(error);
-        }
-      } else {
-        setExamError(null);
-        setShowForm(false);
-        resetForm();
-        fetchExams();
-      }
-      return;
-    }
-
-    const { error } = await supabase
-      .from('exams')
-      .insert([{ ...form, user_id: user.id }]);
-
-    if (error) {
-      if (isMissingTableError(error)) {
-        setExamError(
-          'The exams table is not present in your Supabase project. Run supabase/schema.sql or create the table in Supabase.'
-        );
-      } else {
-        console.error(error);
-      }
-    } else {
-      setExamError(null);
-      setShowForm(false);
-      resetForm();
-      fetchExams();
-    }
-  };
-
-  const handleEdit = (exam) => {
-    setEditingExam(exam);
-    setForm({
-      exam_name: exam.exam_name || '',
-      exam_date: exam.exam_date || '',
-      section_name: exam.section_name || '',
-      notes: exam.notes || '',
-    });
-    setShowForm(true);
-  };
-
-  const handleDelete = async (examId) => {
-    const { error } = await supabase
-      .from('exams')
-      .delete()
-      .eq('id', examId);
-
-    if (error) {
-      console.error(error);
-    } else {
-      fetchExams();
-    }
-  };
 
   return (
     <div className="dashboard-card">
@@ -492,131 +238,45 @@ function ExamDates() {
         </div>
       </div>
 
-      <button
-        className="primary-btn"
-        onClick={() => {
-          resetForm();
-          setShowForm(true);
-        }}
-        disabled={Boolean(examError)}
-      >
-        <Plus size={16} />
-        Add Exam
-      </button>
-
       {examError && (
         <div className="error-message">
           {examError}
         </div>
       )}
 
-      {showForm && (
-        <form onSubmit={handleSubmit} className="cute-form">
-          <input
-            type="text"
-            placeholder="Exam Name"
-            value={form.exam_name}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                exam_name: e.target.value,
-              })
-            }
-            required
-          />
-
-          <input
-            type="date"
-            value={form.exam_date}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                exam_date: e.target.value,
-              })
-            }
-            required
-          />
-
-          <input
-            type="text"
-            placeholder="Section"
-            value={form.section_name}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                section_name: e.target.value,
-              })
-            }
-          />
-
-          <textarea
-            placeholder="Notes"
-            value={form.notes}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                notes: e.target.value,
-              })
-            }
-          />
-
-          <div className="form-actions">
-            <button type="submit" className="primary-btn">
-              {editingExam ? 'Update Exam' : 'Save Exam'}
-            </button>
-
-            <button
-              type="button"
-              className="secondary-btn"
-              onClick={() => {
-                setShowForm(false);
-                resetForm();
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
-
       {exams.length === 0 ? (
         <div className="empty-state">
           <p>No exams scheduled 💖</p>
+          <p style={{ fontSize: '13px', color: '#999', marginTop: '8px' }}>Manage exams in the Exam Dates page</p>
         </div>
       ) : (
-        <div className="list-group">
-          {exams.map((exam) => (
-            <div key={exam.id} className="list-item">
-              <strong>{exam.exam_name}</strong>
-
-              <span>
-                {new Date(
-                  exam.exam_date,
-                ).toLocaleDateString()}
-              </span>
-
-              {exam.section_name && (
-                <small>{exam.section_name}</small>
-              )}
-
-              <div className="form-actions">
-                <button
-                  type="button"
-                  className="primary-btn"
-                  onClick={() => handleEdit(exam)}
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  className="secondary-btn"
-                  onClick={() => handleDelete(exam.id)}
-                >
-                  Delete
-                </button>
+        <div className="exam-list">
+          {exams.map((exam) => {
+            const { status, label, color } = getExamStatus(exam.exam_date);
+            return (
+              <div key={exam.id} className={`exam-item exam-item-${status}`}>
+                <div className="exam-item-left">
+                  <div className="exam-date-badge">
+                    <div className="exam-date-day">
+                      {new Date(exam.exam_date).getDate()}
+                    </div>
+                    <div className="exam-date-month">
+                      {new Date(exam.exam_date).toLocaleDateString('en-US', { month: 'short' })}
+                    </div>
+                  </div>
+                  <div className="exam-details">
+                    <strong className="exam-name">{exam.exam_name}</strong>
+                    {exam.section_name && (
+                      <span className="exam-section">{exam.section_name}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="exam-status" style={{ color }}>
+                  {label}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -910,7 +570,7 @@ function InternDashboard() {
 
             padding: 14px 16px;
 
-            font-size: 14px;
+            font-size: 16px;
 
             outline: none;
 
@@ -979,7 +639,13 @@ function InternDashboard() {
             flex-direction: column;
             gap: 6px;
 
-            border: 1px solid #ffe0ea;
+            border: 1.5px solid #ffe0ea;
+            transition: 0.2s ease;
+          }
+
+          .list-item:hover {
+            border-color: #ffb8ce;
+            box-shadow: 0 4px 12px rgba(255,111,145,0.08);
           }
 
           .list-item strong {
@@ -1032,6 +698,98 @@ function InternDashboard() {
             border-radius: 999px;
           }
 
+          .exam-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+          }
+
+          .exam-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fff8fa;
+            border-radius: 18px;
+            padding: 16px;
+            border: 1.5px solid #ffe0ea;
+            transition: 0.2s ease;
+          }
+
+          .exam-item:hover {
+            border-color: #ffb8ce;
+            box-shadow: 0 4px 12px rgba(255,111,145,0.1);
+          }
+
+          .exam-item-past {
+            opacity: 0.6;
+          }
+
+          .exam-item-today {
+            border-color: #e05555;
+            background: linear-gradient(135deg, #fff0f0, #fff8fa);
+            box-shadow: 0 0 0 2px rgba(224,85,85,0.2);
+          }
+
+          .exam-item-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex: 1;
+          }
+
+          .exam-date-badge {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #ff8fb1, #ff6f91);
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(255,111,145,0.2);
+          }
+
+          .exam-date-day {
+            font-weight: 700;
+            font-size: 18px;
+            line-height: 1;
+          }
+
+          .exam-date-month {
+            font-size: 10px;
+            font-weight: 600;
+            opacity: 0.9;
+            margin-top: 2px;
+          }
+
+          .exam-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          }
+
+          .exam-name {
+            color: #333;
+            font-size: 14px;
+            margin: 0;
+          }
+
+          .exam-section {
+            color: #999;
+            font-size: 12px;
+          }
+
+          .exam-status {
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+            padding: 6px 12px;
+            background: rgba(255,143,177,0.1);
+            border-radius: 999px;
+          }
+
           /* iPhone */
           @media (max-width: 768px) {
             .dashboard-grid {
@@ -1044,6 +802,16 @@ function InternDashboard() {
 
             .dashboard-title {
               font-size: 1.7rem;
+            }
+
+            .exam-item {
+              padding: 14px;
+            }
+
+            .exam-date-badge {
+              width: 50px;
+              height: 50px;
+              font-size: 16px;
             }
           }
 

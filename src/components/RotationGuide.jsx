@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../auth/AuthProvider';
 import {
   Plus,
   Edit3,
@@ -16,7 +17,332 @@ import {
   X,
   AlertTriangle,
   CheckCircle2,
+  Calendar,
+  MapPin,
+  User,
 } from 'lucide-react';
+
+/* ─────────────────────────────────────────────
+   ROTATION FORM MODAL
+───────────────────────────────────────────── */
+function RotationModal({ editing, onClose, onSaved }) {
+  const { user } = useAuth();
+  const [form, setForm] = useState({
+    section_name: editing?.section_name ?? '',
+    hospital_site: editing?.hospital_site ?? '',
+    start_date: editing?.start_date ?? '',
+    end_date: editing?.end_date ?? '',
+    supervisor_name: editing?.supervisor_name ?? '',
+    notes: editing?.notes ?? '',
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+
+    if (new Date(form.start_date) >= new Date(form.end_date)) {
+      setError('End date must be after start date');
+      setSaving(false);
+      return;
+    }
+
+    let result;
+    if (editing) {
+      result = await supabase
+        .from('rotations')
+        .update({ ...form })
+        .eq('id', editing.id)
+        .select()
+        .single();
+    } else {
+      result = await supabase
+        .from('rotations')
+        .insert([{ ...form, user_id: user.id }])
+        .select()
+        .single();
+    }
+
+    setSaving(false);
+
+    if (result.error) {
+      setError(result.error.message);
+    } else {
+      onSaved(result.data, Boolean(editing));
+      onClose();
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>{editing ? 'Edit Rotation' : 'Add Rotation'}</h3>
+          <button className="icon-close" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="modal-form">
+          <label>
+            Section Name *
+            <input
+              value={form.section_name}
+              onChange={(e) => setForm({ ...form, section_name: e.target.value })}
+              placeholder="e.g. Hematology"
+              required
+            />
+          </label>
+
+          <label>
+            Hospital Site
+            <input
+              value={form.hospital_site}
+              onChange={(e) => setForm({ ...form, hospital_site: e.target.value })}
+              placeholder="e.g. Central Medical Lab"
+            />
+          </label>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <label>
+              Start Date *
+              <input
+                type="date"
+                value={form.start_date}
+                onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              End Date *
+              <input
+                type="date"
+                value={form.end_date}
+                onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+                required
+              />
+            </label>
+          </div>
+
+          <label>
+            Supervisor Name
+            <input
+              value={form.supervisor_name}
+              onChange={(e) => setForm({ ...form, supervisor_name: e.target.value })}
+              placeholder="e.g. Dr. Smith"
+            />
+          </label>
+
+          <label>
+            Notes
+            <textarea
+              rows={2}
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              placeholder="Any additional notes..."
+            />
+          </label>
+
+          {error && <p className="form-error">{error}</p>}
+
+          <div className="modal-actions">
+            <button type="submit" className="primary-btn" disabled={saving}>
+              <CheckCircle2 size={15} />
+              {saving ? 'Saving…' : editing ? 'Update' : 'Add Rotation'}
+            </button>
+            <button type="button" className="secondary-btn" onClick={onClose}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   ROTATION CARD
+───────────────────────────────────────────── */
+function RotationCard({ rotation, onEdit, onDelete }) {
+  const isActive = () => {
+    const today = new Date();
+    const start = new Date(rotation.start_date);
+    const end = new Date(rotation.end_date);
+    return today >= start && today <= end;
+  };
+
+  const getDaysLeft = () => {
+    const today = new Date();
+    const end = new Date(rotation.end_date);
+    const diff = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+
+  const active = isActive();
+  const daysLeft = getDaysLeft();
+
+  return (
+    <div className={`rotation-card ${active ? 'active' : ''}`}>
+      <div className="rotation-card-header">
+        <div className="rotation-badge">
+          {active ? (
+            <div className="badge-active">🔄 Active</div>
+          ) : daysLeft < 0 ? (
+            <div className="badge-past">✓ Completed</div>
+          ) : (
+            <div className="badge-upcoming">📅 Upcoming</div>
+          )}
+        </div>
+        <div className="rotation-actions">
+          <button className="icon-btn" onClick={() => onEdit(rotation)} title="Edit">
+            <Edit3 size={14} />
+          </button>
+          <button
+            className="icon-btn danger"
+            onClick={() => onDelete(rotation.id)}
+            title="Delete"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+
+      <h4 className="rotation-section">{rotation.section_name}</h4>
+
+      <div className="rotation-info">
+        {rotation.hospital_site && (
+          <p>
+            <MapPin size={14} /> {rotation.hospital_site}
+          </p>
+        )}
+        <p>
+          <Calendar size={14} />
+          {new Date(rotation.start_date).toLocaleDateString()} -{' '}
+          {new Date(rotation.end_date).toLocaleDateString()}
+        </p>
+        {rotation.supervisor_name && (
+          <p>
+            <User size={14} /> {rotation.supervisor_name}
+          </p>
+        )}
+      </div>
+
+      {rotation.notes && <p className="rotation-notes">{rotation.notes}</p>}
+
+      {active && daysLeft >= 0 && (
+        <div className="rotation-countdown">
+          {daysLeft === 0 ? '🎉 Last day!' : `${daysLeft} days remaining`}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   ROTATION SECTION
+───────────────────────────────────────────── */
+function RotationSection() {
+  const { user } = useAuth();
+  const [rotations, setRotations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingRotation, setEditingRotation] = useState(null);
+
+  const fetchRotations = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('rotations')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('start_date', { ascending: false });
+
+    if (!error) setRotations(data ?? []);
+    setLoading(false);
+  }, [user.id]);
+
+  useEffect(() => {
+    fetchRotations();
+  }, [fetchRotations]);
+
+  const handleSaved = (saved, isEdit) => {
+    if (isEdit) {
+      setRotations((prev) => prev.map((r) => (r.id === saved.id ? saved : r)));
+    } else {
+      setRotations((prev) => [saved, ...prev]);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    const { error } = await supabase.from('rotations').delete().eq('id', id);
+    if (!error) setRotations((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const openEdit = (rotation) => {
+    setEditingRotation(rotation);
+    setShowModal(true);
+  };
+
+  const currentRotation = rotations.find(() => {
+    const today = new Date();
+    const rotation = rotations[0];
+    if (!rotation) return false;
+    const start = new Date(rotation.start_date);
+    const end = new Date(rotation.end_date);
+    return today >= start && today <= end;
+  });
+
+  return (
+    <div className="rotation-section-panel">
+      <div className="rotation-section-header">
+        <div>
+          <h3>Your Rotations</h3>
+          <p>Manage your internship rotation schedule</p>
+        </div>
+        <button
+          className="primary-btn"
+          onClick={() => {
+            setEditingRotation(null);
+            setShowModal(true);
+          }}
+        >
+          <Plus size={15} /> Add Rotation
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="empty-state"><p>Loading rotations…</p></div>
+      ) : rotations.length === 0 ? (
+        <div className="empty-state">
+          <p>No rotations yet — add your first one! ✨</p>
+        </div>
+      ) : (
+        <div className="rotation-cards-grid">
+          {rotations.map((rot) => (
+            <RotationCard
+              key={rot.id}
+              rotation={rot}
+              onEdit={openEdit}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      )}
+
+      {showModal && (
+        <RotationModal
+          editing={editingRotation}
+          onClose={() => {
+            setShowModal(false);
+            setEditingRotation(null);
+          }}
+          onSaved={handleSaved}
+        />
+      )}
+    </div>
+  );
+}
 
 /* ─────────────────────────────────────────────
    SECTION METADATA
@@ -506,6 +832,172 @@ function RotationGuide() {
           font-size: 0.95rem;
         }
 
+        /* ── Rotation Section Panel ── */
+        .rotation-section-panel {
+          background: rgba(255,255,255,0.82);
+          border-radius: 28px;
+          border: 1px solid rgba(255,255,255,0.5);
+          box-shadow: 0 10px 36px rgba(255,111,145,0.09);
+          padding: 24px 28px;
+          margin-bottom: 28px;
+        }
+
+        .rotation-section-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+
+        .rotation-section-header h3 {
+          margin: 0 0 4px;
+          font-size: 1.2rem;
+          color: #333;
+        }
+
+        .rotation-section-header p {
+          margin: 0;
+          color: #888;
+          font-size: 13px;
+        }
+
+        .rotation-cards-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 16px;
+        }
+
+        .rotation-card {
+          background: #fff8fa;
+          border: 1.5px solid #ffe0ea;
+          border-radius: 18px;
+          padding: 18px;
+          transition: all 0.2s ease;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .rotation-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, #ff8fb1, #ff6f91);
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+
+        .rotation-card.active::before {
+          opacity: 1;
+        }
+
+        .rotation-card:hover {
+          border-color: #ffb8ce;
+          box-shadow: 0 6px 18px rgba(255,111,145,0.12);
+          transform: translateY(-2px);
+        }
+
+        .rotation-card.active {
+          background: linear-gradient(135deg, rgba(255,143,177,0.08), rgba(255,111,145,0.06));
+          border-color: #ff8fb1;
+        }
+
+        .rotation-card-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 12px;
+          gap: 12px;
+        }
+
+        .rotation-badge {
+          flex: 1;
+        }
+
+        .badge-active,
+        .badge-upcoming,
+        .badge-past {
+          display: inline-block;
+          padding: 5px 12px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 600;
+          white-space: nowrap;
+        }
+
+        .badge-active {
+          background: linear-gradient(135deg, #ff8fb1, #ff6f91);
+          color: white;
+        }
+
+        .badge-upcoming {
+          background: #e3f2fd;
+          color: #1976d2;
+        }
+
+        .badge-past {
+          background: #e8f5e9;
+          color: #388e3c;
+        }
+
+        .rotation-actions {
+          display: flex;
+          gap: 6px;
+        }
+
+        .rotation-section {
+          margin: 0 0 12px;
+          font-size: 16px;
+          font-weight: 700;
+          color: #333;
+        }
+
+        .rotation-info {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+
+        .rotation-info p {
+          margin: 0;
+          font-size: 13px;
+          color: #666;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .rotation-info svg {
+          color: #ff8fb1;
+          flex-shrink: 0;
+        }
+
+        .rotation-notes {
+          margin: 12px 0 0;
+          padding: 10px 12px;
+          background: #fff0f4;
+          border-left: 3px solid #ff8fb1;
+          border-radius: 6px;
+          font-size: 13px;
+          color: #555;
+          line-height: 1.5;
+        }
+
+        .rotation-countdown {
+          margin-top: 12px;
+          padding: 10px 12px;
+          background: linear-gradient(135deg, rgba(255,143,177,0.1), rgba(255,111,145,0.08));
+          border-radius: 12px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #ff5d8f;
+          text-align: center;
+        }
+
         /* ── Section Tabs ── */
         .section-tabs {
           display: flex;
@@ -647,7 +1139,7 @@ function RotationGuide() {
           background: #fff8fa;
           border-radius: 999px;
           padding: 10px 36px 10px 34px;
-          font-size: 13px;
+          font-size: 16px;
           outline: none;
           transition: 0.2s;
           color: #444;
@@ -911,6 +1403,8 @@ function RotationGuide() {
           max-width: 480px;
           box-shadow: 0 24px 60px rgba(255,111,145,0.22);
           border: 1px solid #ffe0ea;
+          max-height: 90vh;
+          overflow-y: auto;
         }
 
         .modal-header {
@@ -960,7 +1454,7 @@ function RotationGuide() {
           background: #fff8fa;
           border-radius: 14px;
           padding: 12px 14px;
-          font-size: 14px;
+          font-size: 16px;
           outline: none;
           transition: 0.2s;
           color: #444;
@@ -1001,16 +1495,23 @@ function RotationGuide() {
           .sub-tab { padding: 12px 14px; font-size: 12px; }
           .proc-toolbar { flex-wrap: wrap; }
           .modal-card { padding: 20px; }
+          .rotation-section-panel { padding: 18px; }
+          .rotation-section-header { flex-direction: column; gap: 12px; }
+          .rotation-section-header button { width: 100%; }
+          .rotation-cards-grid { grid-template-columns: 1fr; }
         }
 
         @media (min-width: 769px) and (max-width: 1024px) {
           .safety-grid { grid-template-columns: 1fr; }
+          .rotation-cards-grid { grid-template-columns: repeat(2, 1fr); }
         }
       `}</style>
 
       <div className="rg-page">
         <h2 className="rg-title">Rotation & Procedure Guide</h2>
-       
+
+        {/* Rotation Management Section */}
+        <RotationSection />
 
         {/* Section selector tabs */}
         <div className="section-tabs">
