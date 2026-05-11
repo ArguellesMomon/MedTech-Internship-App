@@ -213,7 +213,7 @@ function AppLayout({ children }) {
           flex: 1;
           padding: 20px;
           /* Reserve space for bottom nav when it's visible */
-          padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 32px);
+          padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 48px);
         }
 
         .main-content.no-nav {
@@ -247,8 +247,8 @@ function AppLayout({ children }) {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 3px;
-          padding: 10px 4px 6px;
+          gap: 4px;
+          padding: 14px 4px 8px;
           color: #bbb;
           transition: color 0.18s ease;
           min-width: 0;
@@ -296,7 +296,7 @@ function AppLayout({ children }) {
 
           .main-content {
             padding: 28px 32px;
-            padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px) + 32px);
+            padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px) + 48px);
           }
 
           .main-content.no-nav {
@@ -308,8 +308,8 @@ function AppLayout({ children }) {
           }
 
           .nav-item {
-            gap: 4px;
-            padding: 12px 6px 8px;
+            gap: 5px;
+            padding: 16px 6px 10px;
           }
 
           .nav-label {
