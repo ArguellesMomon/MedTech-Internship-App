@@ -212,8 +212,8 @@ function AppLayout({ children }) {
         .main-content {
           flex: 1;
           padding: 20px;
-          /* Reserve space for bottom nav when it's visible */
-          padding-bottom: calc(100px + env(safe-area-inset-bottom, 20px));
+          /* Reserve space for bottom nav when it's visible - matches nav bar height */
+          padding-bottom: calc(80px + env(safe-area-inset-bottom, 20px) + 8px);
         }
 
         .main-content.no-nav {
@@ -230,7 +230,7 @@ function AppLayout({ children }) {
 
           height: calc(80px + env(safe-area-inset-bottom, 20px));
           padding-bottom: env(safe-area-inset-bottom, 10px);
-          padding-top: 8px;
+          padding-top: 2px;
 
           background: rgba(255, 255, 255, 0.94);
           backdrop-filter: blur(20px);
@@ -250,8 +250,8 @@ function AppLayout({ children }) {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 4px;
-          padding: 14px 4px 8px;
+          gap: 6px;
+          padding: 18px 4px 8px;
           color: #bbb;
           transition: color 0.18s ease;
           min-width: 0;
@@ -299,7 +299,7 @@ function AppLayout({ children }) {
 
           .main-content {
             padding: 28px 32px;
-            padding-bottom: calc(110px + env(safe-area-inset-bottom, 20px));
+            padding-bottom: calc(90px + env(safe-area-inset-bottom, 20px) + 8px);
           }
 
           .main-content.no-nav {
@@ -308,12 +308,12 @@ function AppLayout({ children }) {
 
           .bottom-nav {
             height: calc(90px + env(safe-area-inset-bottom, 20px));
-            padding-top: 12px;
+            padding-top: 2px;
           }
 
           .nav-item {
-            gap: 5px;
-            padding: 12px 6px 8px;
+            gap: 7px;
+            padding: 22px 6px 8px;
           }
 
           .nav-label {
