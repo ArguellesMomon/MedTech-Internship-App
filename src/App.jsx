@@ -319,8 +319,14 @@ function AppLayout({ children }) {
           /* MAIN */
 
           .main-content {
-            padding: 22px;
-          }
+  width: 100%;
+
+  padding: 24px;
+
+  padding-bottom: 80px;
+
+  min-height: calc(100vh - 68px);
+}
 
           /* BACKDROP */
 
@@ -472,23 +478,28 @@ function AppLayout({ children }) {
           /* TABLET */
 
           @media (min-width: 768px) {
-            .top-bar {
-              padding: 0 30px;
-            }
+  .top-bar {
+    padding: 0 30px;
+  }
 
-            .main-content {
-              padding: 30px;
-            }
-          }
+  .main-content {
+    padding: 32px;
+    padding-bottom: 100px;
+  }
+}
 
-          /* DESKTOP */
+/* DESKTOP */
+@media (min-width: 1024px) {
+  .main-content {
+    width: 100%;
+    max-width: 1180px;
 
-          @media (min-width: 1024px) {
-            .main-content {
-              max-width: 1180px;
-              margin: 0 auto;
-            }
-          }
+    margin: 0 auto;
+
+    padding: 40px;
+    padding-bottom: 120px;
+  }
+}
         `}
       </style>
 
