@@ -1,38 +1,61 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
-import { Heart, Sparkles } from 'lucide-react';
+import { Heart, Sparkles, Eye, EyeOff, Mail, Lock } from 'lucide-react';
 
 export default function Login() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    email: '',
-    password: '',
-  });
-
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
-  function updateField(event) {
-    setForm((current) => ({
-      ...current,
-      [event.target.name]: event.target.value,
-    }));
+  const cardRef = useRef(null);
+  const passwordRef = useRef(null);
+
+  /* ── Keyboard detection ── */
+  useEffect(() => {
+    // Visual Viewport API — most reliable for detecting soft keyboard
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    function onResize() {
+      // If viewport height shrinks significantly, keyboard is open
+      const shrinkRatio = vv.height / window.innerHeight;
+      setKeyboardOpen(shrinkRatio < 0.75);
+    }
+
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
+  }, []);
+
+  /* ── Scroll active input into view when keyboard opens ── */
+  useEffect(() => {
+    if (!keyboardOpen) return;
+    const active = document.activeElement;
+    if (active && active !== document.body) {
+      setTimeout(() => {
+        active.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  }, [keyboardOpen]);
+
+  function updateField(e) {
+    setForm((cur) => ({ ...cur, [e.target.name]: e.target.value }));
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-
+  async function handleSubmit(e) {
+    e.preventDefault();
     setSubmitting(true);
     setError('');
-
     try {
       await signIn(form);
       navigate('/');
-    } catch (authError) {
-      setError(authError.message);
+    } catch (err) {
+      setError(err.message);
     } finally {
       setSubmitting(false);
     }
@@ -40,286 +63,472 @@ export default function Login() {
 
   return (
     <>
-      <style>
-        {`
-          * {
-            box-sizing: border-box;
+      <style>{`
+        *,
+        *::before,
+        *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body, #root {
+          width: 100%;
+          min-height: 100%;
+          min-height: 100dvh;
+          overflow-x: hidden;
+        }
+
+        body {
+          font-family: 'Poppins', sans-serif;
+          background: linear-gradient(135deg, #fff5f7 0%, #ffe4ec 50%, #fff0e5 100%);
+          background-attachment: fixed;
+        }
+
+        /* ── PAGE SHELL ── */
+        .login-page {
+          width: 100%;
+          min-height: 100vh;
+          min-height: 100dvh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+
+          /*
+           * Use padding instead of fixed height so the page
+           * can grow when the keyboard pushes content up.
+           */
+          padding: 28px 20px;
+
+          /* Smooth reflow when keyboard appears */
+          transition: padding 0.25s ease;
+        }
+
+        /* When keyboard is open, push padding to top so card stays visible */
+        .login-page.keyboard-open {
+          justify-content: flex-start;
+          padding-top: 20px;
+        }
+
+        /* ── CARD ── */
+        .login-card {
+          width: 100%;
+          max-width: 480px;
+          background: rgba(255, 255, 255, 0.94);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          border-radius: 32px;
+          padding: 42px 32px;
+          box-shadow: 0 12px 48px rgba(255, 111, 145, 0.18);
+          border: 1px solid rgba(255, 255, 255, 0.7);
+          transition: padding 0.2s ease, border-radius 0.2s ease;
+        }
+
+        /* ── LOGO ── */
+        .logo-wrapper {
+          width: 76px;
+          height: 76px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #ff8fb1, #ff6f91);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin: 0 auto 18px;
+          box-shadow: 0 8px 28px rgba(255, 111, 145, 0.35);
+          transition: transform 0.2s ease;
+        }
+
+        .keyboard-open .logo-wrapper {
+          transform: scale(0.85);
+          margin-bottom: 10px;
+        }
+
+        .login-title {
+          text-align: center;
+          font-size: 2.1rem;
+          font-weight: 700;
+          color: #ff5d8f;
+          margin-bottom: 0;
+          line-height: 1.1;
+        }
+
+        .login-subtitle {
+          text-align: center;
+          color: #888;
+          font-size: 0.93rem;
+          line-height: 1.55;
+          margin-top: 10px;
+          margin-bottom: 30px;
+          transition: margin 0.2s ease;
+        }
+
+        .keyboard-open .login-subtitle {
+          margin-bottom: 18px;
+        }
+
+        /* ── FORM GROUP ── */
+        .form-group {
+          margin-bottom: 16px;
+        }
+
+        .form-label {
+          display: block;
+          margin-bottom: 8px;
+          font-size: 0.88rem;
+          font-weight: 600;
+          color: #666;
+          letter-spacing: 0.01em;
+        }
+
+        /* ── INPUT WRAPPER (icon + input + eye toggle) ── */
+        .input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .input-icon {
+          position: absolute;
+          left: 15px;
+          color: #ffaac5;
+          pointer-events: none;
+          display: flex;
+          align-items: center;
+          z-index: 1;
+          flex-shrink: 0;
+        }
+
+        .form-input {
+          width: 100%;
+          border: 1.5px solid #ffd3df;
+          background: #fff8fa;
+          border-radius: 18px;
+          /* Left padding accommodates icon; right padding accommodates eye toggle */
+          padding: 14px 48px 14px 44px;
+          font-size: 15px;
+          font-family: 'Poppins', sans-serif;
+          outline: none;
+          transition: border-color 0.22s, box-shadow 0.22s, background 0.22s;
+          color: #444;
+          -webkit-appearance: none;
+          appearance: none;
+        }
+
+        .form-input:focus {
+          border-color: #ff8fb1;
+          background: #fff;
+          box-shadow: 0 0 0 4px rgba(255, 143, 177, 0.16);
+        }
+
+        .form-input.no-right-icon {
+          padding-right: 16px;
+        }
+
+        /* ── Hide ALL browser-native password icons ── */
+
+        /* Edge / IE — native reveal button */
+        .form-input[type="password"]::-ms-reveal,
+        .form-input[type="password"]::-ms-clear {
+          display: none !important;
+        }
+
+        /* Chrome / Safari autofill key icon */
+        .form-input::-webkit-credentials-auto-fill-button {
+          display: none !important;
+          visibility: hidden;
+          pointer-events: none;
+        }
+
+        /* Safari — contacts / password suggestion icon */
+        .form-input::-webkit-contacts-auto-fill-button {
+          display: none !important;
+          visibility: hidden;
+          pointer-events: none;
+        }
+
+        /*
+         * Eye toggle — explicitly sized and positioned so it
+         * is always visible and tappable on mobile/tablet
+         */
+        .eye-toggle {
+          position: absolute;
+          right: 0;
+          top: 0;
+          bottom: 0;
+
+          /* Large tap target */
+          width: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          color: #ffaac5;
+          border-radius: 0 18px 18px 0;
+          transition: color 0.18s, background 0.18s;
+
+          /* Prevent any layout from collapsing this */
+          flex-shrink: 0;
+
+          /* Ensure it sits above the input visually */
+          z-index: 2;
+
+          /* Prevent double-tap zoom on iOS */
+          touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .eye-toggle:hover  { color: #ff6f91; background: rgba(255,111,145,0.06); }
+        .eye-toggle:active { color: #ff6f91; background: rgba(255,111,145,0.12); }
+
+        /* ── ERROR ── */
+        .error-box {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          background: #fff1f1;
+          color: #c0392b;
+          border: 1px solid #ffcfcf;
+          padding: 12px 14px;
+          border-radius: 14px;
+          font-size: 13px;
+          margin-bottom: 14px;
+          line-height: 1.45;
+        }
+
+        /* ── SUBMIT ── */
+        .submit-btn {
+          width: 100%;
+          border: none;
+          border-radius: 20px;
+          padding: 15px;
+          margin-top: 6px;
+          background: linear-gradient(135deg, #ff8fb1, #ff6f91);
+          color: white;
+          font-size: 15px;
+          font-weight: 600;
+          font-family: 'Poppins', sans-serif;
+          cursor: pointer;
+          transition: transform 0.22s, box-shadow 0.22s, opacity 0.22s;
+          box-shadow: 0 8px 22px rgba(255, 111, 145, 0.28);
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+
+        .submit-btn:hover   { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(255,111,145,0.35); }
+        .submit-btn:active  { transform: scale(0.98); }
+        .submit-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .btn-inner {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+
+        /* ── BOTTOM ── */
+        .bottom-text {
+          text-align: center;
+          margin-top: 22px;
+          font-size: 14px;
+          color: #888;
+        }
+
+        .bottom-link {
+          color: #ff5d8f;
+          font-weight: 600;
+          text-decoration: none;
+        }
+
+        .bottom-link:hover { text-decoration: underline; }
+
+        .footer-note {
+          text-align: center;
+          margin-top: 16px;
+          color: #bbb;
+          font-size: 12px;
+        }
+
+        /* ─────────────────────────────────────────
+           RESPONSIVE
+        ───────────────────────────────────────── */
+
+        /* ── Phone (portrait & landscape) ── */
+        @media (max-width: 600px) {
+          .login-page { padding: 20px 16px; }
+
+          .login-card {
+            border-radius: 26px;
+            padding: 32px 22px;
           }
 
-          html,
-          body,
-          #root {
-            width: 100%;
-            min-height: 100vh;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
+          .keyboard-open .login-card {
+            padding-top: 24px;
+            border-radius: 24px;
           }
 
-          body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(
-              135deg,
-              #fff5f7 0%,
-              #ffe4ec 50%,
-              #fff0e5 100%
-            );
-          }
+          .login-title { font-size: 1.75rem; }
 
+          .form-input { font-size: 16px; /* prevents iOS zoom on focus */ }
+
+          /* Eye toggle stays full-size for easy tapping */
+          .eye-toggle { width: 48px; }
+        }
+
+        /* ── Phone landscape ── */
+        @media (max-width: 812px) and (orientation: landscape) {
           .login-page {
-            width: 100%;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 24px;
+            justify-content: flex-start;
+            padding-top: 16px;
           }
 
           .login-card {
-            width: 100%;
-            max-width: 480px;
-            min-width: 320px;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(14px);
-            border-radius: 32px;
-            padding: 42px 30px;
-            box-shadow: 0 12px 40px rgba(255, 111, 145, 0.18);
-            border: 1px solid rgba(255,255,255,0.6);
+            padding: 24px 28px;
+            border-radius: 24px;
           }
 
           .logo-wrapper {
-            width: 76px;
-            height: 76px;
-            border-radius: 999px;
-            background: linear-gradient(135deg, #ff8fb1, #ff6f91);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0 auto 18px;
-            box-shadow: 0 8px 24px rgba(255, 111, 145, 0.3);
+            width: 58px;
+            height: 58px;
+            margin-bottom: 12px;
           }
 
-          .title {
-            text-align: center;
-            font-size: 2.1rem;
-            font-weight: 700;
-            color: #ff5d8f;
-            margin: 0;
+          .login-title { font-size: 1.5rem; }
+
+          .login-subtitle {
+            font-size: 0.82rem;
+            margin-bottom: 16px;
           }
 
-          .subtitle {
-            text-align: center;
-            color: #777;
-            margin-top: 10px;
-            margin-bottom: 34px;
-            font-size: 0.95rem;
-            line-height: 1.5;
+          .form-group { margin-bottom: 12px; }
+        }
+
+        /* ── Tablet (portrait) ── */
+        @media (min-width: 601px) and (max-width: 1024px) and (orientation: portrait) {
+          .login-card {
+            max-width: 520px;
+            padding: 48px 40px;
           }
 
-          .form-group {
-            margin-bottom: 18px;
+          .login-title { font-size: 2.3rem; }
+
+          .form-input { font-size: 16px; padding: 15px 50px 15px 46px; }
+
+          /* Eye toggle must remain correctly sized on iPad */
+          .eye-toggle { width: 52px; }
+
+          .submit-btn { padding: 17px; font-size: 16px; }
+        }
+
+        /* ── Tablet (landscape) ── */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+          .login-card {
+            max-width: 500px;
+            padding: 40px 36px;
           }
 
-          .label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 0.92rem;
-            font-weight: 500;
-            color: #5f5f5f;
-          }
+          .form-input { font-size: 16px; }
+          .eye-toggle { width: 52px; }
+        }
+      `}</style>
 
-          .input {
-            width: 100%;
-            border: 1px solid #ffd3df;
-            background: #fff8fa;
-            border-radius: 18px;
-            padding: 15px 16px;
-            font-size: 15px;
-            outline: none;
-            transition: all 0.25s ease;
-            color: #444;
-          }
+      <div className={`login-page${keyboardOpen ? ' keyboard-open' : ''}`}>
+        <div className="login-card" ref={cardRef}>
 
-          .input:focus {
-            border-color: #ff8fb1;
-            background: #fff;
-            box-shadow: 0 0 0 4px rgba(255, 143, 177, 0.18);
-          }
-
-          .submit-btn {
-            width: 100%;
-            border: none;
-            border-radius: 20px;
-            padding: 16px;
-            margin-top: 10px;
-            background: linear-gradient(135deg, #ff8fb1, #ff6f91);
-            color: white;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            box-shadow: 0 8px 20px rgba(255, 111, 145, 0.25);
-          }
-
-          .submit-btn:hover {
-            transform: translateY(-1px);
-          }
-
-          .submit-btn:active {
-            transform: scale(0.98);
-          }
-
-          .submit-btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-          }
-
-          .error-box {
-            background: #fff1f1;
-            color: #d12f2f;
-            border: 1px solid #ffcfcf;
-            padding: 12px 14px;
-            border-radius: 14px;
-            font-size: 14px;
-            margin-bottom: 14px;
-          }
-
-          .bottom-text {
-            text-align: center;
-            margin-top: 24px;
-            font-size: 14px;
-            color: #777;
-          }
-
-          .bottom-link {
-            color: #ff5d8f;
-            font-weight: 600;
-            text-decoration: none;
-          }
-
-          .bottom-link:hover {
-            text-decoration: underline;
-          }
-
-          .footer-note {
-            text-align: center;
-            margin-top: 18px;
-            color: #999;
-            font-size: 12px;
-          }
-
-          /* iPhone */
-          @media (max-width: 480px) {
-            .login-page {
-              padding: 18px;
-              align-items: flex-start;
-            }
-
-            .login-card {
-              margin-top: 24px;
-              border-radius: 28px;
-              padding: 30px 22px;
-            }
-
-            .title {
-              font-size: 1.8rem;
-            }
-
-            .input {
-              font-size: 16px;
-              padding: 14px;
-            }
-          }
-
-          /* iPad */
-          @media (min-width: 768px) and (max-width: 1024px) {
-            .login-card {
-              max-width: 580px;
-              padding: 50px;
-            }
-
-            .title {
-              font-size: 2.4rem;
-            }
-
-            .input {
-              font-size: 16px;
-              padding: 16px;
-            }
-
-            .submit-btn {
-              padding: 18px;
-              font-size: 16px;
-            }
-          }
-        `}
-      </style>
-
-      <div className="login-page">
-        <div className="login-card">
           {/* Logo */}
           <div className="logo-wrapper">
-            <Heart size={34} color="white" fill="white" />
+            <Heart size={32} color="white" fill="white" />
           </div>
 
           {/* Header */}
-          <h1 className="title">Welcome Back</h1>
-
-          <p className="subtitle">
+          <h1 className="login-title">Welcome Back</h1>
+          <p className="login-subtitle">
             Login to continue your medtech internship journey ✨
           </p>
 
           {/* Form */}
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="label">Email Address</label>
+          <form onSubmit={handleSubmit} noValidate>
 
-              <input
-                className="input"
-                name="email"
-                type="email"
-                value={form.email}
-                onChange={updateField}
-                placeholder="example@email.com"
-                required
-              />
+            {/* Email */}
+            <div className="form-group">
+              <label className="form-label" htmlFor="login-email">
+                Email Address
+              </label>
+              <div className="input-wrapper">
+                <span className="input-icon">
+                  <Mail size={17} />
+                </span>
+                <input
+                  id="login-email"
+                  className="form-input no-right-icon"
+                  style={{ paddingRight: 16 }}
+                  name="email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={updateField}
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
             </div>
 
+            {/* Password */}
             <div className="form-group">
-              <label className="label">Password</label>
-
-              <input
-                className="input"
-                name="password"
-                type="password"
-                value={form.password}
-                onChange={updateField}
-                placeholder="enter your password"
-                required
-              />
+              <label className="form-label" htmlFor="login-password">
+                Password
+              </label>
+              <div className="input-wrapper">
+                <span className="input-icon">
+                  <Lock size={17} />
+                </span>
+                <input
+                  id="login-password"
+                  ref={passwordRef}
+                  className="form-input"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={form.password}
+                  onChange={updateField}
+                  placeholder="enter your password"
+                  required
+                />
+                {/* Eye toggle — always rendered, never hidden */}
+                <button
+                  type="button"
+                  className="eye-toggle"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onPointerDown={(e) => {
+                    // Use onPointerDown + preventDefault so the input
+                    // doesn't lose focus on iOS Safari before toggle fires
+                    e.preventDefault();
+                    setShowPassword((v) => !v);
+                  }}
+                >
+                  {showPassword
+                    ? <EyeOff size={18} strokeWidth={2} />
+                    : <Eye    size={18} strokeWidth={2} />}
+                </button>
+              </div>
             </div>
 
+            {/* Error */}
             {error && (
-              <div className="error-box">
-                {error}
+              <div className="error-box" role="alert">
+                ⚠️ {error}
               </div>
             )}
 
+            {/* Submit */}
             <button
               type="submit"
               disabled={submitting}
               className="submit-btn"
             >
-              <span
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                }}
-              >
+              <span className="btn-inner">
                 <Sparkles size={16} />
-                {submitting ? 'Logging in...' : 'Log in'}
+                {submitting ? 'Logging in…' : 'Log in'}
               </span>
             </button>
           </form>
@@ -332,7 +541,7 @@ export default function Login() {
           </p>
 
           <p className="footer-note">
-            &copy; {new Date().getFullYear()} MedTech Mate. All rights reserved. 
+            © {new Date().getFullYear()} MedTech Mate. All rights reserved.
           </p>
         </div>
       </div>

@@ -204,7 +204,7 @@ on public.exams for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
--- procedures (shared reference content, any authenticated user can manage)
+-- procedures
 create policy "Authenticated users can manage procedures"
 on public.procedures for all
 using (auth.role() = 'authenticated')
@@ -225,3 +225,60 @@ insert into public.encouragement_messages (message, section_name) values
   ('Remember to take breaks and stay hydrated.', null),
   ('Every expert was once a beginner. You''ve got this!', null),
   ('One step at a time. Progress is progress.', null);
+
+-- ─────────────────────────────────────────────
+-- STORAGE — AVATARS BUCKET
+-- ─────────────────────────────────────────────
+
+-- Create the bucket (public so avatar URLs work without auth tokens)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'avatars',
+  'avatars',
+  true,
+  5242880,  -- 5 MB max per file
+  array['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+)
+on conflict (id) do update
+  set public            = true,
+      file_size_limit   = 5242880,
+      allowed_mime_types = array['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+
+-- Drop old policies so re-running the script is safe
+drop policy if exists "Avatars are publicly accessible" on storage.objects;
+drop policy if exists "Users can upload own avatar"     on storage.objects;
+drop policy if exists "Users can update own avatar"     on storage.objects;
+drop policy if exists "Users can delete own avatar"     on storage.objects;
+
+-- Anyone (including anonymous visitors) can view avatars
+create policy "Avatars are publicly accessible"
+on storage.objects for select
+to public
+using (bucket_id = 'avatars');
+
+-- Authenticated users can upload into their own folder (avatars/<user_id>/...)
+create policy "Users can upload own avatar"
+on storage.objects for insert
+to authenticated
+with check (
+  bucket_id = 'avatars'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Authenticated users can overwrite their own avatar (upsert)
+create policy "Users can update own avatar"
+on storage.objects for update
+to authenticated
+using (
+  bucket_id = 'avatars'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Authenticated users can delete their own avatar
+create policy "Users can delete own avatar"
+on storage.objects for delete
+to authenticated
+using (
+  bucket_id = 'avatars'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);

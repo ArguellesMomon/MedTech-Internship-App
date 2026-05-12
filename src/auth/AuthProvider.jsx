@@ -154,15 +154,25 @@ export function AuthProvider({ children }) {
       throw new Error('Cannot save a profile without a user id.');
     }
 
+    // Base fields always included
     const payload = {
-      id: values.id ?? user.id,
-      email: values.email ?? user?.email,
-      full_name: values.full_name,
-      school: values.school,
-      year_level: values.year_level,
-      program: values.program,
-      updated_at: new Date().toISOString(),
+      id:           values.id    ?? user.id,
+      email:        values.email ?? user?.email,
+      full_name:    values.full_name,
+      school:       values.school,
+      year_level:   values.year_level,
+      program:      values.program,
+      updated_at:   new Date().toISOString(),
     };
+
+    // Optional fields — only include when explicitly passed so existing
+    // callers that don't send them won't accidentally null the values out.
+    if (values.avatar_url !== undefined) {
+      payload.avatar_url = values.avatar_url;
+    }
+    if (values.internship_start_date !== undefined) {
+      payload.internship_start_date = values.internship_start_date || null;
+    }
 
     const { data, error } = await supabase
       .from('profiles')
