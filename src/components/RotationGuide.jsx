@@ -140,6 +140,9 @@ function RotationModal({ editing, existingRotations, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState('');
 
+  const isCustom = editing && !SECTIONS.some(s => s.id === editing.section_name);
+  const [selectedSection, setSelectedSection] = useState(isCustom ? '__custom__' : editing?.section_name ?? '');
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -192,15 +195,21 @@ function RotationModal({ editing, existingRotations, onClose, onSaved }) {
         <form onSubmit={handleSubmit} className="rm-form">
           <label className="rm-label">
             Section *
-            <select className="rm-input rm-select" value={form.section_name}
-              onChange={(e) => setForm({ ...form, section_name: e.target.value })} required>
+            <select className="rm-input rm-select" value={selectedSection}
+              onChange={(e) => {
+                setSelectedSection(e.target.value);
+                if (e.target.value !== '__custom__') {
+                  setForm({ ...form, section_name: e.target.value });
+                }
+              }} required>
               <option value="">Select a section…</option>
               {sectionOptions.map((s) => <option key={s}>{s}</option>)}
               <option value="__custom__">Other / Custom</option>
             </select>
-            {form.section_name === '__custom__' && (
+            {selectedSection === '__custom__' && (
               <input className="rm-input" style={{ marginTop: 8 }}
                 placeholder="Type section name…"
+                value={form.section_name}
                 onChange={(e) => setForm({ ...form, section_name: e.target.value })} />
             )}
           </label>

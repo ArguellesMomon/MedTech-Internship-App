@@ -1029,12 +1029,14 @@ function InternDashboard() {
           font-family: 'Sora', sans-serif;
           font-size: 20px; font-weight: 800;
           line-height: 1; letter-spacing: -0.02em;
+          color: #e05555
         }
 
         .id-stamp-month {
           font-size: 9px; font-weight: 700;
           text-transform: uppercase; letter-spacing: 0.1em;
           opacity: 0.88; margin-top: 1px;
+          color: #e05555
         }
 
         .id-stamp-year {
