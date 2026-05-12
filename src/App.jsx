@@ -20,7 +20,7 @@ import ShiftPlanner from './components/ShiftPlanner';
 import NotesSection from './components/NotesSection';
 
 import { isSupabaseConfigured } from './lib/supabase';
-
+import Logo from './assets/Logo.png';
 import {
   Menu,
   X,
@@ -289,13 +289,19 @@ function AppLayout({ children }) {
             display: flex;
             align-items: center;
             gap: 8px;
+            margin-left: -50px;
 
             font-weight: 700;
             font-size: 1rem;
 
             color: #ff5d8f;
           }
-
+          .brand-logo {
+  height: 30px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
           .menu-toggle {
             width: 42px;
             height: 42px;
@@ -500,8 +506,12 @@ function AppLayout({ children }) {
         {/* TOP BAR */}
         <header className="top-bar">
           <Link to="/" className="brand-link">
-            💖 MedTech Mate
-          </Link>
+  <img
+    src={Logo}
+    alt="MedTech Mate Logo"
+    className="brand-logo"
+  />
+</Link>
 
           {user && !isAuthPage && (
             <button

@@ -244,9 +244,7 @@ function Dashboard() {
       <main className="dashboard-page">
         {/* Welcome */}
         <section className="welcome-section">
-          <h1 className="welcome-title">
-            Welcome back ✨
-          </h1>
+          
         </section>
 
 

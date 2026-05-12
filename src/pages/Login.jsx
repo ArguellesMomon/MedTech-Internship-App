@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
-import { Heart, Sparkles, Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { Sparkles, Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import Logo from '../assets/Logo.png';
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -18,12 +19,10 @@ export default function Login() {
 
   /* ── Keyboard detection ── */
   useEffect(() => {
-    // Visual Viewport API — most reliable for detecting soft keyboard
     const vv = window.visualViewport;
     if (!vv) return;
 
     function onResize() {
-      // If viewport height shrinks significantly, keyboard is open
       const shrinkRatio = vv.height / window.innerHeight;
       setKeyboardOpen(shrinkRatio < 0.75);
     }
@@ -90,18 +89,10 @@ export default function Login() {
           flex-direction: column;
           justify-content: center;
           align-items: center;
-
-          /*
-           * Use padding instead of fixed height so the page
-           * can grow when the keyboard pushes content up.
-           */
           padding: 28px 20px;
-
-          /* Smooth reflow when keyboard appears */
           transition: padding 0.25s ease;
         }
 
-        /* When keyboard is open, push padding to top so card stays visible */
         .login-page.keyboard-open {
           justify-content: flex-start;
           padding-top: 20px;
@@ -123,40 +114,40 @@ export default function Login() {
 
         /* ── LOGO ── */
         .logo-wrapper {
-          width: 76px;
-          height: 76px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #ff8fb1, #ff6f91);
           display: flex;
           justify-content: center;
           align-items: center;
-          margin: 0 auto 18px;
-          box-shadow: 0 8px 28px rgba(255, 111, 145, 0.35);
+          margin: 0 auto 10px;
           transition: transform 0.2s ease;
         }
 
-        .keyboard-open .logo-wrapper {
-          transform: scale(0.85);
-          margin-bottom: 10px;
+        .logo-img {
+          width: 500px;
+          height: auto;
+          object-fit: contain;
+          display: block;
+          /* Preserve transparency */
+          background: transparent;
+          transition: transform 0.2s ease, width 0.2s ease;
         }
 
+        .keyboard-open .logo-wrapper {
+          margin-bottom: 4px;
+        }
+
+        .keyboard-open .logo-img {
+          width: 80px;
+        }
+
+        /* ── TITLE ── */
         .login-title {
           text-align: center;
           font-size: 2.1rem;
           font-weight: 700;
           color: #ff5d8f;
           margin-bottom: 0;
-          line-height: 1.1;
-        }
-
-        .login-subtitle {
-          text-align: center;
-          color: #888;
-          font-size: 0.93rem;
-          line-height: 1.55;
-          margin-top: 10px;
-          margin-bottom: 30px;
-          transition: margin 0.2s ease;
+          line-height: 1;
+          padding-bottom: 6px;
         }
 
         .keyboard-open .login-subtitle {
@@ -177,7 +168,7 @@ export default function Login() {
           letter-spacing: 0.01em;
         }
 
-        /* ── INPUT WRAPPER (icon + input + eye toggle) ── */
+        /* ── INPUT WRAPPER ── */
         .input-wrapper {
           position: relative;
           display: flex;
@@ -200,7 +191,6 @@ export default function Login() {
           border: 1.5px solid #ffd3df;
           background: #fff8fa;
           border-radius: 18px;
-          /* Left padding accommodates icon; right padding accommodates eye toggle */
           padding: 14px 48px 14px 44px;
           font-size: 15px;
           font-family: 'Poppins', sans-serif;
@@ -221,58 +211,30 @@ export default function Login() {
           padding-right: 16px;
         }
 
-        /* ── Hide ALL browser-native password icons ── */
-
-        /* Edge / IE — native reveal button */
+        /* ── Hide browser-native password icons ── */
         .form-input[type="password"]::-ms-reveal,
-        .form-input[type="password"]::-ms-clear {
-          display: none !important;
-        }
+        .form-input[type="password"]::-ms-clear { display: none !important; }
+        .form-input::-webkit-credentials-auto-fill-button { display: none !important; visibility: hidden; pointer-events: none; }
+        .form-input::-webkit-contacts-auto-fill-button { display: none !important; visibility: hidden; pointer-events: none; }
 
-        /* Chrome / Safari autofill key icon */
-        .form-input::-webkit-credentials-auto-fill-button {
-          display: none !important;
-          visibility: hidden;
-          pointer-events: none;
-        }
-
-        /* Safari — contacts / password suggestion icon */
-        .form-input::-webkit-contacts-auto-fill-button {
-          display: none !important;
-          visibility: hidden;
-          pointer-events: none;
-        }
-
-        /*
-         * Eye toggle — explicitly sized and positioned so it
-         * is always visible and tappable on mobile/tablet
-         */
+        /* ── Eye toggle ── */
         .eye-toggle {
           position: absolute;
           right: 0;
           top: 0;
           bottom: 0;
-
-          /* Large tap target */
           width: 48px;
           display: flex;
           align-items: center;
           justify-content: center;
-
           background: transparent;
           border: none;
           cursor: pointer;
           color: #ffaac5;
           border-radius: 0 18px 18px 0;
           transition: color 0.18s, background 0.18s;
-
-          /* Prevent any layout from collapsing this */
           flex-shrink: 0;
-
-          /* Ensure it sits above the input visually */
           z-index: 2;
-
-          /* Prevent double-tap zoom on iOS */
           touch-action: manipulation;
           -webkit-tap-highlight-color: transparent;
         }
@@ -348,84 +310,37 @@ export default function Login() {
           font-size: 12px;
         }
 
-        /* ─────────────────────────────────────────
-           RESPONSIVE
-        ───────────────────────────────────────── */
+        /* ── RESPONSIVE ── */
 
-        /* ── Phone (portrait & landscape) ── */
         @media (max-width: 600px) {
           .login-page { padding: 20px 16px; }
-
-          .login-card {
-            border-radius: 26px;
-            padding: 32px 22px;
-          }
-
-          .keyboard-open .login-card {
-            padding-top: 24px;
-            border-radius: 24px;
-          }
-
+          .login-card { border-radius: 26px; padding: 32px 22px; }
+          .keyboard-open .login-card { padding-top: 24px; border-radius: 24px; }
           .login-title { font-size: 1.75rem; }
-
-          .form-input { font-size: 16px; /* prevents iOS zoom on focus */ }
-
-          /* Eye toggle stays full-size for easy tapping */
+          .form-input { font-size: 16px; }
+          .logo-img { width: 300px; }
           .eye-toggle { width: 48px; }
         }
 
-        /* ── Phone landscape ── */
         @media (max-width: 812px) and (orientation: landscape) {
-          .login-page {
-            justify-content: flex-start;
-            padding-top: 16px;
-          }
-
-          .login-card {
-            padding: 24px 28px;
-            border-radius: 24px;
-          }
-
-          .logo-wrapper {
-            width: 58px;
-            height: 58px;
-            margin-bottom: 12px;
-          }
-
+          .login-page { justify-content: flex-start; padding-top: 16px; }
+          .login-card { padding: 24px 28px; border-radius: 24px; }
+          .logo-img { width: 300px; }
           .login-title { font-size: 1.5rem; }
-
-          .login-subtitle {
-            font-size: 0.82rem;
-            margin-bottom: 16px;
-          }
-
           .form-group { margin-bottom: 12px; }
         }
 
-        /* ── Tablet (portrait) ── */
         @media (min-width: 601px) and (max-width: 1024px) and (orientation: portrait) {
-          .login-card {
-            max-width: 520px;
-            padding: 48px 40px;
-          }
-
+          .login-card { max-width: 520px; padding: 48px 40px; }
           .login-title { font-size: 2.3rem; }
-
+          .logo-img { width: 500px; }
           .form-input { font-size: 16px; padding: 15px 50px 15px 46px; }
-
-          /* Eye toggle must remain correctly sized on iPad */
           .eye-toggle { width: 52px; }
-
           .submit-btn { padding: 17px; font-size: 16px; }
         }
 
-        /* ── Tablet (landscape) ── */
         @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
-          .login-card {
-            max-width: 500px;
-            padding: 40px 36px;
-          }
-
+          .login-card { max-width: 500px; padding: 40px 36px; }
           .form-input { font-size: 16px; }
           .eye-toggle { width: 52px; }
         }
@@ -436,14 +351,14 @@ export default function Login() {
 
           {/* Logo */}
           <div className="logo-wrapper">
-            <Heart size={32} color="white" fill="white" />
+            <img
+              src={Logo}
+              alt="MedTech Mate"
+              className="logo-img"
+              draggable={false}
+            />
           </div>
 
-          {/* Header */}
-          <h1 className="login-title">Welcome Back</h1>
-          <p className="login-subtitle">
-            Login to continue your medtech internship journey ✨
-          </p>
 
           {/* Form */}
           <form onSubmit={handleSubmit} noValidate>
@@ -494,14 +409,11 @@ export default function Login() {
                   placeholder="enter your password"
                   required
                 />
-                {/* Eye toggle — always rendered, never hidden */}
                 <button
                   type="button"
                   className="eye-toggle"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onPointerDown={(e) => {
-                    // Use onPointerDown + preventDefault so the input
-                    // doesn't lose focus on iOS Safari before toggle fires
                     e.preventDefault();
                     setShowPassword((v) => !v);
                   }}

@@ -2,35 +2,36 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import {
-  Heart, Sparkles, Eye, EyeOff,
+  Sparkles, Eye, EyeOff,
   User, School, GraduationCap, BookOpen,
   Mail, Lock, ChevronRight, ChevronLeft, Check,
 } from 'lucide-react';
+import Logo from '../assets/Logo.png';
 
 /* ─────────────────────────────────────────────
    STEP DEFINITIONS
 ───────────────────────────────────────────── */
 const STEPS = [
-  { id: 'personal',  label: 'Personal',  icon: User       },
+  { id: 'personal',  label: 'Personal',  icon: User          },
   { id: 'education', label: 'Education', icon: GraduationCap },
-  { id: 'account',   label: 'Account',   icon: Lock       },
+  { id: 'account',   label: 'Account',   icon: Lock          },
 ];
 
 export default function Signup() {
   const { signUp } = useAuth();
   const navigate   = useNavigate();
 
-  const [step, setStep] = useState(0); // 0 | 1 | 2
-  const [direction, setDirection] = useState('forward'); // 'forward' | 'back'
+  const [step,      setStep]      = useState(0);
+  const [direction, setDirection] = useState('forward');
   const [animating, setAnimating] = useState(false);
 
   const [form, setForm] = useState({
-    full_name: '',
-    school:    '',
-    year_level:'',
-    program:   'BS Medical Technology',
-    email:     '',
-    password:  '',
+    full_name:  '',
+    school:     '',
+    year_level: '',
+    program:    'BS Medical Technology',
+    email:      '',
+    password:   '',
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -60,38 +61,29 @@ export default function Signup() {
     return (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
   }
 
-  /* ── Step navigation with slide animation ── */
+  /* ── Step navigation ── */
   function goTo(next) {
     if (animating) return;
     setDirection(next > step ? 'forward' : 'back');
     setError('');
     setAnimating(true);
-    setTimeout(() => {
-      setStep(next);
-      setAnimating(false);
-    }, 220);
+    setTimeout(() => { setStep(next); setAnimating(false); }, 220);
   }
 
-  /* ── Per-step validation ── */
   function validateStep() {
-    if (step === 0) {
-      if (!form.full_name.trim()) { setError('Please enter your full name.'); return false; }
+    if (step === 0 && !form.full_name.trim()) {
+      setError('Please enter your full name.');
+      return false;
     }
     if (step === 2) {
-      if (!form.email.trim())    { setError('Please enter your email address.'); return false; }
-      if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return false; }
+      if (!form.email.trim())        { setError('Please enter your email address.'); return false; }
+      if (form.password.length < 6)  { setError('Password must be at least 6 characters.'); return false; }
     }
     return true;
   }
 
-  function handleNext() {
-    if (!validateStep()) return;
-    goTo(step + 1);
-  }
-
-  function handleBack() {
-    goTo(step - 1);
-  }
+  function handleNext()  { if (validateStep()) goTo(step + 1); }
+  function handleBack()  { goTo(step - 1); }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -118,9 +110,6 @@ export default function Signup() {
       setSubmitting(false);
     }
   }
-
-  /* ── Progress % ── */
-  const progress = ((step) / (STEPS.length - 1)) * 100;
 
   return (
     <>
@@ -173,16 +162,27 @@ export default function Signup() {
         }
 
         /* ── LOGO ── */
-        .su-logo {
-          width: 68px; height: 68px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #ff8fb1, #ff6f91);
-          display: flex; align-items: center; justify-content: center;
-          margin: 0 auto 16px;
-          box-shadow: 0 8px 24px rgba(255,111,145,0.32);
+        .su-logo-wrap {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin: 0 auto 12px;
           transition: transform 0.2s ease;
         }
-        .keyboard-open .su-logo { transform: scale(0.8); margin-bottom: 8px; }
+
+        .su-logo-img {
+          width: 110px;
+          height: auto;
+          object-fit: contain;
+          display: block;
+          background: transparent;
+          transition: width 0.2s ease;
+          -webkit-user-drag: none;
+          user-select: none;
+        }
+
+        .keyboard-open .su-logo-wrap { margin-bottom: 4px; }
+        .keyboard-open .su-logo-img  { width: 72px; }
 
         /* ── HEADER ── */
         .su-title {
@@ -193,6 +193,7 @@ export default function Signup() {
           margin-bottom: 4px;
           line-height: 1.15;
         }
+
         .su-subtitle {
           text-align: center;
           color: #999;
@@ -200,6 +201,7 @@ export default function Signup() {
           margin-bottom: 22px;
           transition: margin 0.2s ease;
         }
+
         .keyboard-open .su-subtitle { margin-bottom: 12px; }
 
         /* ── STEP INDICATORS ── */
@@ -269,19 +271,17 @@ export default function Signup() {
           text-transform: uppercase;
         }
 
-        .su-step-bubble.active  .su-step-label,
-        .su-step-bubble.done    .su-step-label { color: #ff8fb1; }
+        .su-step-bubble.active .su-step-label,
+        .su-step-bubble.done  .su-step-label { color: #ff8fb1; }
 
         /* ── STEP PANEL ── */
         .su-panel-wrap {
-          /* clip the sliding panels */
           overflow: hidden;
           position: relative;
           min-height: 200px;
         }
 
         .su-panel {
-          /* panels slide in/out */
           animation-duration: 220ms;
           animation-fill-mode: both;
           animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -289,8 +289,8 @@ export default function Signup() {
 
         @keyframes slideInRight  { from { opacity:0; transform:translateX(32px);  } to { opacity:1; transform:translateX(0); } }
         @keyframes slideInLeft   { from { opacity:0; transform:translateX(-32px); } to { opacity:1; transform:translateX(0); } }
-        @keyframes slideOutRight { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(32px);  } }
         @keyframes slideOutLeft  { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(-32px); } }
+        @keyframes slideOutRight { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(32px);  } }
 
         .su-panel.enter-forward { animation-name: slideInRight; }
         .su-panel.enter-back    { animation-name: slideInLeft;  }
@@ -322,7 +322,6 @@ export default function Signup() {
           color: #666;
         }
 
-        /* Input wrapper for icon + input + optional eye */
         .su-input-wrap {
           position: relative;
           display: flex;
@@ -362,16 +361,10 @@ export default function Signup() {
 
         .su-input.with-eye { padding-right: 50px; }
 
-        /* ── Hide ALL browser-native password reveal icons ── */
         .su-input[type="password"]::-ms-reveal,
         .su-input[type="password"]::-ms-clear { display: none !important; }
-
-        .su-input::-webkit-credentials-auto-fill-button {
-          display: none !important; visibility: hidden; pointer-events: none;
-        }
-        .su-input::-webkit-contacts-auto-fill-button {
-          display: none !important; visibility: hidden; pointer-events: none;
-        }
+        .su-input::-webkit-credentials-auto-fill-button { display: none !important; visibility: hidden; pointer-events: none; }
+        .su-input::-webkit-contacts-auto-fill-button    { display: none !important; visibility: hidden; pointer-events: none; }
 
         /* ── EYE TOGGLE ── */
         .su-eye-toggle {
@@ -455,7 +448,7 @@ export default function Signup() {
           margin-bottom: 14px;
         }
 
-        /* ── NAVIGATION BUTTONS ── */
+        /* ── NAVIGATION ── */
         .su-nav {
           display: flex;
           gap: 10px;
@@ -523,37 +516,36 @@ export default function Signup() {
           font-size: 11px;
         }
 
-        /* ── PHONE ── */
+        /* ── RESPONSIVE ── */
         @media (max-width: 480px) {
           .su-page  { padding: 16px; }
           .su-card  { padding: 28px 20px 24px; border-radius: 26px; }
           .su-title { font-size: 1.65rem; }
           .su-input { font-size: 16px; }
+          .su-logo-img { width: 90px; }
           .su-next-btn, .su-back-btn { padding: 13px 16px; font-size: 14px; }
           .su-step-connector { width: 28px; }
         }
 
-        /* ── PHONE LANDSCAPE ── */
         @media (max-width: 812px) and (orientation: landscape) {
-          .su-page { justify-content: flex-start; padding-top: 14px; }
-          .su-card { padding: 20px 24px; border-radius: 22px; }
-          .su-logo { width: 52px; height: 52px; margin-bottom: 8px; }
+          .su-page  { justify-content: flex-start; padding-top: 14px; }
+          .su-card  { padding: 20px 24px; border-radius: 22px; }
+          .su-logo-img { width: 60px; }
           .su-title { font-size: 1.45rem; }
           .su-subtitle { margin-bottom: 10px; font-size: 0.8rem; }
           .su-steps { margin-bottom: 16px; }
           .su-group { margin-bottom: 10px; }
         }
 
-        /* ── TABLET PORTRAIT ── */
         @media (min-width: 481px) and (max-width: 1024px) and (orientation: portrait) {
           .su-card  { max-width: 560px; padding: 44px 38px 36px; }
           .su-title { font-size: 2.2rem; }
+          .su-logo-img { width: 120px; }
           .su-input { font-size: 16px; }
           .su-eye-toggle { width: 52px; }
           .su-next-btn, .su-back-btn { padding: 15px 22px; font-size: 15px; }
         }
 
-        /* ── TABLET LANDSCAPE ── */
         @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
           .su-card  { max-width: 520px; padding: 36px 34px 30px; }
           .su-input { font-size: 16px; }
@@ -565,8 +557,13 @@ export default function Signup() {
         <div className="su-card">
 
           {/* Logo */}
-          <div className="su-logo">
-            <Heart size={30} color="white" fill="white" />
+          <div className="su-logo-wrap">
+            <img
+              src={Logo}
+              alt="MedTech Mate"
+              className="su-logo-img"
+              draggable={false}
+            />
           </div>
 
           {/* Title */}
@@ -600,12 +597,12 @@ export default function Signup() {
               className={`su-panel ${animating ? `exit-${direction}` : `enter-${direction}`}`}
               key={step}
             >
+
               {/* ── STEP 0: Personal ── */}
               {step === 0 && (
                 <>
                   <p className="su-step-heading">👋 What's your name?</p>
                   <p className="su-step-desc">Let's start with the basics.</p>
-
                   <div className="su-group">
                     <label className="su-label" htmlFor="su-fullname">Full Name *</label>
                     <div className="su-input-wrap">
@@ -630,7 +627,6 @@ export default function Signup() {
                 <>
                   <p className="su-step-heading">🎓 Education details</p>
                   <p className="su-step-desc">Tell us about your academic background.</p>
-
                   <div className="su-group">
                     <label className="su-label" htmlFor="su-school">School / University</label>
                     <div className="su-input-wrap">
@@ -646,7 +642,6 @@ export default function Signup() {
                       />
                     </div>
                   </div>
-
                   <div className="su-group">
                     <label className="su-label" htmlFor="su-yearlevel">Year Level</label>
                     <div className="su-input-wrap">
@@ -661,7 +656,6 @@ export default function Signup() {
                       />
                     </div>
                   </div>
-
                   <div className="su-group">
                     <label className="su-label" htmlFor="su-program">Program</label>
                     <div className="su-input-wrap">
@@ -684,7 +678,6 @@ export default function Signup() {
                 <>
                   <p className="su-step-heading">🔐 Set up your account</p>
                   <p className="su-step-desc">Your login credentials — keep them safe!</p>
-
                   <div className="su-group">
                     <label className="su-label" htmlFor="su-email">Email Address *</label>
                     <div className="su-input-wrap">
@@ -703,14 +696,13 @@ export default function Signup() {
                       />
                     </div>
                   </div>
-
                   <div className="su-group">
                     <label className="su-label" htmlFor="su-password">Password *</label>
                     <div className="su-input-wrap">
                       <span className="su-input-icon"><Lock size={16} /></span>
                       <input
                         id="su-password"
-                        className={`su-input with-eye`}
+                        className="su-input with-eye"
                         type={showPassword ? 'text' : 'password'}
                         name="password"
                         value={form.password}
@@ -736,23 +728,20 @@ export default function Signup() {
 
                     {/* Password strength meter */}
                     {form.password.length > 0 && (() => {
-                      const len = form.password.length;
+                      const len       = form.password.length;
                       const hasUpper  = /[A-Z]/.test(form.password);
                       const hasNum    = /[0-9]/.test(form.password);
                       const hasSymbol = /[^A-Za-z0-9]/.test(form.password);
-                      const score = (len >= 8 ? 1 : 0) + (hasUpper ? 1 : 0) + (hasNum ? 1 : 0) + (hasSymbol ? 1 : 0);
-                      const levels = ['weak','fair','good','strong'];
-                      const labels = ['Weak','Fair','Good','Strong'];
+                      const score  = (len >= 8 ? 1 : 0) + (hasUpper ? 1 : 0) + (hasNum ? 1 : 0) + (hasSymbol ? 1 : 0);
+                      const levels = ['weak', 'fair', 'good', 'strong'];
+                      const labels = ['Weak', 'Fair', 'Good', 'Strong'];
                       const level  = score <= 1 ? 0 : score === 2 ? 1 : score === 3 ? 2 : 3;
                       const cls    = levels[level];
                       return (
                         <div className="su-strength">
                           <div className="su-strength-bars">
-                            {[0,1,2,3].map((i) => (
-                              <div
-                                key={i}
-                                className={`su-strength-bar ${i <= level ? cls : ''}`}
-                              />
+                            {[0, 1, 2, 3].map((i) => (
+                              <div key={i} className={`su-strength-bar ${i <= level ? cls : ''}`} />
                             ))}
                           </div>
                           <span className={`su-strength-label ${cls}`}>{labels[level]}</span>
@@ -763,7 +752,7 @@ export default function Signup() {
                 </>
               )}
 
-              {/* Error / success messages */}
+              {/* Messages */}
               {error   && <div className="su-error">⚠️ {error}</div>}
               {message && <div className="su-success">{message}</div>}
 
