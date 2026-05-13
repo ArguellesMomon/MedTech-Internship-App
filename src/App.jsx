@@ -81,7 +81,7 @@ const MAIN_NAV = [
   { to: '/',          Icon: LayoutDashboard, label: 'Dashboard'      },
   { to: '/rotations', Icon: Microscope,      label: 'Rotations'      },
   { to: '/reports',   Icon: ClipboardList,   label: 'Daily Reports'  },
-  { to: '/shifts',    Icon: CalendarClock,   label: 'Shifts'         },
+  { to: '/shifts',    Icon: CalendarClock,   label: 'Shifts & Exams' },
   { to: '/notes',     Icon: NotebookPen,     label: 'Notes'          },
   { to: '/about',     Icon: Info,            label: 'About'          },
 ];
@@ -95,14 +95,12 @@ function HamburgerMenu({ open, setOpen }) {
 
   const displayName = profile?.full_name?.trim().split(/\s+/)[0] || 'there';
   const initial     = (profile?.full_name?.trim() || user?.email || 'M')[0].toUpperCase();
+  const avatarUrl   = profile?.avatar_url
 
   return (
     <>
       {open && <div className="menu-backdrop" onClick={() => setOpen(false)} />}
-
       <aside className={`side-menu ${open ? 'open' : ''}`}>
-
-        {/* Header */}
         <div className="menu-top">
           <span style={{ color: '#ff5d8f', fontSize: '1.15rem', fontWeight: 700 }}>✨ Menu</span>
           <button className="close-btn" onClick={() => setOpen(false)}>
@@ -111,12 +109,17 @@ function HamburgerMenu({ open, setOpen }) {
         </div>
 
         {/* Profile chip */}
-        <Link
-          to="/profile"
-          className="menu-profile-chip"
-          onClick={() => setOpen(false)}
-        >
-          <div className="menu-avatar">{initial}</div>
+        <Link to="/profile" className="menu-profile-chip" onClick={() => setOpen(false)}>
+          <div className="menu-avatar">
+            {/* ← changed: show image if available, otherwise initial */}
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Profile"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '14px' }}
+              />
+            ) : initial}
+          </div>
           <div className="menu-profile-info">
             <span className="menu-profile-name">{displayName}</span>
             <span className="menu-profile-sub">View & edit profile →</span>
@@ -145,7 +148,7 @@ function HamburgerMenu({ open, setOpen }) {
           })}
         </div>
 
-        <div className="menu-divider" style={{ marginTop: 'auto' }} />
+        <div className="menu-divider" />
 
         {/* Log out */}
         <button className="menu-link menu-logout" onClick={signOut}>
@@ -161,7 +164,8 @@ function HamburgerMenu({ open, setOpen }) {
    APP LAYOUT
 ───────────────────────────────────────────── */
 function AppLayout({ children }) {
-  const { user } = useAuth();
+  
+  const { user, } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 

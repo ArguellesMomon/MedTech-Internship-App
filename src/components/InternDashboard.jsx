@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthProvider';
+import { useNavigate } from 'react-router-dom';
 import {
   Microscope, CalendarDays, ClipboardCheck, GraduationCap,
   MapPin, User2, Clock, TrendingUp, Zap, BookOpen,
@@ -42,13 +43,15 @@ function getGreeting() {
 function daysUntil(dateStr) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  return Math.round((new Date(dateStr + 'T12:00:00') - today) / 86400000);
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const target = new Date(y, m - 1, d); // local midnight, no timezone offset
+  return Math.round((target - today) / 86400000);
 }
 
 function getUrgency(days) {
   if (days < 0)   return { color: '#4abf95', bg: '#edfaf4', label: `${Math.abs(days)}d ago`  };
-  if (days === 0) return { color: '#e05555', bg: '#fff0f0', label: 'Today!'                   };
-  if (days === 1) return { color: '#ff6f91', bg: '#fff0f4', label: 'Tomorrow'                 };
+  if (days === 0) return { color: '#000000', bg: '#fff0f0', label: 'Today!'                   };
+  if (days === 1) return { color: '#ffafaf', bg: '#fce4ec', label: 'Tomorrow'                 }; // ← darker rose on deeper pink
   if (days <= 3)  return { color: '#ff8c5a', bg: '#fff5ee', label: `In ${days} days`          };
   if (days <= 7)  return { color: '#5f8dff', bg: '#eff4ff', label: `In ${days} days`          };
   return                 { color: '#aaa',    bg: '#f5f5f5', label: `In ${days} days`          };
@@ -139,6 +142,7 @@ function DashboardHeader({ profile, daysInternship }) {
 ───────────────────────────────────────────── */
 function CurrentRotation() {
   const { user }   = useAuth();
+  const navigate = useNavigate();
   const [rotation, setRotation] = useState(null);
   const [loading,  setLoading]  = useState(true);
 
@@ -170,6 +174,7 @@ function CurrentRotation() {
       <div
         className="id-rotation-strip"
         style={{ background: `linear-gradient(135deg, ${meta.color}ee 0%, ${meta.color}99 100%)` }}
+        onClick={() => navigate('/rotations')}
       >
         {/* Decorative circles */}
         <div className="id-strip-circle id-strip-circle-1" />
@@ -251,6 +256,7 @@ function CurrentRotation() {
 ───────────────────────────────────────────── */
 function UpcomingShifts() {
   const { user } = useAuth();
+  const navigate = useNavigate(); 
   const [shifts,  setShifts]  = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -268,7 +274,10 @@ function UpcomingShifts() {
   }, [user.id]);
 
   return (
-    <div className="id-card">
+    <div className="id-card"
+    onClick={() => navigate('/shifts')} 
+    >
+      
       {/* Header */}
       <div className="id-card-head">
         <div className="id-icon-wrap orange"><CalendarDays size={18} /></div>
@@ -351,6 +360,7 @@ function UpcomingShifts() {
 ───────────────────────────────────────────── */
 function ExamDates() {
   const { user } = useAuth();
+  const navigate = useNavigate(); 
   const [exams,     setExams]     = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [examError, setExamError] = useState(null);
@@ -385,7 +395,9 @@ function ExamDates() {
   const upcomingCount = exams.filter(e => daysUntil(e.exam_date) >= 0).length;
 
   return (
-    <div className="id-card">
+    <div className="id-card"
+    onClick={() => navigate('/shifts', { state: { tab: 'exams' } })}    
+    >
       <div className="id-card-head">
         <div className="id-icon-wrap blue"><GraduationCap size={18} /></div>
         <div className="id-head-text">
@@ -482,6 +494,7 @@ function ExamDates() {
 ───────────────────────────────────────────── */
 function OverallProgress() {
   const { user } = useAuth();
+  const navigate = useNavigate();  
   const [progress, setProgress] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [animated, setAnimated] = useState(false);
@@ -513,7 +526,8 @@ function OverallProgress() {
   const doneCount      = progress.filter(([, v]) => v.total > 0 && v.completed >= v.total).length;
 
   return (
-    <div className="id-card id-progress-card">
+    <div className="id-card id-progress-card"
+    onClick={() => navigate('/reports')}>
       <div className="id-card-head">
         <div className="id-icon-wrap green"><ClipboardCheck size={18} /></div>
         <div className="id-head-text">
@@ -716,20 +730,21 @@ function InternDashboard() {
 
         /* ─── Card ─── */
         .id-card {
-          background: rgba(255,255,255,0.9);
-          border-radius: 28px;
-          border: 1px solid rgba(255,220,232,0.55);
-          box-shadow:
-            0 2px 12px rgba(255,111,145,0.05),
-            0 6px 28px rgba(0,0,0,0.04),
-            inset 0 1px 0 rgba(255,255,255,0.9);
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-          transition: box-shadow 0.28s ease, transform 0.28s ease;
-          animation: id-fade-up 0.5s ease both;
-          backdrop-filter: blur(12px);
-        }
+  background: rgba(255,255,255,0.9);
+  border-radius: 28px;
+  border: 1px solid rgba(255,220,232,0.55);
+  box-shadow:
+    0 2px 12px rgba(255,111,145,0.05),
+    0 6px 28px rgba(0,0,0,0.04),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.28s ease, transform 0.28s ease;
+  animation: id-fade-up 0.5s ease both;
+  backdrop-filter: blur(12px);
+  cursor: pointer;  /* ← add this */
+}
 
         .id-card:hover {
           box-shadow:

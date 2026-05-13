@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthProvider';
+import { useLocation } from 'react-router-dom'
 import {
   CalendarDays, Plus, Heart, Clock, ChevronLeft, ChevronRight,
   Edit3, Trash2, X, Check, Sunrise, Sun, Moon, Coffee, BookOpen,
@@ -110,12 +111,15 @@ function formatDateLong(dateStr) {
   });
 }
 
-function daysUntil(dateStr) {
+
+ function daysUntil(dateStr) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const target = new Date(dateStr + 'T12:00:00');
-  return Math.round((target - today) / (1000 * 60 * 60 * 24));
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const target = new Date(y, m - 1, d); // local midnight, no timezone offset
+  return Math.round((target - today) / 86400000);
 }
+
 
 /* Returns urgency level + display info based on days remaining */
 function getUrgency(days) {
@@ -1075,6 +1079,7 @@ function WellnessPanel({ weekShifts }) {
    MAIN SHIFT PLANNER
 ───────────────────────────────────────────── */
 export default function ShiftPlanner() {
+  const location = useLocation();   
   const { user } = useAuth();
 
   /* ── Shifts state ── */
@@ -1094,8 +1099,9 @@ export default function ShiftPlanner() {
   const [editingExam, setEditingExam] = useState(null);
 
   /* ── Page tab ── */
-  const [activeTab, setActiveTab] = useState('shifts');
-
+const [activeTab, setActiveTab] = useState(
+    location.state?.tab ?? 'shifts'              // ← change 'shifts' to this
+  );
   /* ── Derived ── */
   const upcomingExamCount = useMemo(
     () => allExams.filter(e => daysUntil(e.exam_date) >= 0).length,
