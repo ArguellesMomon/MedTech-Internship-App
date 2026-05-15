@@ -18,6 +18,7 @@ const SECTIONS = [
   { id: 'Microbiology',            color: '#5f8dff', bg: '#eff4ff', grad: 'linear-gradient(135deg,#7ab6ff,#5f8dff)' },
   { id: 'Blood Bank',              color: '#e05555', bg: '#fff0f0', grad: 'linear-gradient(135deg,#ff8f8f,#e05555)' },
   { id: 'Histo / Cyto', color: '#4abf95', bg: '#edfaf4', grad: 'linear-gradient(135deg,#6dd6b1,#4abf95)' },
+  { id: 'Custom Section', color: '#00000063', bg: '#edfaf4', grad: 'linear-gradient(135deg,#6dd6b1,#4abf95)' },
 ];
 const SECTION_MAP = Object.fromEntries(SECTIONS.map(s => [s.id, s]));
 
@@ -870,6 +871,26 @@ export default function DailyReportTracker() {
     setShowModal(true);
   };
 
+  const tabStats = useMemo(() => {
+    let completed = 0;
+    let required = 0;
+    let quotaItems = 0;
+
+    Object.values(quotasBySection).forEach(quotas => {
+      quotaItems += quotas.length;
+      quotas.forEach(q => {
+        completed += q.completed_count ?? 0;
+        required  += q.target_count ?? 0;
+      });
+    });
+
+    return {
+      logCount: allLogs.length,
+      quotaItems,
+      quotaPct: required > 0 ? Math.min(100, Math.round((completed / required) * 100)) : 0,
+    };
+  }, [allLogs.length, quotasBySection]);
+
   return (
     <>
       <style>{`
@@ -901,20 +922,52 @@ export default function DailyReportTracker() {
         .hs-val { font-size: 22px; font-weight: 700; line-height: 1; }
         .hs-label { font-size: 10px; font-weight: 600; color: #bbb; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; }
 
-        /* ─── Page tabs (matches ShiftPlanner) ─── */
-        .qtr-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
-        .qtr-tab {
-          display: flex; align-items: center; gap: 8px;
-          padding: 12px 22px; border-radius: 999px;
-          border: 1.5px solid #ffd6e1; background: rgba(255,255,255,0.8);
-          color: #aaa; font-size: 14px; font-weight: 600;
-          cursor: pointer; transition: all 0.2s;
+        /* ─── Page tabs ─── */
+        .qtr-tabs {
+          display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px; margin-bottom: 24px;
         }
-        .qtr-tab:hover { border-color: #ff8fb1; color: #ff5d8f; }
+        .qtr-tab {
+          display: flex; align-items: center; gap: 12px;
+          padding: 14px 16px; border-radius: 20px;
+          border: 1.5px solid #ffe0ea; background: rgba(255,255,255,0.86);
+          color: #aaa; cursor: pointer; transition: all 0.2s;
+          text-align: left; font-family: inherit; min-width: 0;
+          box-shadow: 0 4px 18px rgba(255,111,145,0.06);
+        }
+        .qtr-tab:hover {
+          border-color: #ffb8ce; color: #ff5d8f;
+          transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,111,145,0.12);
+        }
         .qtr-tab.active {
+          background: linear-gradient(135deg,#fff8fa,#ffffff);
+          border-color: #ff8fb1; color: #ff5d8f;
+          box-shadow: 0 10px 28px rgba(255,111,145,0.16);
+        }
+        .qtr-tab-icon {
+          width: 42px; height: 42px; border-radius: 15px;
+          display: flex; align-items: center; justify-content: center;
+          color: white; flex-shrink: 0;
           background: linear-gradient(135deg,#ff8fb1,#ff6f91);
-          border-color: transparent; color: white;
-          box-shadow: 0 6px 18px rgba(255,111,145,0.3);
+          box-shadow: 0 6px 16px rgba(255,111,145,0.24);
+        }
+        .qtr-tab.quota .qtr-tab-icon {
+          background: linear-gradient(135deg,#7ab6ff,#5f8dff);
+          box-shadow: 0 6px 16px rgba(95,141,255,0.24);
+        }
+        .qtr-tab-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+        .qtr-tab-title { font-size: 14px; font-weight: 800; color: #333; line-height: 1.2; }
+        .qtr-tab-sub { font-size: 12px; font-weight: 600; color: #bbaab2; line-height: 1.35; }
+        .qtr-tab-badge {
+          display: inline-flex; align-items: center; justify-content: center;
+          min-width: 34px; height: 28px; padding: 0 10px; border-radius: 999px;
+          background: #fff0f4; color: #ff5d8f; font-size: 12px; font-weight: 800;
+          flex-shrink: 0;
+        }
+        .qtr-tab.quota .qtr-tab-badge { background: #eff4ff; color: #5f8dff; }
+        .qtr-tab.active .qtr-tab-badge { background: currentColor; color: white; }
+        @media (max-width: 640px) {
+          .qtr-tabs { grid-template-columns: 1fr; }
         }
 
         /* ─── Daily Log ─── */
@@ -1254,14 +1307,22 @@ export default function DailyReportTracker() {
               <button
                 className={`qtr-tab ${activeTab === 'log' ? 'active' : ''}`}
                 onClick={() => setActiveTab('log')}>
-                <ClipboardList size={16} />
-                Daily Log ({allLogs.length})
+                <span className="qtr-tab-icon"><ClipboardList size={18} /></span>
+                <span className="qtr-tab-copy">
+                  <span className="qtr-tab-title">Daily Log</span>
+                  <span className="qtr-tab-sub">Record procedures and competency</span>
+                </span>
+                <span className="qtr-tab-badge">{tabStats.logCount}</span>
               </button>
               <button
-                className={`qtr-tab ${activeTab === 'quota' ? 'active' : ''}`}
+                className={`qtr-tab quota ${activeTab === 'quota' ? 'active' : ''}`}
                 onClick={() => setActiveTab('quota')}>
-                <BarChart2 size={16} />
-                Quota Board
+                <span className="qtr-tab-icon"><BarChart2 size={18} /></span>
+                <span className="qtr-tab-copy">
+                  <span className="qtr-tab-title">Quota Board</span>
+                  <span className="qtr-tab-sub">{tabStats.quotaItems} tracked items</span>
+                </span>
+                <span className="qtr-tab-badge">{tabStats.quotaPct}%</span>
               </button>
             </div>
 

@@ -27,6 +27,15 @@ function getFileType(filename) {
   return 'other';
 }
 
+function normalizeFileName(name) {
+  return name
+    .replace(/\s+/g, '_')
+    .replace(/%20/g, '_')
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
 function getFileMeta(type) {
   return {
     pdf:  { label: 'PDF',  color: '#e05555', bg: '#fff0f0', Icon: FileText     },
@@ -734,8 +743,7 @@ export default function DocumentsPage() {
       <div className="dp-page">
         {/* Header */}
         <div>
-          <h1 className="dp-title">📂 My Documents</h1>
-          <p className="dp-subtitle">Upload and review your study files anytime</p>
+          <h1 className="dp-title">My Documents</h1>
         </div>
 
         {/* Storage usage bar — always visible */}

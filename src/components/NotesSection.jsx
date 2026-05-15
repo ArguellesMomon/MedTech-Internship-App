@@ -1,215 +1,316 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthProvider';
 import {
-  FileText,
-  Plus,
-  Edit3,
-  Trash2,
-  Search,
-  X,
-  Copy,
-  Check,
-  Star,
-  StickyNote,
-  ChevronDown,
-  ChevronUp,
-  ArrowUpDown,
-  Filter,
+  Plus, Edit3, Trash2, Search, X, Copy,
+  Check, Star, StickyNote, FileText,
+  ChevronDown, ChevronUp, ArrowUpDown,
+  Filter, Settings2, Sparkles, SlidersHorizontal,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────
-   CONSTANTS
+   CONSTANTS  (logic unchanged) 
 ───────────────────────────────────────────── */
 const SECTIONS = [
-  { id: 'Hematology',               color: '#ff6f91', bg: '#fff0f4' },
-  { id: 'Clinical Chemistry',        color: '#ff8c5a', bg: '#fff5ee' },
-  { id: 'Microbiology',              color: '#5f8dff', bg: '#eff4ff' },
-  { id: 'Blood Bank',                color: '#e05555', bg: '#fff0f0' },
-  { id: 'Histopathology/Cytology',   color: '#4abf95', bg: '#edfaf4' },
+  { id: 'Hematology',              color: '#ff6f91', bg: '#fff0f4' },
+  { id: 'Clinical Chemistry',      color: '#ff8c5a', bg: '#fff5ee' },
+  { id: 'Microbiology',            color: '#5f8dff', bg: '#eff4ff' },
+  { id: 'Blood Bank',              color: '#e05555', bg: '#fff0f0' },
+  { id: 'Histopathology/Cytology', color: '#4abf95', bg: '#edfaf4' },
 ];
 
-const SECTION_MAP = Object.fromEntries(SECTIONS.map((s) => [s.id, s]));
-
 const CUSTOM_SECTION_COLORS = [
-  { color: '#8d6fff', bg: '#f5efff' },
-  { color: '#34b3ff', bg: '#e8f6ff' },
-  { color: '#54c58e', bg: '#ecfbf2' },
-  { color: '#f6b45f', bg: '#fff4e8' },
-  { color: '#f56b8a', bg: '#fff0f4' },
-  { color: '#b071ec', bg: '#f4ecff' },
+  { color: '#8d6fff', bg: '#f5efff' }, { color: '#34b3ff', bg: '#e8f6ff' },
+  { color: '#54c58e', bg: '#ecfbf2' }, { color: '#f6b45f', bg: '#fff4e8' },
+  { color: '#f56b8a', bg: '#fff0f4' }, { color: '#b071ec', bg: '#f4ecff' },
+  { color: '#26c6da', bg: '#e0f7fa' }, { color: '#ef6c00', bg: '#fff3e0' },
 ];
 
 const CUSTOM_SECTION_STORAGE_KEY = 'intern-app-notes-custom-sections';
 
-function generateSectionMeta(sectionName) {
-  const hash = sectionName.split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
-  const index = Math.abs(hash) % CUSTOM_SECTION_COLORS.length;
-  return CUSTOM_SECTION_COLORS[index];
+function colorToSoftBg(hex) {
+  const clean = hex.replace('#', '');
+  if (clean.length !== 6) return '#fff0f4';
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  const mix = v => Math.round(v + (255 - v) * 0.88).toString(16).padStart(2, '0');
+  return `#${mix(r)}${mix(g)}${mix(b)}`;
+}
+
+function generateSectionMeta(name) {
+  const hash = name.split('').reduce((a, c) => c.charCodeAt(0) + ((a << 5) - a), 0);
+  return CUSTOM_SECTION_COLORS[Math.abs(hash) % CUSTOM_SECTION_COLORS.length];
+}
+
+function normalizeStoredSections(saved) {
+  if (!Array.isArray(saved)) return SECTIONS;
+  const merged = saved.some(s => SECTIONS.some(base => base.id === s?.id))
+    ? saved
+    : [...SECTIONS, ...saved];
+  const seen = new Set();
+  return merged.reduce((list, section) => {
+    const id = typeof section?.id === 'string' ? section.id.trim() : '';
+    if (!id || seen.has(id.toLowerCase())) return list;
+    const meta = generateSectionMeta(id);
+    const color = section.color || meta.color;
+    seen.add(id.toLowerCase());
+    list.push({ id, color, bg: section.bg || colorToSoftBg(color) });
+    return list;
+  }, []);
 }
 
 const SORT_OPTIONS = [
   { id: 'newest', label: 'Newest first' },
   { id: 'oldest', label: 'Oldest first' },
-  { id: 'az',     label: 'A → Z' },
-  { id: 'za',     label: 'Z → A' },
+  { id: 'az',     label: 'A → Z'        },
+  { id: 'za',     label: 'Z → A'        },
 ];
 
-const MAX_BODY = 1000;
+const MAX_BODY = 3000;
 
-/* ─────────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────────── */
 function timeAgo(dateStr) {
   const diff = (Date.now() - new Date(dateStr)) / 1000;
-  if (diff < 60)   return 'just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 60)    return 'just now';
+  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+  if (diff < 604800)return `${Math.floor(diff / 86400)}d ago`;
   return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 /* ─────────────────────────────────────────────
-   NOTE MODAL  (add + edit)
+   MANAGE SECTIONS MODAL  (logic unchanged, restyled)
 ───────────────────────────────────────────── */
-function NoteModal({ editing, defaultSection, onClose, onSaved, sections, sectionMap }) {
+function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose }) {
+  const [name,     setName]     = useState('');
+  const [error,    setError]    = useState('');
+  const [removing, setRemoving] = useState(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 80); }, []);
+
+  const allIds = sections.map(s => s.id);
+
+  const handleAdd = () => {
+    const label = name.trim();
+    if (!label) { setError('Please enter a section name.'); return; }
+    if (allIds.some(id => id.toLowerCase() === label.toLowerCase())) {
+      setError('That section already exists.'); return;
+    }
+    onAdd(label); setName(''); setError('');
+  };
+
+  return (
+    <div className="ms-overlay" onClick={onClose}>
+      <div className="ms-modal" onClick={e => e.stopPropagation()}>
+        <div className="ms-head">
+          <div className="ms-head-left">
+            <div className="ms-head-icon"><Settings2 size={18} /></div>
+            <div>
+              <h3 className="ms-title">Manage Sections</h3>
+              <p className="ms-sub">Add, remove, and color your note sections</p>
+            </div>
+          </div>
+          <button className="ms-close" onClick={onClose}><X size={16} /></button>
+        </div>
+
+        {/* Add new */}
+        <div className="ms-add-box">
+          <p className="ms-box-label">New Section</p>
+          <div className="ms-add-row">
+            <input ref={inputRef} className="ms-input"
+              placeholder="e.g. Immunology, Parasitology…"
+              value={name}
+              onChange={e => { setName(e.target.value); setError(''); }}
+              onKeyDown={e => e.key === 'Enter' && handleAdd()}
+              maxLength={40} />
+            <button className="ms-add-btn" onClick={handleAdd}>
+              <Plus size={15} /> Add
+            </button>
+          </div>
+          {error && <p className="ms-error">{error}</p>}
+        </div>
+
+        {/* Custom sections list */}
+        <div>
+          <p className="ms-box-label">
+            Sections
+            {sections.length > 0 && (
+              <span className="ms-count">{sections.length}</span>
+            )}
+          </p>
+          {sections.length === 0 ? (
+            <div className="ms-empty">
+              <span style={{ fontSize: 28 }}>🗂️</span>
+              <p style={{ margin: 0, fontSize: 13, color: '#bbb' }}>No sections yet.</p>
+            </div>
+          ) : (
+            <div className="ms-list">
+              {sections.map(sec => {
+                const meta  = { ...generateSectionMeta(sec.id), ...sec };
+                const isRem = removing === sec.id;
+                return (
+                  <div key={sec.id} className={`ms-row ${isRem ? 'ms-row-rem' : ''}`}>
+                    <div className="ms-row-main">
+                      <div className="ms-sec-pill"
+                        style={{ background: meta.bg, color: meta.color, borderColor: meta.color + '44' }}>
+                        <span className="ms-dot" style={{ background: meta.color }} />
+                        {sec.id}
+                      </div>
+                      <label className="ms-color-control" title={`Change ${sec.id} color`}>
+                        <span className="ms-color-swatch" style={{ background: meta.color }} />
+                        <input
+                          type="color"
+                          value={meta.color}
+                          onChange={e => onColorChange(sec.id, e.target.value)}
+                        />
+                      </label>
+                    </div>
+                    {isRem ? (
+                      <div className="ms-confirm">
+                        <span>Remove?</span>
+                        <button className="ms-yes" onClick={() => { onRemove(sec.id); setRemoving(null); }}>Yes</button>
+                        <button className="ms-no"  onClick={() => setRemoving(null)}>No</button>
+                      </div>
+                    ) : (
+                      <button className="ms-rm-btn" onClick={() => setRemoving(sec.id)}>
+                        <Trash2 size={12} /> Remove
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="ms-note">
+          <Sparkles size={12} style={{ color: '#ff8fb1', flexShrink: 0 }} />
+          Removing a section hides it from new notes and filters; existing notes keep their label.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   NOTE MODAL  (redesigned)
+───────────────────────────────────────────── */
+function NoteModal({ editing, defaultSection, onClose, onSaved, allSections, sectionMap }) {
   const { user } = useAuth();
 
   const [form, setForm] = useState({
     title:        editing?.title        ?? '',
     body:         editing?.body         ?? '',
-    section_name: editing?.section_name ?? defaultSection ?? sections[0].id,
+    section_name: editing?.section_name ?? defaultSection ?? allSections[0]?.id ?? '',
     is_staff_tip: editing?.is_staff_tip ?? false,
   });
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState('');
 
-  const charLeft = MAX_BODY - form.body.length;
+  const charLeft    = MAX_BODY - form.body.length;
+  const meta        = sectionMap[form.section_name] ?? generateSectionMeta(form.section_name);
+  const accentColor = meta?.color ?? '#ff6f91';
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     if (!form.title.trim() || !form.body.trim()) return;
-    setSaving(true);
-    setError('');
-
+    setSaving(true); setError('');
     const payload = {
-      title:        form.title.trim(),
-      body:         form.body.trim(),
-      section_name: form.section_name,
-      is_staff_tip: form.is_staff_tip,
+      title: form.title.trim(), body: form.body.trim(),
+      section_name: form.section_name, is_staff_tip: form.is_staff_tip,
     };
-
     let result;
     if (editing) {
-      result = await supabase
-        .from('notes')
+      result = await supabase.from('notes')
         .update({ ...payload, updated_at: new Date().toISOString() })
-        .eq('id', editing.id)
-        .select()
-        .single();
+        .eq('id', editing.id).select().single();
     } else {
-      result = await supabase
-        .from('notes')
-        .insert([{ ...payload, user_id: user.id }])
-        .select()
-        .single();
+      result = await supabase.from('notes')
+        .insert([{ ...payload, user_id: user.id }]).select().single();
     }
-
     setSaving(false);
     if (result.error) { setError(result.error.message); return; }
     onSaved(result.data, Boolean(editing));
     onClose();
   };
 
-  const accentColor = sectionMap[form.section_name]?.color ?? generateSectionMeta(form.section_name).color;
-
   return (
-    <div className="ns-overlay" onClick={onClose}>
-      <div className="ns-modal" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="ns-modal-header">
-          <div className="ns-modal-title-row">
-            <div className="ns-modal-dot" style={{ background: accentColor }} />
-            <h3>{editing ? 'Edit Note' : 'New Note'}</h3>
+    <div className="nm-overlay" onClick={onClose}>
+      <div className="nm-sheet" onClick={e => e.stopPropagation()}>
+        {/* Colored header */}
+        <div className="nm-header" style={{ background: `linear-gradient(135deg, ${accentColor}e0, ${accentColor})` }}>
+          <div className="nm-header-left">
+            <div className="nm-header-icon">
+              {editing ? <Edit3 size={16} color="white" /> : <Plus size={16} color="white" />}
+            </div>
+            <span className="nm-header-title">{editing ? 'Edit Note' : 'New Note'}</span>
           </div>
-          <button className="ns-icon-btn" onClick={onClose}><X size={16} /></button>
+          <button className="nm-header-close" onClick={onClose}><X size={17} /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="ns-modal-form">
+        <form onSubmit={handleSubmit} className="nm-body">
           {/* Section pills */}
           <div>
-            <p className="ns-field-label">Section</p>
-            <div className="ns-section-pills">
-              {sections.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  className={`ns-pill ${form.section_name === s.id ? 'active' : ''}`}
-                  style={form.section_name === s.id
-                    ? { background: s.color, borderColor: s.color, color: '#fff' }
-                    : { borderColor: s.color + '55', color: s.color }}
-                  onClick={() => setForm({ ...form, section_name: s.id })}
-                >
-                  {s.id}
-                </button>
-              ))}
+            <p className="nm-label">Section</p>
+            <div className="nm-sec-pills">
+              {allSections.map(s => {
+                const sm = sectionMap[s.id] ?? generateSectionMeta(s.id);
+                const on = form.section_name === s.id;
+                return (
+                  <button key={s.id} type="button" className="nm-sec-pill"
+                    style={on
+                      ? { background: sm.color, borderColor: sm.color, color: '#fff', boxShadow: `0 4px 12px ${sm.color}44` }
+                      : { borderColor: sm.color + '55', color: sm.color }}
+                    onClick={() => setForm({ ...form, section_name: s.id })}>
+                    {s.id}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Title */}
-          <label className="ns-field-label">
+          <label className="nm-label">
             Title *
-            <input
-              className="ns-input"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            <input className="nm-input" value={form.title} required maxLength={120}
               placeholder="Give your note a title…"
-              required
-              maxLength={120}
-            />
+              style={{ '--a': accentColor }}
+              onChange={e => setForm({ ...form, title: e.target.value })} />
           </label>
 
           {/* Body */}
-          <label className="ns-field-label">
+          <label className="nm-label">
             Content *
-            <textarea
-              className="ns-textarea"
-              rows={5}
-              value={form.body}
-              onChange={(e) => {
-                if (e.target.value.length <= MAX_BODY)
-                  setForm({ ...form, body: e.target.value });
-              }}
-              placeholder="Write your note, tip, or reminder here…"
-              required
-            />
-            <span className={`ns-char-count ${charLeft < 50 ? 'warn' : ''}`}>
-              {charLeft} characters left
-            </span>
+            <textarea className="nm-textarea" rows={5} required
+              value={form.body} placeholder="Write your note, tip, or reminder…"
+              style={{ '--a': accentColor }}
+              onChange={e => { if (e.target.value.length <= MAX_BODY) setForm({ ...form, body: e.target.value }); }} />
+            <span className={`nm-char ${charLeft < 50 ? 'warn' : ''}`}>{charLeft} left</span>
           </label>
 
           {/* Staff tip toggle */}
-          <label className="ns-toggle-row">
-            <div className={`ns-toggle ${form.is_staff_tip ? 'on' : ''}`}
-              onClick={() => setForm({ ...form, is_staff_tip: !form.is_staff_tip })}>
-              <span className="ns-toggle-knob" />
+          <div className="nm-toggle-row" onClick={() => setForm({ ...form, is_staff_tip: !form.is_staff_tip })}>
+            <div className={`nm-toggle ${form.is_staff_tip ? 'on' : ''}`}>
+              <span className="nm-knob" />
             </div>
-            <span className="ns-toggle-label">
-              <Star size={13} style={{ display: 'inline', marginRight: 4, verticalAlign: -2 }} />
+            <span className="nm-toggle-label">
+              <Star size={13} style={{ display: 'inline', marginRight: 5, verticalAlign: -2,
+                color: form.is_staff_tip ? '#f59e0b' : '#ccc' }} />
               Mark as Staff Tip
             </span>
-          </label>
+          </div>
 
-          {error && <p className="ns-form-error">{error}</p>}
+          {error && <p className="nm-err">{error}</p>}
 
-          <div className="ns-modal-actions">
-            <button type="submit" className="ns-primary-btn" disabled={saving}>
+          <div className="nm-actions">
+            <button type="submit" className="nm-submit"
+              style={{ background: `linear-gradient(135deg, ${accentColor}cc, ${accentColor})` }}
+              disabled={saving}>
               <Check size={15} />
               {saving ? 'Saving…' : editing ? 'Update Note' : 'Add Note'}
             </button>
-            <button type="button" className="ns-secondary-btn" onClick={onClose}>
-              Cancel
-            </button>
+            <button type="button" className="nm-cancel" onClick={onClose}>Cancel</button>
           </div>
         </form>
       </div>
@@ -218,16 +319,112 @@ function NoteModal({ editing, defaultSection, onClose, onSaved, sections, sectio
 }
 
 /* ─────────────────────────────────────────────
-   NOTE CARD
+   NOTE CARD  (complete redesign)
 ───────────────────────────────────────────── */
-function NoteCard({ note, onEdit, onDelete, sectionMap }) {
-  const [expanded,  setExpanded]  = useState(false);
-  const [copied,    setCopied]    = useState(false);
+function NoteCard({ note, onOpen, onEdit, onDelete, sectionMap, style }) {
+  const [copied,     setCopied]    = useState(false);
+  const [confirmDel, setConfirmDel]= useState(false);
 
-  const meta    = sectionMap[note.section_name] ?? SECTION_MAP[note.section_name] ?? generateSectionMeta(note.section_name);
-  const preview = note.body.length > 140 && !expanded
-    ? note.body.slice(0, 140) + '…'
+  const meta    = sectionMap[note.section_name] ?? generateSectionMeta(note.section_name);
+  const isTip   = note.is_staff_tip;
+  const preview = note.body.length > 160
+    ? note.body.slice(0, 160) + '…'
     : note.body;
+
+  const copyNote = async e => {
+    e.stopPropagation();
+    await navigator.clipboard.writeText(`${note.title}\n\n${note.body}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
+
+  const openFromKeyboard = e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onOpen(note);
+    }
+  };
+
+  return (
+    <article
+      className={`nc-card ${isTip ? 'nc-tip' : ''}`}
+      style={{ '--c': meta?.color ?? '#ff6f91', '--b': meta?.bg ?? '#fff0f4', ...style }}
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(note)}
+      onKeyDown={openFromKeyboard}
+    >
+      {/* Top color tab */}
+      <div className="nc-tab" style={{ background: isTip ? 'linear-gradient(90deg,#f59e0b,#fbbf24)' : meta?.color }} />
+
+      {/* Staff tip ribbon */}
+      {isTip && (
+        <div className="nc-tip-ribbon">
+          <Star size={11} fill="currentColor" /> Staff Tip
+        </div>
+      )}
+
+      {/* Card body */}
+      <div className="nc-content">
+        {/* Section badge + actions */}
+        <div className="nc-top-row">
+          <span className="nc-section-badge"
+            style={{ background: meta?.bg, color: meta?.color }}>
+            {note.section_name}
+          </span>
+          <div className="nc-btns">
+            <button className="nc-btn" onClick={copyNote} title="Copy">
+              {copied
+                ? <Check size={12} style={{ color: '#4abf95' }} />
+                : <Copy size={12} />}
+            </button>
+            <button className="nc-btn" onClick={e => { e.stopPropagation(); onEdit(note); }} title="Edit">
+              <Edit3 size={12} />
+            </button>
+            {confirmDel ? (
+              <span className="nc-del-confirm" onClick={e => e.stopPropagation()}>
+                Delete?
+                <button className="nc-del-yes" onClick={() => onDelete(note.id)}>Yes</button>
+                <button className="nc-del-no"  onClick={() => setConfirmDel(false)}>No</button>
+              </span>
+            ) : (
+              <button className="nc-btn nc-btn-del" onClick={e => { e.stopPropagation(); setConfirmDel(true); }} title="Delete">
+                <Trash2 size={12} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Title */}
+        <h4 className="nc-title">{note.title}</h4>
+
+        {/* Body — with subtle ruled lines */}
+        <p className="nc-body">{preview}</p>
+
+        <span className="nc-open-hint" style={{ color: meta?.color }}>
+          Open note
+        </span>
+      </div>
+
+      {/* Footer */}
+      <div className="nc-footer">
+        <span className="nc-time">
+          {note.updated_at && note.updated_at !== note.created_at
+            ? `Edited ${timeAgo(note.updated_at)}`
+            : `${timeAgo(note.created_at)}`}
+        </span>
+      </div>
+    </article>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   MAIN PAGE
+───────────────────────────────────────────── */
+function NoteViewModal({ note, onClose, onEdit, sectionMap }) {
+  const [copied, setCopied] = useState(false);
+  const meta  = sectionMap[note.section_name] ?? generateSectionMeta(note.section_name);
+  const isTip = note.is_staff_tip;
 
   const copyNote = async () => {
     await navigator.clipboard.writeText(`${note.title}\n\n${note.body}`);
@@ -236,1014 +433,846 @@ function NoteCard({ note, onEdit, onDelete, sectionMap }) {
   };
 
   return (
-    <div
-      className="ns-card"
-      style={{ borderLeftColor: meta?.color ?? '#ff6f91' }}
-    >
-      {/* Top row */}
-      <div className="ns-card-top">
-        <div className="ns-card-meta">
-          {note.is_staff_tip && (
-            <span className="ns-tip-badge">
-              <Star size={10} style={{ marginRight: 3, verticalAlign: -1 }} />
-              Staff Tip
+    <div className="nv-overlay" onClick={onClose}>
+      <div
+        className="nv-modal"
+        onClick={e => e.stopPropagation()}
+        style={{ '--c': meta?.color ?? '#ff6f91', '--b': meta?.bg ?? '#fff0f4' }}
+      >
+        <div className="nv-top" style={{ background: meta?.color }}>
+          <div className="nv-top-left">
+            <FileText size={16} />
+            <span>{isTip ? 'Staff Tip' : 'Note'}</span>
+          </div>
+          <button className="nv-close" onClick={onClose} title="Close"><X size={17} /></button>
+        </div>
+
+        <div className="nv-body">
+          <div className="nv-meta-row">
+            <span className="nv-section" style={{ background: meta?.bg, color: meta?.color }}>
+              {note.section_name}
             </span>
-          )}
-          <span
-            className="ns-section-badge"
-            style={{ background: meta?.bg ?? '#fff0f4', color: meta?.color ?? '#ff6f91' }}
-          >
-            {note.section_name}
-          </span>
+            <span className="nv-time">
+              {note.updated_at && note.updated_at !== note.created_at
+                ? `Edited ${timeAgo(note.updated_at)}`
+                : timeAgo(note.created_at)}
+            </span>
+          </div>
+
+          <h3 className="nv-title">{note.title}</h3>
+          <div className="nv-text">{note.body}</div>
+
+          <div className="nv-actions">
+            <button className="nv-action primary" onClick={copyNote}>
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+            <button className="nv-action" onClick={() => { onClose(); onEdit(note); }}>
+              <Edit3 size={14} /> Edit
+            </button>
+          </div>
         </div>
-
-        <div className="ns-card-actions">
-          <button
-            className="ns-icon-btn"
-            onClick={copyNote}
-            title="Copy to clipboard"
-          >
-            {copied ? <Check size={13} style={{ color: '#4abf95' }} /> : <Copy size={13} />}
-          </button>
-          <button className="ns-icon-btn" onClick={() => onEdit(note)} title="Edit">
-            <Edit3 size={13} />
-          </button>
-          <button className="ns-icon-btn danger" onClick={() => onDelete(note.id)} title="Delete">
-            <Trash2 size={13} />
-          </button>
-        </div>
-      </div>
-
-      {/* Title */}
-      <h4 className="ns-card-title">{note.title}</h4>
-
-      {/* Body */}
-      <p className="ns-card-body">{preview}</p>
-
-      {/* Expand / collapse */}
-      {note.body.length > 140 && (
-        <button
-          className="ns-expand-btn"
-          onClick={() => setExpanded((v) => !v)}
-        >
-          {expanded ? <><ChevronUp size={12} /> Show less</> : <><ChevronDown size={12} /> Read more</>}
-        </button>
-      )}
-
-      {/* Footer */}
-      <div className="ns-card-footer">
-        <span className="ns-timestamp">
-          {note.updated_at && note.updated_at !== note.created_at
-            ? `Updated ${timeAgo(note.updated_at)}`
-            : `Added ${timeAgo(note.created_at)}`}
-        </span>
       </div>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────────
-   MAIN NOTES SECTION
-───────────────────────────────────────────── */
-function NotesSection() {
+export default function NotesSection() {
   const { user } = useAuth();
 
-  const [notes,           setNotes]          = useState([]);
-  const [loading,         setLoading]        = useState(true);
-  const [search,          setSearch]         = useState('');
-  const [filterType,      setFilterType]     = useState('all');   // all | notes | tips
-  const [filterSection,   setFilterSection]  = useState('');
-  const [sortBy,          setSortBy]         = useState('newest');
-  const [showSort,        setShowSort]       = useState(false);
-  const [showModal,       setShowModal]      = useState(false);
-  const [editingNote,     setEditingNote]    = useState(null);
-  const [customSections,  setCustomSections] = useState([]);
-  const [showManageSections, setShowManageSections] = useState(false);
-  const [newSectionName,  setNewSectionName] = useState('');
-  const [sectionError,    setSectionError]   = useState('');
+  const [notes,          setNotes]          = useState([]);
+  const [loading,        setLoading]        = useState(true);
+  const [search,         setSearch]         = useState('');
+  const [filterType,     setFilterType]     = useState('all');
+  const [filterSection,  setFilterSection]  = useState('');
+  const [sortBy,         setSortBy]         = useState('newest');
+  const [showSort,       setShowSort]       = useState(false);
+  const [showFilters,    setShowFilters]    = useState(false);
+  const [showNoteModal,  setShowNoteModal]  = useState(false);
+  const [viewingNote,    setViewingNote]    = useState(null);
+  const [editingNote,    setEditingNote]    = useState(null);
+  const [sections,       setSections]       = useState(SECTIONS);
+  const [sectionsLoaded, setSectionsLoaded] = useState(false);
+  const [showManage,     setShowManage]     = useState(false);
 
   /* ── Fetch ── */
   useEffect(() => {
-    const fetchNotes = async () => {
+    const fetch = async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from('notes')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      const { data } = await supabase.from('notes').select('*')
+        .eq('user_id', user.id).order('created_at', { ascending: false });
       setNotes(data || []);
       setLoading(false);
     };
-    fetchNotes();
+    fetch();
   }, [user.id]);
 
+  /* ── Custom sections ── */
   useEffect(() => {
-    const saved = localStorage.getItem(`${CUSTOM_SECTION_STORAGE_KEY}-${user.id}`);
-    if (!saved) return;
-
     try {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) setCustomSections(parsed);
-    } catch {
-      setCustomSections([]);
-    }
+      const saved = localStorage.getItem(`${CUSTOM_SECTION_STORAGE_KEY}-${user.id}`);
+      setSections(saved ? normalizeStoredSections(JSON.parse(saved)) : SECTIONS);
+    } catch { setSections(SECTIONS); }
+    setSectionsLoaded(true);
   }, [user.id]);
 
   useEffect(() => {
-    localStorage.setItem(
-      `${CUSTOM_SECTION_STORAGE_KEY}-${user.id}`,
-      JSON.stringify(customSections)
-    );
-  }, [customSections, user.id]);
+    if (sectionsLoaded) {
+      localStorage.setItem(`${CUSTOM_SECTION_STORAGE_KEY}-${user.id}`, JSON.stringify(sections));
+    }
+  }, [sections, sectionsLoaded, user.id]);
 
-  const allSections = useMemo(
-    () => [...SECTIONS, ...customSections],
-    [customSections]
-  );
+  const allSections = sections;
+  const sectionMap  = useMemo(() => Object.fromEntries(allSections.map(s => [s.id, s])), [allSections]);
 
-  const sectionMap = useMemo(
-    () => Object.fromEntries(allSections.map((s) => [s.id, s])),
-    [allSections]
-  );
+  /* ── Stats ── */
+  const totalTips  = notes.filter(n => n.is_staff_tip).length;
+  const totalNotes = notes.length - totalTips;
 
-  /* ── Derived counts ── */
-  const totalTips   = notes.filter((n) => n.is_staff_tip).length;
-  const totalNotes  = notes.length - totalTips;
-
-  /* ── Filter + sort ── */
+  /* ── Derived filter ── */
   const filtered = useMemo(() => {
-    let result = [...notes];
-
-    if (filterSection) result = result.filter((n) => n.section_name === filterSection);
-    if (filterType === 'notes') result = result.filter((n) => !n.is_staff_tip);
-    if (filterType === 'tips')  result = result.filter((n) => n.is_staff_tip);
+    let r = [...notes];
+    if (filterSection)          r = r.filter(n => n.section_name === filterSection);
+    if (filterType === 'notes') r = r.filter(n => !n.is_staff_tip);
+    if (filterType === 'tips')  r = r.filter(n => n.is_staff_tip);
     if (search.trim()) {
       const q = search.toLowerCase();
-      result = result.filter(
-        (n) => n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q)
-      );
+      r = r.filter(n => n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q));
     }
-
-    if (sortBy === 'oldest') result.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    else if (sortBy === 'az') result.sort((a, b) => a.title.localeCompare(b.title));
-    else if (sortBy === 'za') result.sort((a, b) => b.title.localeCompare(a.title));
-    // newest is default (already ordered from supabase)
-
-    return result;
+    if (sortBy === 'oldest') r.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+    else if (sortBy === 'az') r.sort((a,b) => a.title.localeCompare(b.title));
+    else if (sortBy === 'za') r.sort((a,b) => b.title.localeCompare(a.title));
+    return r;
   }, [notes, filterSection, filterType, search, sortBy]);
 
+  /* ── Active filter count for badge ── */
+  const activeFilterCount = (filterType !== 'all' ? 1 : 0) + (filterSection ? 1 : 0);
+
   /* ── Handlers ── */
-  const handleAddSection = () => {
-    const label = newSectionName.trim();
-    if (!label) {
-      setSectionError('Please enter a section name.');
-      return;
-    }
-
-    const exists = allSections.some((section) => section.id.toLowerCase() === label.toLowerCase());
-    if (exists) {
-      setSectionError('That section already exists.');
-      return;
-    }
-
+  const handleAddSection = label => {
     const meta = generateSectionMeta(label);
-    const nextSection = { id: label, color: meta.color, bg: meta.bg };
-
-    setCustomSections((prev) => [...prev, nextSection]);
+    setSections(prev => [...prev, { id: label, color: meta.color, bg: meta.bg }]);
     setFilterSection(label);
-    setNewSectionName('');
-    setSectionError('');
-    setShowManageSections(false);
   };
-
-  const handleRemoveSection = (sectionId) => {
-    setCustomSections((prev) => prev.filter((section) => section.id !== sectionId));
-    if (filterSection === sectionId) setFilterSection('');
+  const handleRemoveSection = id => {
+    setSections(prev => prev.filter(s => s.id !== id));
+    if (filterSection === id) setFilterSection('');
   };
-
+  const handleSectionColorChange = (id, color) => {
+    setSections(prev => prev.map(s => s.id === id ? { ...s, color, bg: colorToSoftBg(color) } : s));
+  };
   const handleSaved = (saved, isEdit) => {
-    if (isEdit) {
-      setNotes((prev) => prev.map((n) => (n.id === saved.id ? saved : n)));
-    } else {
-      setNotes((prev) => [saved, ...prev]);
-    }
+    setNotes(prev => isEdit ? prev.map(n => n.id === saved.id ? saved : n) : [saved, ...prev]);
   };
-
-  const handleDelete = async (id) => {
+  const handleDelete = async id => {
     await supabase.from('notes').delete().eq('id', id);
-    setNotes((prev) => prev.filter((n) => n.id !== id));
+    setNotes(prev => prev.filter(n => n.id !== id));
   };
 
-  const openEdit = (note) => {
-    setEditingNote(note);
-    setShowModal(true);
-  };
-
-  const currentSortLabel = SORT_OPTIONS.find((o) => o.id === sortBy)?.label ?? 'Sort';
+  const currentSortLabel = SORT_OPTIONS.find(o => o.id === sortBy)?.label ?? 'Sort';
+  const clearFilters = () => { setFilterType('all'); setFilterSection(''); };
 
   return (
     <>
       <style>{`
-        /* ── Page ── */
-        .ns-page { width: 100%; }
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400;1,9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-        .ns-page-title {
-          font-size: 2rem;
-          font-weight: 700;
-          color: #ff5d8f;
-          margin-bottom: 6px;
+        /* ════════════════════════════════
+           BASE
+        ════════════════════════════════ */
+        .ns-page {
+          width: 100%;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          display: flex; flex-direction: column; gap: 0;
+          padding-bottom: 80px;
         }
 
-        .ns-page-sub {
-          color: #888;
-          font-size: 0.95rem;
-          margin-bottom: 28px;
-        }
-
-        /* ── Stats row ── */
-        .ns-stats {
-          display: flex;
-          gap: 12px;
+        /* ════════════════════════════════
+           HEADER BLOCK
+        ════════════════════════════════ */
+        .ns-hero {
+          padding-bottom: 28px;
+          border-bottom: 1px solid rgba(255,200,220,0.3);
           margin-bottom: 24px;
-          flex-wrap: wrap;
+          animation: ns-up 0.5s ease both;
         }
 
-        .ns-stat-chip {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: rgba(255,255,255,0.85);
-          border: 1px solid #ffe0ea;
-          border-radius: 999px;
-          padding: 8px 16px;
-          font-size: 13px;
-          font-weight: 600;
-          color: #666;
+        .ns-hero-top {
+          display: flex; align-items: flex-end;
+          justify-content: space-between; gap: 16px; flex-wrap: wrap;
+          margin-bottom: 24px;
         }
 
-        .ns-stat-chip span {
-          color: #ff5d8f;
-          font-weight: 700;
-          font-size: 15px;
+        .ns-title {
+font-size: 2rem; font-weight: 700; color: #ff5d8f; margin-bottom: 6px;         }
+
+        .ns-title-accent { color: #ff5d8f; }
+
+        /* Stats - big numbers */
+        .ns-stats {
+          display: grid; grid-template-columns: repeat(3,1fr); gap: 1px;
+          background: rgba(255,200,220,0.25);
+          border-radius: 22px; overflow: hidden;
+          border: 1px solid rgba(255,200,220,0.35);
         }
 
-        /* ── Toolbar ── */
+        .ns-stat {
+          background: rgba(255,255,255,0.9);
+          padding: 18px 20px;
+          display: flex; flex-direction: column; gap: 3px;
+        }
+
+        .ns-stat-n {
+          font-size: 2.2rem; font-weight: 700;
+          color: #ff5d8f; line-height: 1; letter-spacing: -0.03em;
+        }
+
+        .ns-stat-l {
+          font-size: 11px; font-weight: 700; color: #c8b0a8;
+          text-transform: uppercase; letter-spacing: 0.1em;
+        }
+
+        .ns-stat:nth-child(2) .ns-stat-n { color: #f59e0b; }
+        .ns-stat:nth-child(3) .ns-stat-n { color: #888; }
+
+        /* ════════════════════════════════
+           TOOLBAR
+        ════════════════════════════════ */
         .ns-toolbar {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 16px;
-          flex-wrap: wrap;
+          display: flex; align-items: center; gap: 8px;
+          margin-bottom: 12px; flex-wrap: wrap;
+          animation: ns-up 0.5s ease 0.05s both;
+          position: relative; z-index: 20;
         }
 
+        /* Search */
         .ns-search-wrap {
-          flex: 1;
-          min-width: 200px;
-          position: relative;
-          display: flex;
-          align-items: center;
+          flex: 1; min-width: 180px; position: relative; display: flex; align-items: center;
         }
-
-        .ns-search-icon {
-          position: absolute;
-          left: 13px;
-          color: #ccc;
-          pointer-events: none;
-        }
-
+        .ns-si { position: absolute; left: 13px; color: #ccc; pointer-events: none; }
         .ns-search {
           width: 100%;
-          border: 1.5px solid #ffd6e1;
+          border: 1.5px solid rgba(255,200,220,0.5);
           background: rgba(255,255,255,0.9);
-          border-radius: 999px;
-          padding: 10px 36px 10px 35px;
-          font-size: 13px;
-          outline: none;
-          transition: 0.2s;
-          color: #444;
+          border-radius: 999px; padding: 11px 36px 11px 36px;
+          font-size: 13px; outline: none; transition: 0.2s;
+          color: #333; font-family: inherit;
         }
-
         .ns-search:focus {
-          border-color: #ff8fb1;
-          background: white;
+          border-color: #ff8fb1; background: white;
           box-shadow: 0 0 0 3px rgba(255,143,177,0.15);
         }
+        .ns-sc { position: absolute; right: 12px; background: none; border: none; color: #bbb; cursor: pointer; display: flex; padding: 0; }
 
-        .ns-search-clear {
-          position: absolute;
-          right: 12px;
-          background: none;
-          border: none;
-          color: #bbb;
-          cursor: pointer;
-          display: flex;
-          padding: 0;
-        }
-
-        /* ── Sort dropdown ── */
-        .ns-sort-wrap { position: relative; }
-
+        /* Sort dropdown */
+        .ns-sort-wrap { position: relative; z-index: 50; }
         .ns-sort-btn {
-          display: flex;
-          align-items: center;
-          gap: 7px;
-          border: 1.5px solid #ffd6e1;
+          display: flex; align-items: center; gap: 7px;
+          border: 1.5px solid rgba(255,200,220,0.5);
           background: rgba(255,255,255,0.9);
-          border-radius: 999px;
-          padding: 10px 16px;
-          font-size: 13px;
-          font-weight: 600;
-          color: #888;
-          cursor: pointer;
-          transition: 0.2s;
-          white-space: nowrap;
+          border-radius: 999px; padding: 11px 16px;
+          font-size: 13px; font-weight: 600; color: #888;
+          cursor: pointer; transition: 0.2s; white-space: nowrap; font-family: inherit;
         }
-
         .ns-sort-btn:hover { border-color: #ff8fb1; color: #ff5d8f; }
-
-        .ns-sort-dropdown {
-          position: absolute;
-          top: calc(100% + 8px);
-          right: 0;
-          background: white;
-          border-radius: 18px;
-          border: 1px solid #ffe0ea;
-          box-shadow: 0 12px 32px rgba(255,111,145,0.16);
-          overflow: hidden;
-          z-index: 200;
-          min-width: 160px;
+        .ns-sort-dd {
+          position: absolute; top: calc(100% + 8px); right: 0;
+          background: white; border-radius: 18px; border: 1px solid #ffe0ea;
+          box-shadow: 0 16px 40px rgba(255,111,145,0.15);
+          overflow: hidden; z-index: 1000; min-width: 160px;
         }
-
-        .ns-sort-option {
-          display: block;
-          width: 100%;
-          text-align: left;
-          border: none;
-          background: transparent;
-          padding: 12px 16px;
-          font-size: 13px;
-          color: #555;
-          cursor: pointer;
-          transition: 0.15s;
+        .ns-sort-opt {
+          display: block; width: 100%; text-align: left; border: none;
+          background: transparent; padding: 12px 16px; font-size: 13px; color: #555;
+          cursor: pointer; transition: 0.15s; font-family: inherit;
         }
+        .ns-sort-opt:hover  { background: #fff0f4; color: #ff5d8f; }
+        .ns-sort-opt.active { color: #ff5d8f; font-weight: 700; background: #fff5f8; }
 
-        .ns-sort-option:hover { background: #fff0f4; color: #ff5d8f; }
-        .ns-sort-option.active { color: #ff5d8f; font-weight: 700; background: #fff5f8; }
-
-        /* ── Primary button ── */
-        .ns-primary-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          border: none;
-          background: linear-gradient(135deg, #ff8fb1, #ff6f91);
-          color: white;
-          border-radius: 999px;
-          padding: 10px 20px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: 0.2s;
-          white-space: nowrap;
+        /* Filter toggle button */
+        .ns-filter-btn {
+          display: inline-flex; align-items: center; gap: 7px;
+          border: 1.5px solid rgba(255,200,220,0.5);
+          background: rgba(255,255,255,0.9);
+          border-radius: 999px; padding: 11px 18px;
+          font-size: 13px; font-weight: 600; color: #888;
+          cursor: pointer; transition: all 0.2s; white-space: nowrap; font-family: inherit;
         }
-
-        .ns-primary-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,111,145,0.28); }
-        .ns-primary-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
-
-        .ns-secondary-btn {
-          border: none;
-          background: #f4f4f4;
-          color: #666;
-          border-radius: 999px;
-          padding: 10px 18px;
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: 0.2s;
-        }
-
-        .ns-secondary-btn:hover { background: #eee; }
-
-        /* ── Type tabs ── */
-        .ns-type-tabs {
-          display: flex;
-          gap: 6px;
-          margin-bottom: 14px;
-          flex-wrap: wrap;
-        }
-
-        .ns-type-tab {
-          padding: 7px 16px;
-          border-radius: 999px;
-          border: 1.5px solid #ffe0ea;
-          background: rgba(255,255,255,0.8);
-          font-size: 13px;
-          font-weight: 600;
-          color: #999;
-          cursor: pointer;
-          transition: 0.2s;
-        }
-
-        .ns-type-tab:hover { border-color: #ff8fb1; color: #ff5d8f; }
-
-        .ns-type-tab.active {
-          background: linear-gradient(135deg, #ff8fb1, #ff6f91);
-          border-color: transparent;
-          color: white;
-          box-shadow: 0 4px 12px rgba(255,111,145,0.25);
-        }
-
-        /* ── Section filter pills ── */
-        .ns-filter-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 20px;
-          flex-wrap: wrap;
-        }
-
-        .ns-filter-label {
-          font-size: 12px;
-          font-weight: 600;
-          color: #bbb;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-
-        .ns-filter-pill {
-          padding: 6px 14px;
-          border-radius: 999px;
-          border: 1.5px solid;
-          background: transparent;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: 0.2s;
-        }
-
-        .ns-filter-pill.all {
-          border-color: #ffd6e1;
-          color: #ff5d8f;
-        }
-
-        .ns-filter-pill.all.active,
-        .ns-filter-pill.all:hover {
-          background: #ff5d8f;
-          color: white;
-          border-color: #ff5d8f;
-        }
-
-        .ns-add-section-btn {
-          border: 1.5px dashed #ffbfd6;
-          background: transparent;
-          color: #ff5d8f;
-          border-radius: 999px;
-          padding: 6px 14px;
-          font-size: 12px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: 0.2s;
-          white-space: nowrap;
-        }
-
-        .ns-add-section-btn:hover {
+        .ns-filter-btn:hover { border-color: #ff8fb1; color: #ff5d8f; }
+        .ns-filter-btn.has-filters {
+          border-color: #ff8fb1; color: #ff5d8f;
           background: #fff0f4;
-          border-color: #ff8fb1;
-          color: #ff5d8f;
+          box-shadow: 0 4px 16px rgba(255,111,145,0.18);
+        }
+        .ns-filter-count {
+          display: inline-flex; align-items: center; justify-content: center;
+          width: 18px; height: 18px; background: #ff5d8f; color: white;
+          border-radius: 50%; font-size: 10px; font-weight: 800;
         }
 
-        .ns-new-section-form {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-          align-items: center;
-          margin-bottom: 18px;
+        /* New note button */
+        .ns-new-btn {
+          display: inline-flex; align-items: center; gap: 7px; border: none;
+          background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white;
+          border-radius: 999px; padding: 11px 22px;
+          font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s;
+          white-space: nowrap; font-family: inherit;
+          box-shadow: 0 4px 16px rgba(255,111,145,0.3);
         }
+        .ns-new-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,111,145,0.4); }
 
-        .ns-input-sm {
-          flex: 1;
-          min-width: 180px;
-        }
-
-        .ns-btn-sm {
-          padding: 8px 14px;
-          font-size: 12px;
-        }
-
-        .ns-new-section-error {
-          margin: 10px 0 0;
-          width: 100%;
-        }
-
-        .ns-section-manager {
-          border: 1px solid #ffe0ea;
-          background: rgba(255, 247, 250, 0.95);
-          border-radius: 24px;
-          padding: 18px;
-          margin-top: 12px;
-          box-shadow: 0 14px 40px rgba(255, 109, 145, 0.09);
-        }
-
-        .ns-section-manager-header {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 12px;
-          margin-bottom: 16px;
-        }
-
-        .ns-section-manager-title {
-          margin: 0 0 4px;
-          font-size: 14px;
-          font-weight: 700;
-          color: #333;
-        }
-
-        .ns-section-manager-subtitle {
-          margin: 0;
-          font-size: 12px;
-          color: #777;
-          line-height: 1.4;
-        }
-
-        .ns-add-section-row {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-          align-items: center;
-          margin-bottom: 16px;
-        }
-
-        .ns-section-manager-list {
+        /* ════════════════════════════════
+           COLLAPSIBLE FILTER PANEL
+           Uses grid-template-rows trick — smoothest possible collapse
+        ════════════════════════════════ */
+        .ns-fp-outer {
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 10px;
+          grid-template-rows: 0fr;
+          transition: grid-template-rows 0.35s cubic-bezier(0.4,0,0.2,1);
+          margin-bottom: 0;
+        }
+        .ns-fp-outer.open {
+          grid-template-rows: 1fr;
+          margin-bottom: 16px;
+        }
+        .ns-fp-inner {
+          overflow: hidden;
+          min-height: 0;
+        }
+        .ns-fp-panel {
+          background: rgba(255,255,255,0.88);
+          border: 1.5px solid rgba(255,200,220,0.45);
+          border-radius: 22px;
+          padding: 20px;
+          display: flex; flex-direction: column; gap: 16px;
+          margin-top: 8px;
+          box-shadow: 0 4px 20px rgba(255,111,145,0.08);
         }
 
-        .ns-section-manager-empty {
-          padding: 16px;
-          background: white;
-          border-radius: 18px;
-          border: 1px dashed #ffd6e1;
-          color: #8a7b87;
-          font-size: 13px;
-          text-align: center;
+        /* Type segmented control */
+        .ns-type-seg {
+          display: flex; background: #f5eff2; border-radius: 14px; padding: 4px; gap: 2px;
+        }
+        .ns-type-seg-btn {
+          flex: 1; padding: 9px 14px; border: none; border-radius: 11px;
+          background: transparent; font-size: 13px; font-weight: 600; color: #aaa;
+          cursor: pointer; transition: all 0.18s; font-family: inherit; white-space: nowrap;
+        }
+        .ns-type-seg-btn:hover { color: #ff5d8f; }
+        .ns-type-seg-btn.on {
+          background: white; color: #ff5d8f;
+          box-shadow: 0 2px 10px rgba(255,111,145,0.15);
         }
 
-        .ns-custom-section-item {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          padding: 12px 14px;
-          border-radius: 16px;
-          background: white;
-          border: 1px solid #ffe6ed;
-          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        /* Section pills row */
+        .ns-sec-row-head {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-bottom: 10px;
+        }
+        .ns-sec-row-label {
+          font-size: 11px; font-weight: 700; color: #c8b0a8;
+          text-transform: uppercase; letter-spacing: 0.09em;
+        }
+        .ns-manage-link {
+          background: none; border: none; color: #ff8fb1; font-size: 12px; font-weight: 600;
+          cursor: pointer; font-family: inherit; transition: color 0.15s;
+          display: flex; align-items: center; gap: 5px;
+        }
+        .ns-manage-link:hover { color: #ff5d8f; }
+
+        .ns-sec-pills {
+          display: flex; flex-wrap: wrap; gap: 7px;
+        }
+        .ns-sec-pill {
+          padding: 6px 14px; border-radius: 999px; border: 1.5px solid;
+          background: transparent; font-size: 12px; font-weight: 600;
+          cursor: pointer; transition: all 0.18s; font-family: inherit;
+          white-space: nowrap;
+        }
+        .ns-sec-pill.all { border-color: rgba(255,111,145,0.4); color: #ff5d8f; }
+        .ns-sec-pill.all.on { background: #ff5d8f; color: white; border-color: #ff5d8f; }
+
+        /* Clear row */
+        .ns-fp-clear-row {
+          display: flex; align-items: center; justify-content: flex-end;
+        }
+        .ns-clear-btn {
+          background: none; border: 1.5px solid rgba(255,200,220,0.5);
+          color: #bbb; border-radius: 999px; padding: 6px 14px;
+          font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.18s; font-family: inherit;
+          display: flex; align-items: center; gap: 5px;
+        }
+        .ns-clear-btn:hover { border-color: #e05555; color: #e05555; background: #fde8e8; }
+        .ns-clear-btn.hidden { display: none; }
+
+        /* ════════════════════════════════
+           RESULTS COUNT
+        ════════════════════════════════ */
+        .ns-count {
+          font-size: 12px; color: #c8b0a8; margin-bottom: 16px;
+          display: flex; align-items: center; gap: 6px;
         }
 
-        .ns-custom-section-item:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 8px 18px rgba(255, 109, 145, 0.12);
-        }
-
-        .ns-custom-section-pill {
-          flex: 1;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 8px 12px;
-          border-radius: 999px;
-          font-size: 13px;
-          font-weight: 700;
-        }
-
-        .ns-custom-section-delete {
-          border: none;
-          background: #ffe7ef;
-          color: #d64566;
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          transition: background 0.2s;
-        }
-
-        .ns-custom-section-delete:hover {
-          background: #ffd0dc;
-        }
-
-        /* ── Note grid ── */
+        /* ════════════════════════════════
+           NOTE GRID
+        ════════════════════════════════ */
         .ns-grid {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
+          grid-template-columns: repeat(2,1fr);
           gap: 14px;
+          align-items: start; /* important for masonry feel */
         }
 
-        /* ── Note card ── */
-        .ns-card {
-          background: rgba(255,255,255,0.88);
+        @keyframes ns-up {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes nc-in {
+          from { opacity: 0; transform: translateY(12px) scale(0.98); }
+          to   { opacity: 1; transform: translateY(0)  scale(1);    }
+        }
+
+        /* ════════════════════════════════
+           NOTE CARD
+        ════════════════════════════════ */
+        .nc-card {
           border-radius: 20px;
-          border: 1.5px solid #ffe0ea;
-          border-left: 4px solid;
-          padding: 16px;
-          transition: box-shadow 0.2s, transform 0.2s;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .ns-card:hover {
-          box-shadow: 0 8px 24px rgba(255,111,145,0.1);
-          transform: translateY(-1px);
-        }
-
-        .ns-card-top {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-        }
-
-        .ns-card-meta {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          flex-wrap: wrap;
-        }
-
-        .ns-tip-badge {
-          display: inline-flex;
-          align-items: center;
-          background: linear-gradient(135deg, #ffe08a, #ffcc33);
-          color: #7a5800;
-          border-radius: 999px;
-          padding: 3px 9px;
-          font-size: 10px;
-          font-weight: 700;
-        }
-
-        .ns-section-badge {
-          border-radius: 999px;
-          padding: 3px 10px;
-          font-size: 11px;
-          font-weight: 600;
-        }
-
-        .ns-card-actions {
-          display: flex;
-          gap: 5px;
-          align-items: center;
-          flex-shrink: 0;
-        }
-
-        .ns-icon-btn {
-          border: none;
-          background: #f0f0f0;
-          padding: 7px;
-          border-radius: 10px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          color: #888;
-          transition: 0.2s;
-        }
-
-        .ns-icon-btn:hover { background: #ffe4ec; color: #ff5d8f; transform: scale(1.05); }
-        .ns-icon-btn.danger:hover { background: #fde8e8; color: #e05555; }
-
-        .ns-card-title {
-          margin: 0;
-          font-size: 14px;
-          font-weight: 700;
-          color: #333;
-          line-height: 1.4;
-        }
-
-        .ns-card-body {
-          margin: 0;
-          font-size: 13px;
-          color: #666;
-          line-height: 1.6;
-          white-space: pre-wrap;
-          word-break: break-word;
-        }
-
-        .ns-expand-btn {
-          background: none;
-          border: none;
-          color: #ff8fb1;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          padding: 0;
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          align-self: flex-start;
-        }
-
-        .ns-expand-btn:hover { color: #ff5d8f; }
-
-        .ns-card-footer {
-          margin-top: auto;
-          padding-top: 6px;
-          border-top: 1px solid #f5e6ea;
-        }
-
-        .ns-timestamp {
-          font-size: 11px;
-          color: #bbb;
-        }
-
-        /* ── Empty state ── */
-        .ns-empty {
-          grid-column: 1 / -1;
-          text-align: center;
-          padding: 48px 24px;
-          color: #bbb;
-        }
-
-        .ns-empty-icon {
-          font-size: 40px;
-          margin-bottom: 12px;
-        }
-
-        .ns-empty p {
-          margin: 0 0 16px;
-          font-size: 14px;
-        }
-
-        /* ── Results count ── */
-        .ns-results-count {
-          font-size: 12px;
-          color: #bbb;
-          margin-bottom: 14px;
-          padding-left: 2px;
-        }
-
-        /* ── Modal ── */
-        .ns-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.22);
-          backdrop-filter: blur(5px);
-          z-index: 1000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-        }
-
-        .ns-modal {
-          background: white;
-          border-radius: 28px;
-          padding: 28px;
-          width: 100%;
-          max-width: 520px;
-          box-shadow: 0 24px 60px rgba(255,111,145,0.2);
-          border: 1px solid #ffe0ea;
-          max-height: 90vh;
-          overflow-y: auto;
-        }
-
-        .ns-modal-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 22px;
-        }
-
-        .ns-modal-title-row {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .ns-modal-dot {
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-        }
-
-        .ns-modal-header h3 {
-          margin: 0;
-          font-size: 1.1rem;
-          color: #333;
-        }
-
-        .ns-modal-form {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-
-        .ns-field-label {
-          display: flex;
-          flex-direction: column;
-          gap: 7px;
-          font-size: 12px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          color: #aaa;
-          margin: 0;
-        }
-
-        .ns-input {
-          border: 1.5px solid #ffd6e1;
-          background: #fff8fa;
-          border-radius: 14px;
-          padding: 12px 14px;
-          font-size: 14px;
-          outline: none;
-          transition: 0.2s;
-          color: #444;
-          font-family: inherit;
-        }
-
-        .ns-input:focus {
-          border-color: #ff8fb1;
-          background: white;
-          box-shadow: 0 0 0 3px rgba(255,143,177,0.15);
-        }
-
-        .ns-textarea {
-          border: 1.5px solid #ffd6e1;
-          background: #fff8fa;
-          border-radius: 14px;
-          padding: 12px 14px;
-          font-size: 14px;
-          outline: none;
-          transition: 0.2s;
-          color: #444;
-          resize: vertical;
-          min-height: 120px;
-          font-family: inherit;
-          line-height: 1.6;
-        }
-
-        .ns-textarea:focus {
-          border-color: #ff8fb1;
-          background: white;
-          box-shadow: 0 0 0 3px rgba(255,143,177,0.15);
-        }
-
-        .ns-char-count {
-          align-self: flex-end;
-          font-size: 11px;
-          color: #ccc;
-        }
-
-        .ns-char-count.warn { color: #ff8c5a; font-weight: 600; }
-
-        .ns-section-pills {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 7px;
-        }
-
-        .ns-pill {
-          padding: 6px 12px;
-          border-radius: 999px;
-          border: 1.5px solid;
-          background: transparent;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: 0.15s;
-        }
-
-        /* ── Staff tip toggle ── */
-        .ns-toggle-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          cursor: pointer;
-          user-select: none;
-        }
-
-        .ns-toggle {
-          width: 42px;
-          height: 24px;
-          border-radius: 999px;
-          background: #e0e0e0;
+          border: 1.5px solid rgba(255,200,220,0.5);
+          background: rgba(255,255,255,0.96);
+          overflow: hidden;
+          display: flex; flex-direction: column;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,1);
+          transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s;
+          animation: nc-in 0.35s ease both;
           position: relative;
           cursor: pointer;
-          transition: background 0.2s;
-          flex-shrink: 0;
         }
 
-        .ns-toggle.on { background: linear-gradient(135deg, #ffcc33, #ffb300); }
-
-        .ns-toggle-knob {
-          position: absolute;
-          top: 3px;
-          left: 3px;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          background: white;
-          transition: transform 0.2s;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+        .nc-card:focus-visible {
+          outline: 3px solid color-mix(in srgb, var(--c) 32%, transparent);
+          outline-offset: 3px;
         }
 
-        .ns-toggle.on .ns-toggle-knob { transform: translateX(18px); }
-
-        .ns-toggle-label {
-          font-size: 13px;
-          font-weight: 600;
-          color: #666;
+        .nc-card:hover {
+          transform: translateY(-4px) rotate(0.3deg);
+          box-shadow:
+            0 16px 40px color-mix(in srgb, var(--c) 18%, rgba(0,0,0,0.08)),
+            inset 0 1px 0 rgba(255,255,255,1);
+          border-color: color-mix(in srgb, var(--c) 40%, rgba(255,200,220,0.5));
         }
 
-        .ns-form-error {
-          background: #fde8e8;
-          color: #c0392b;
-          border-radius: 12px;
-          padding: 10px 14px;
-          font-size: 13px;
-          margin: 0;
+        /* Staff tip card: warm tint */
+        .nc-tip {
+          background: linear-gradient(180deg, #fffbea 0%, rgba(255,255,255,0.96) 72px);
         }
 
-        .ns-modal-actions {
-          display: flex;
-          gap: 10px;
-          padding-top: 4px;
+        /* Section color tab at top */
+        .nc-tab {
+          height: 5px; flex-shrink: 0;
         }
 
-        /* ── Responsive ── */
-        @media (max-width: 768px) {
-          .ns-grid { grid-template-columns: 1fr; }
-          .ns-toolbar { gap: 8px; }
-          .ns-modal { padding: 20px; }
-          .ns-page-title { font-size: 1.7rem; }
-          .ns-section-pills { gap: 6px; }
+        /* Staff tip ribbon */
+        .nc-tip-ribbon {
+          display: inline-flex; align-items: center; gap: 5px;
+          background: linear-gradient(135deg,#fef3c7,#fde68a);
+          color: #92400e;
+          font-size: 10px; font-weight: 800;
+          text-transform: uppercase; letter-spacing: 0.08em;
+          padding: 5px 14px;
+          border-bottom: 1px solid #fcd34d44;
         }
 
-        @media (min-width: 769px) and (max-width: 1024px) {
-          .ns-grid { grid-template-columns: 1fr; }
+        .nc-content { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; gap: 9px; }
+
+        .nc-top-row {
+          display: flex; align-items: center; justify-content: space-between; gap: 6px;
+        }
+
+        .nc-section-badge {
+          border-radius: 999px; padding: 3px 10px;
+          font-size: 10px; font-weight: 700;
+          letter-spacing: 0.04em; white-space: nowrap;
+          text-transform: uppercase;
+        }
+
+        .nc-btns {
+          display: flex; align-items: center; gap: 3px; flex-shrink: 0;
+          opacity: 0; transition: opacity 0.2s;
+        }
+        .nc-card:hover .nc-btns { opacity: 1; }
+
+        /* Always visible on touch devices */
+        @media (hover: none) {
+          .nc-btns { opacity: 1; }
+        }
+
+        .nc-btn {
+          width: 28px; height: 28px; border: none; border-radius: 8px;
+          background: #f5f0f2; display: flex; align-items: center; justify-content: center;
+          color: #c8b0a8; cursor: pointer; transition: all 0.15s;
+        }
+        .nc-btn:hover        { background: #ffe4ec; color: #ff5d8f; transform: scale(1.08); }
+        .nc-btn-del:hover    { background: #fde8e8; color: #e05555; }
+
+        .nc-del-confirm {
+          display: flex; align-items: center; gap: 5px;
+          font-size: 11px; color: #888; background: #fff8fa;
+          border: 1px solid #ffe0ea; border-radius: 10px; padding: 3px 8px;
+        }
+        .nc-del-yes {
+          border: none; background: #fde8e8; color: #e05555;
+          border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: 700; cursor: pointer;
+        }
+        .nc-del-no {
+          border: none; background: #f0f0f0; color: #888;
+          border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: 600; cursor: pointer;
+        }
+
+        .nc-title {
+          font-weight: 700;
+          font-size: 15px; color: #1c1412;
+          margin: 0; line-height: 1.35; letter-spacing: -0.01em;
+        }
+
+        .nc-body {
+          font-size: 13px; color: #666; line-height: 1.7;
+          margin: 0; white-space: pre-wrap; word-break: break-word;
+          /* Subtle ruled-line texture */
+          background-image: repeating-linear-gradient(
+            transparent, transparent 27px,
+            rgba(255,200,220,0.18) 27px, rgba(255,200,220,0.18) 28px
+          );
+          background-size: 100% 28px;
+          padding-bottom: 2px;
+        }
+
+        .nc-open-hint {
+          background: none; border: none;
+          font-size: 11px; font-weight: 700;
+          padding: 0; align-self: flex-start;
+          display: inline-flex; align-items: center; gap: 3px;
+          transition: opacity 0.15s; font-family: inherit;
+        }
+        .nc-card:hover .nc-open-hint { opacity: 0.72; }
+
+        .nc-footer {
+          padding: 10px 16px;
+          border-top: 1px solid rgba(255,200,220,0.25);
+          background: rgba(255,248,251,0.6);
+        }
+        .nc-time { font-size: 11px; color: #d0c0c8; font-weight: 500; }
+
+        /* Note viewer modal */
+        .nv-overlay {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.32);
+          backdrop-filter: blur(7px); z-index: 1000;
+          display: flex; align-items: center; justify-content: center; padding: 22px;
+        }
+        .nv-modal {
+          width: 100%; max-width: 620px; max-height: min(82vh, 720px);
+          background: white; border-radius: 26px; overflow: hidden;
+          box-shadow: 0 24px 70px rgba(0,0,0,0.18);
+          border: 1px solid color-mix(in srgb, var(--c) 28%, #ffe0ea);
+          display: flex; flex-direction: column; animation: nm-up 0.28s ease both;
+        }
+        .nv-top {
+          min-height: 54px; padding: 14px 18px; color: white;
+          display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        }
+        .nv-top-left { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+        .nv-close {
+          width: 34px; height: 34px; border: none; border-radius: 12px;
+          background: rgba(255,255,255,0.18); color: white; cursor: pointer;
+          display: flex; align-items: center; justify-content: center; transition: 0.18s;
+        }
+        .nv-close:hover { background: rgba(255,255,255,0.28); }
+        .nv-body { padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+        .nv-meta-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+        .nv-section { border-radius: 999px; padding: 5px 12px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+        .nv-time { font-size: 12px; color: #c8b0a8; font-weight: 600; }
+        .nv-title { margin: 0; color: #1c1412; font-size: 1.45rem; line-height: 1.25; letter-spacing: 0; }
+        .nv-text {
+          color: #444; font-size: 14px; line-height: 1.85; white-space: pre-wrap; word-break: break-word;
+          background: linear-gradient(180deg, var(--b), rgba(255,255,255,0.7));
+          border: 1px solid color-mix(in srgb, var(--c) 18%, #ffe0ea);
+          border-radius: 18px; padding: 18px;
+        }
+        .nv-actions { display: flex; align-items: center; gap: 10px; justify-content: flex-end; padding-top: 2px; }
+        .nv-action {
+          border: 1.5px solid rgba(255,200,220,0.55); background: white; color: #888;
+          border-radius: 999px; padding: 10px 16px; font-size: 13px; font-weight: 700;
+          cursor: pointer; display: inline-flex; align-items: center; gap: 7px; font-family: inherit; transition: 0.18s;
+        }
+        .nv-action:hover { border-color: var(--c); color: var(--c); background: var(--b); }
+        .nv-action.primary { background: var(--c); border-color: var(--c); color: white; }
+        .nv-action.primary:hover { opacity: 0.9; color: white; }
+
+        /* ════════════════════════════════
+           EMPTY STATE
+        ════════════════════════════════ */
+        .ns-empty {
+          grid-column: 1/-1;
+          text-align: center; padding: 64px 24px;
+          display: flex; flex-direction: column; align-items: center; gap: 12px;
+        }
+        .ns-empty-blob {
+          width: 80px; height: 80px; border-radius: 28px;
+          background: linear-gradient(135deg, #fff0f4, #ffd6e1);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 34px; margin-bottom: 4px;
+          box-shadow: 0 8px 24px rgba(255,111,145,0.15);
+        }
+        .ns-empty-title { font-family: 'Fraunces', serif; font-style: italic; font-size: 1.4rem; color: #888; margin: 0; }
+        .ns-empty-hint  { font-size: 13px; color: #d0c0c8; margin: 0; }
+
+        /* ════════════════════════════════
+           LOADING SKELETON
+        ════════════════════════════════ */
+        .ns-skeleton-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; }
+        .ns-skeleton-card {
+          border-radius: 20px; overflow: hidden;
+          background: white; border: 1.5px solid rgba(255,200,220,0.4);
+        }
+        .ns-skeleton-tab { height: 5px; background: #f0e0e8; }
+        .ns-skeleton-body {
+          padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
+        }
+        .ns-skel {
+          border-radius: 8px;
+          background: linear-gradient(90deg, #f8f0f4 25%, #fde8ef 50%, #f8f0f4 75%);
+          background-size: 200% 100%;
+          animation: ns-shimmer 1.6s ease-in-out infinite;
+        }
+        @keyframes ns-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* ════════════════════════════════
+           NOTE MODAL
+        ════════════════════════════════ */
+        .nm-overlay {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.28);
+          backdrop-filter: blur(6px); z-index: 1000;
+          display: flex; align-items: flex-end; justify-content: center;
+        }
+        .nm-sheet {
+          background: white; width: 100%; max-width: 620px;
+          border-radius: 28px 28px 0 0;
+          box-shadow: 0 -8px 48px rgba(0,0,0,0.14);
+          max-height: 92vh; display: flex; flex-direction: column;
+          animation: nm-up 0.3s cubic-bezier(0.34,1.2,0.64,1) both;
+          overflow: hidden;
+        }
+        @keyframes nm-up { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .nm-header {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 18px 22px; gap: 12px; flex-shrink: 0;
+        }
+        .nm-header-left  { display: flex; align-items: center; gap: 11px; }
+        .nm-header-icon  { width: 32px; height: 32px; border-radius: 10px; background: rgba(255,255,255,0.22); display: flex; align-items: center; justify-content: center; }
+        .nm-header-title { font-family: 'Fraunces', serif; font-style: italic; font-size: 1.1rem; font-weight: 700; color: white; margin: 0; }
+        .nm-header-close { border: none; background: rgba(255,255,255,0.2); border-radius: 9px; padding: 7px; cursor: pointer; display: flex; color: white; transition: 0.2s; }
+        .nm-header-close:hover { background: rgba(255,255,255,0.32); }
+
+        .nm-body { flex: 1; overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+        .nm-label {
+          display: flex; flex-direction: column; gap: 7px;
+          font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin: 0;
+        }
+        .nm-sec-pills { display: flex; flex-wrap: wrap; gap: 7px; }
+        .nm-sec-pill {
+          padding: 6px 12px; border-radius: 999px; border: 1.5px solid;
+          background: transparent; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.15s; font-family: inherit;
+        }
+        .nm-input {
+          border: 1.5px solid rgba(255,200,220,0.6); background: #fff8fa; border-radius: 14px;
+          padding: 13px 15px; font-size: 15px; outline: none; transition: 0.2s;
+          color: #1c1412; font-family: 'Plus Jakarta Sans', sans-serif; width: 100%;
+        }
+        .nm-input:focus {
+          border-color: var(--a, #ff8fb1); background: white;
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--a, #ff8fb1) 18%, transparent);
+        }
+        .nm-textarea {
+          border: 1.5px solid rgba(255,200,220,0.6); background: #fff8fa; border-radius: 14px;
+          padding: 13px 15px; font-size: 14px; outline: none; transition: 0.2s;
+          color: #444; resize: vertical; min-height: 120px;
+          font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.7; width: 100%;
+        }
+        .nm-textarea:focus {
+          border-color: var(--a, #ff8fb1); background: white;
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--a, #ff8fb1) 18%, transparent);
+        }
+        .nm-char { align-self: flex-end; font-size: 11px; color: #ccc; }
+        .nm-char.warn { color: #ff8c5a; font-weight: 600; }
+
+        .nm-toggle-row { display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; }
+        .nm-toggle { width: 42px; height: 24px; border-radius: 999px; background: #e8e0e4; position: relative; transition: background 0.2s; flex-shrink: 0; }
+        .nm-toggle.on { background: linear-gradient(135deg,#fcd34d,#f59e0b); }
+        .nm-knob { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: white; transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+        .nm-toggle.on .nm-knob { transform: translateX(18px); }
+        .nm-toggle-label { font-size: 13px; font-weight: 600; color: #666; }
+
+        .nm-err { background: #fde8e8; color: #c0392b; border-radius: 12px; padding: 10px 14px; font-size: 13px; margin: 0; }
+        .nm-actions { display: flex; gap: 10px; padding-top: 4px; }
+        .nm-submit {
+          display: inline-flex; align-items: center; gap: 7px; border: none; color: white;
+          border-radius: 999px; padding: 13px 24px; font-size: 14px; font-weight: 700;
+          cursor: pointer; transition: 0.2s; font-family: inherit;
+        }
+        .nm-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,111,145,0.3); }
+        .nm-submit:disabled { opacity: 0.65; cursor: not-allowed; }
+        .nm-cancel { border: none; background: #f0ecea; color: #888; border-radius: 999px; padding: 13px 20px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+        /* ════════════════════════════════
+           MANAGE SECTIONS MODAL
+        ════════════════════════════════ */
+        .ms-overlay {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.28);
+          backdrop-filter: blur(6px); z-index: 1000;
+          display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .ms-modal {
+          background: white; border-radius: 28px; padding: 26px;
+          width: 100%; max-width: 460px;
+          box-shadow: 0 24px 60px rgba(0,0,0,0.14);
+          border: 1px solid rgba(255,200,220,0.4);
+          max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 22px;
+          animation: nm-up 0.28s ease both;
+        }
+        .ms-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+        .ms-head-left { display: flex; align-items: center; gap: 12px; }
+        .ms-head-icon { width: 40px; height: 40px; border-radius: 14px; background: linear-gradient(135deg,#ff8fb1,#ff6f91); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+        .ms-title  { margin: 0 0 3px; font-family: 'Fraunces', serif; font-style: italic; font-size: 1.1rem; font-weight: 700; color: #1c1412; }
+        .ms-sub    { margin: 0; font-size: 12px; color: #bbb; }
+        .ms-close  { border: none; background: #f4f0f2; border-radius: 10px; padding: 7px; cursor: pointer; display: flex; color: #888; transition: 0.2s; flex-shrink: 0; }
+        .ms-close:hover { background: #ffe4ec; color: #ff5d8f; }
+        .ms-box-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #c8b0a8; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .ms-count { display: inline-flex; align-items: center; justify-content: center; background: #fff0f4; color: #ff6f91; border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 700; }
+        .ms-add-box { background: #fff8fa; border: 1px solid rgba(255,200,220,0.4); border-radius: 18px; padding: 18px; }
+        .ms-add-row { display: flex; gap: 10px; align-items: center; }
+        .ms-input { flex: 1; border: 1.5px solid rgba(255,200,220,0.6); background: white; border-radius: 12px; padding: 11px 14px; font-size: 14px; outline: none; transition: 0.2s; color: #444; font-family: inherit; }
+        .ms-input:focus { border-color: #ff8fb1; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
+        .ms-add-btn { display: inline-flex; align-items: center; gap: 6px; border: none; background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white; border-radius: 12px; padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; font-family: inherit; }
+        .ms-add-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(255,111,145,0.25); }
+        .ms-error { background: #fde8e8; color: #c0392b; border-radius: 10px; padding: 8px 12px; font-size: 12px; margin-top: 10px; }
+        .ms-empty { text-align: center; padding: 24px 16px; background: #fff8fa; border-radius: 16px; border: 1px dashed rgba(255,200,220,0.5); display: flex; flex-direction: column; align-items: center; gap: 6px; color: #bbb; font-size: 13px; }
+        .ms-list { display: flex; flex-direction: column; gap: 8px; }
+        .ms-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 16px; border: 1.5px solid rgba(255,200,220,0.4); background: #fff8fa; transition: 0.2s; }
+        .ms-row:hover { border-color: #ffb8ce; background: white; }
+        .ms-row-rem { border-color: #ffd0d0; background: #fff5f5; }
+        .ms-row-main { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+        .ms-sec-pill { display: inline-flex; align-items: center; gap: 7px; border: 1.5px solid; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; }
+        .ms-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .ms-color-control { width: 30px; height: 30px; border: 1.5px solid rgba(255,200,220,0.5); background: white; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; position: relative; overflow: hidden; }
+        .ms-color-control input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+        .ms-color-swatch { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
+        .ms-rm-btn { display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid rgba(255,200,220,0.5); background: white; color: #aaa; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit; }
+        .ms-rm-btn:hover { border-color: #ffd0d0; background: #fde8e8; color: #e05555; }
+        .ms-confirm { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #888; flex-shrink: 0; font-weight: 600; }
+        .ms-yes { border: none; background: linear-gradient(135deg,#ff8f8f,#e05555); color: white; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .ms-no  { border: none; background: #f0f0f0; color: #888; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .ms-note { display: flex; align-items: flex-start; gap: 8px; background: #fff8fa; border: 1px solid rgba(255,200,220,0.4); border-radius: 14px; padding: 12px 14px; font-size: 12px; color: #bbb; line-height: 1.6; }
+
+        /* ════════════════════════════════
+           RESPONSIVE
+        ════════════════════════════════ */
+        @media (max-width: 767px) {
+          .ns-title  { font-size: 2rem; }
+          .ns-grid   { grid-template-columns: 1fr; }
+          .ns-skeleton-grid { grid-template-columns: 1fr; }
+          .ns-stats  { grid-template-columns: repeat(3,1fr); }
+          .ns-stat-n { font-size: 1.8rem; }
+          .ns-toolbar { gap: 7px; }
+          .ns-new-btn { padding: 11px 16px; font-size: 12px; }
+          .ms-add-row { flex-direction: column; }
+          .ms-add-btn { justify-content: center; }
+          .nm-sheet   { border-radius: 24px 24px 0 0; }
+          .nm-body    { padding: 18px; }
+          /* Mobile FAB */
+          .ns-fab {
+            display: flex !important;
+            position: fixed; bottom: calc(72px + env(safe-area-inset-bottom,0px));
+            right: 16px; z-index: 200;
+            width: 54px; height: 54px; border-radius: 50%;
+            border: none; background: linear-gradient(135deg,#ff8fb1,#ff6f91);
+            color: white; align-items: center; justify-content: center;
+            box-shadow: 0 8px 28px rgba(255,111,145,0.48); cursor: pointer;
+            transition: 0.2s;
+          }
+          .ns-fab:active { transform: scale(0.94); }
+          .ns-new-btn { display: none; } /* hide inline btn on mobile, use FAB instead */
+        }
+
+        .ns-fab { display: none; } /* hidden by default, shown on mobile */
+
+        @media (min-width: 768px) and (max-width: 1023px) {
+          .ns-title  { font-size: 2rem; }
+          .ns-grid   { grid-template-columns: repeat(2,1fr); }
+          .nm-overlay { align-items: center; padding: 20px; }
+          .nm-sheet   { border-radius: 28px; max-height: 88vh; }
+        }
+
+        @media (min-width: 1024px) {
+          .ns-grid { grid-template-columns: repeat(2,1fr); }
+          .nm-overlay { align-items: center; padding: 24px; }
+          .nm-sheet   { border-radius: 28px; max-height: 86vh; }
         }
       `}</style>
 
       <div className="ns-page">
-        {/* Page header */}
-        <h2 className="ns-page-title">Notes & Staff Tips</h2>
 
-        {/* Stats chips */}
-        <div className="ns-stats">
-          <div className="ns-stat-chip">
-            <StickyNote size={15} />
-            <span>{totalNotes}</span> personal notes
+        {/* ── HERO ── */}
+        <div className="ns-hero">
+          <div className="ns-hero-top">
+            <h1 className="ns-title">
+              Notes &amp; <span className="ns-title-accent">Tips</span>
+            </h1>
+            
           </div>
-          <div className="ns-stat-chip">
-            <Star size={15} style={{ color: '#ffb300' }} />
-            <span style={{ color: '#cc8800' }}>{totalTips}</span> staff tips
-          </div>
-          <div className="ns-stat-chip">
-            <FileText size={15} />
-            <span>{notes.length}</span> total
+
+          {/* Stats */}
+          <div className="ns-stats">
+            <div className="ns-stat">
+              <span className="ns-stat-n">{totalNotes}</span>
+              <span className="ns-stat-l">Personal</span>
+            </div>
+            <div className="ns-stat">
+              <span className="ns-stat-n">{totalTips}</span>
+              <span className="ns-stat-l">Staff Tips</span>
+            </div>
+            <div className="ns-stat">
+              <span className="ns-stat-n">{notes.length}</span>
+              <span className="ns-stat-l">Total</span>
+            </div>
           </div>
         </div>
 
-        {/* Toolbar */}
+        {/* ── TOOLBAR ── */}
         <div className="ns-toolbar">
           {/* Search */}
           <div className="ns-search-wrap">
-            <Search size={14} className="ns-search-icon" />
-            <input
-              className="ns-search"
-              placeholder="Search notes…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <Search size={14} className="ns-si" />
+            <input className="ns-search" placeholder="Search notes and tips…"
+              value={search} onChange={e => setSearch(e.target.value)} />
             {search && (
-              <button className="ns-search-clear" onClick={() => setSearch('')}>
-                <X size={12} />
-              </button>
+              <button className="ns-sc" onClick={() => setSearch('')}><X size={12} /></button>
             )}
           </div>
 
           {/* Sort */}
           <div className="ns-sort-wrap">
-            <button
-              className="ns-sort-btn"
-              onClick={() => setShowSort((v) => !v)}
-            >
+            <button className="ns-sort-btn" onClick={() => setShowSort(v => !v)}>
               <ArrowUpDown size={13} />
               {currentSortLabel}
             </button>
             {showSort && (
-              <div className="ns-sort-dropdown">
-                {SORT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.id}
-                    className={`ns-sort-option ${sortBy === opt.id ? 'active' : ''}`}
-                    onClick={() => { setSortBy(opt.id); setShowSort(false); }}
-                  >
+              <div className="ns-sort-dd">
+                {SORT_OPTIONS.map(opt => (
+                  <button key={opt.id}
+                    className={`ns-sort-opt ${sortBy === opt.id ? 'active' : ''}`}
+                    onClick={() => { setSortBy(opt.id); setShowSort(false); }}>
                     {opt.label}
                   </button>
                 ))}
@@ -1251,163 +1280,150 @@ function NotesSection() {
             )}
           </div>
 
-          {/* Add button */}
+          {/* Filter toggle */}
           <button
-            className="ns-primary-btn"
-            onClick={() => { setEditingNote(null); setShowModal(true); }}
+            className={`ns-filter-btn ${activeFilterCount > 0 ? 'has-filters' : ''}`}
+            onClick={() => setShowFilters(v => !v)}
           >
+            <SlidersHorizontal size={14} />
+            Section
+            {activeFilterCount > 0 && (
+              <span className="ns-filter-count">{activeFilterCount}</span>
+            )}
+            {showFilters ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          </button>
+
+          {/* Desktop new note */}
+          <button className="ns-new-btn"
+            onClick={() => { setEditingNote(null); setShowNoteModal(true); }}>
             <Plus size={15} /> New Note
           </button>
         </div>
 
-        {/* Type tabs */}
-        <div className="ns-type-tabs">
-          {[
-            { id: 'all',   label: `All (${notes.length})` },
-            { id: 'notes', label: `My Notes (${totalNotes})` },
-            { id: 'tips',  label: `⭐ Staff Tips (${totalTips})` },
-          ].map((t) => (
-            <button
-              key={t.id}
-              className={`ns-type-tab ${filterType === t.id ? 'active' : ''}`}
-              onClick={() => setFilterType(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        {/* ── COLLAPSIBLE FILTER PANEL ── */}
+        <div className={`ns-fp-outer ${showFilters ? 'open' : ''}`}>
+          <div className="ns-fp-inner">
+            <div className="ns-fp-panel">
 
-        {/* Section filter pills */}
-        <div className="ns-filter-row">
-          <span className="ns-filter-label"><Filter size={11} /> Section:</span>
-          <button
-            className={`ns-filter-pill all ${filterSection === '' ? 'active' : ''}`}
-            onClick={() => setFilterSection('')}
-          >
-            All
-          </button>
-          {allSections.map((s) => (
-            <button
-              key={s.id}
-              className={`ns-filter-pill ${filterSection === s.id ? 'active' : ''}`}
-              style={{
-                borderColor: s.color + '88',
-                color: filterSection === s.id ? '#fff' : s.color,
-                background: filterSection === s.id ? s.color : 'transparent',
-              }}
-              onClick={() => setFilterSection(filterSection === s.id ? '' : s.id)}
-            >
-              {s.id}
-            </button>
-          ))}
-          <button
-            className="ns-add-section-btn"
-            type="button"
-            onClick={() => setShowManageSections((prev) => !prev)}
-          >
-            {showManageSections ? 'Hide section manager' : 'Manage sections'}
-          </button>
-        </div>
-        {showManageSections && (
-          <div className="ns-section-manager">
-            <div className="ns-section-manager-header">
+              {/* Type segmented control */}
               <div>
-                <p className="ns-section-manager-title">Custom section manager</p>
-                <p className="ns-section-manager-subtitle">Add or remove your own note categories with pill-style controls.</p>
-              </div>
-              <button
-                type="button"
-                className="ns-secondary-btn ns-btn-sm"
-                onClick={() => {
-                  setShowManageSections(false);
-                  setNewSectionName('');
-                  setSectionError('');
-                }}
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="ns-add-section-row">
-              <input
-                className="ns-input ns-input-sm"
-                value={newSectionName}
-                onChange={(e) => { setNewSectionName(e.target.value); setSectionError(''); }}
-                placeholder="Add custom section"
-              />
-              <button type="button" className="ns-primary-btn ns-btn-sm" onClick={handleAddSection}>
-                Add section
-              </button>
-            </div>
-            {sectionError && <p className="ns-form-error ns-new-section-error">{sectionError}</p>}
-
-            <div className="ns-section-manager-list">
-              {customSections.length === 0 ? (
-                <div className="ns-section-manager-empty">No custom sections yet — create one to get started.</div>
-              ) : (
-                customSections.map((section) => (
-                  <div key={section.id} className="ns-custom-section-item">
-                    <span className="ns-custom-section-pill" style={{ borderColor: section.color + '88', color: section.color, background: section.bg }}>
-                      {section.id}
-                    </span>
-                    <button
-                      type="button"
-                      className="ns-custom-section-delete"
-                      onClick={() => handleRemoveSection(section.id)}
-                      title={`Delete ${section.id}`}
-                    >
-                      <X size={14} />
+                <p className="ms-box-label" style={{ margin: '0 0 10px' }}>Show</p>
+                <div className="ns-type-seg">
+                  {[
+                    { id: 'all',   label: `All (${notes.length})`     },
+                    { id: 'notes', label: `Notes (${totalNotes})`     },
+                    { id: 'tips',  label: `⭐ Tips (${totalTips})`    },
+                  ].map(t => (
+                    <button key={t.id}
+                      className={`ns-type-seg-btn ${filterType === t.id ? 'on' : ''}`}
+                      onClick={() => setFilterType(t.id)}>
+                      {t.label}
                     </button>
-                  </div>
-                ))
-              )}
+                  ))}
+                </div>
+              </div>
+
+              {/* Section pills */}
+              <div>
+                <div className="ns-sec-row-head">
+                  <span className="ns-sec-row-label">Section</span>
+                  <button className="ns-manage-link" onClick={() => setShowManage(true)}>
+                    <Edit3 size={11} /> Edit Sections
+                  </button>
+                </div>
+                <div className="ns-sec-pills">
+                  <button
+                    className={`ns-sec-pill all ${filterSection === '' ? 'on' : ''}`}
+                    onClick={() => setFilterSection('')}>All</button>
+                  {allSections.map(s => {
+                    const meta = sectionMap[s.id] ?? generateSectionMeta(s.id);
+                    const on   = filterSection === s.id;
+                    return (
+                      <button key={s.id} className="ns-sec-pill"
+                        style={{
+                          borderColor: meta.color + '88',
+                          color:       on ? '#fff' : meta.color,
+                          background:  on ? meta.color : 'transparent',
+                        }}
+                        onClick={() => setFilterSection(on ? '' : s.id)}>
+                        {s.id}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Clear row */}
+              <div className="ns-fp-clear-row">
+                <button
+                  className={`ns-clear-btn ${activeFilterCount === 0 ? 'hidden' : ''}`}
+                  onClick={clearFilters}
+                >
+                  <X size={12} /> Clear all filters
+                </button>
+              </div>
             </div>
           </div>
-        )}
-     
+        </div>
 
-        {/* Results count */}
-        {(search || filterSection || filterType !== 'all') && (
-          <p className="ns-results-count">
+        {/* ── RESULTS COUNT ── */}
+        {(search || filterSection || filterType !== 'all') && !loading && (
+          <p className="ns-count">
             Showing {filtered.length} of {notes.length} note{notes.length !== 1 ? 's' : ''}
           </p>
         )}
 
-        {/* Notes grid */}
+        {/* ── NOTES GRID ── */}
         {loading ? (
-          <div className="ns-empty"><p>Loading your notes…</p></div>
+          <div className="ns-skeleton-grid">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="ns-skeleton-card">
+                <div className="ns-skeleton-tab" />
+                <div className="ns-skeleton-body">
+                  <div className="ns-skel" style={{ height: 14, width: '45%', borderRadius: 8 }} />
+                  <div className="ns-skel" style={{ height: 18, width: '75%', borderRadius: 8 }} />
+                  <div className="ns-skel" style={{ height: 12, width: '90%', borderRadius: 6 }} />
+                  <div className="ns-skel" style={{ height: 12, width: '70%', borderRadius: 6 }} />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="ns-grid">
             {filtered.length === 0 ? (
               <div className="ns-empty">
-                <div className="ns-empty-icon">
+                <div className="ns-empty-blob">
                   {search ? '🔍' : notes.length === 0 ? '📓' : '🗂️'}
                 </div>
-                <p>
+                <p className="ns-empty-title">
                   {search
                     ? `No notes match "${search}"`
                     : notes.length === 0
-                    ? 'No notes yet — start capturing your learnings!'
-                    : 'No notes match the current filters.'}
+                    ? 'Your notebook is empty'
+                    : 'Nothing matches these filters'}
+                </p>
+                <p className="ns-empty-hint">
+                  {notes.length === 0
+                    ? 'Start capturing clinical learnings, tips, and reminders'
+                    : 'Try clearing your filters'}
                 </p>
                 {notes.length === 0 && (
-                  <button
-                    className="ns-primary-btn"
-                    style={{ margin: '0 auto' }}
-                    onClick={() => { setEditingNote(null); setShowModal(true); }}
-                  >
+                  <button className="ns-new-btn" style={{ marginTop: 6 }}
+                    onClick={() => { setEditingNote(null); setShowNoteModal(true); }}>
                     <Plus size={15} /> Write your first note
                   </button>
                 )}
               </div>
             ) : (
-              filtered.map((note) => (
+              filtered.map((note, idx) => (
                 <NoteCard
                   key={note.id}
                   note={note}
-                  onEdit={openEdit}
-                  onDelete={handleDelete}
                   sectionMap={sectionMap}
+                  style={{ animationDelay: `${Math.min(idx * 45, 300)}ms` }}
+                  onOpen={setViewingNote}
+                  onEdit={n => { setEditingNote(n); setShowNoteModal(true); }}
+                  onDelete={handleDelete}
                 />
               ))
             )}
@@ -1415,19 +1431,41 @@ function NotesSection() {
         )}
       </div>
 
-      {/* Modal */}
-      {showModal && (
+      {/* Mobile FAB */}
+      <button className="ns-fab" onClick={() => { setEditingNote(null); setShowNoteModal(true); }}>
+        <Plus size={22} />
+      </button>
+
+      {/* Modals */}
+      {viewingNote && (
+        <NoteViewModal
+          note={viewingNote}
+          sectionMap={sectionMap}
+          onClose={() => setViewingNote(null)}
+          onEdit={n => { setEditingNote(n); setShowNoteModal(true); }}
+        />
+      )}
+
+      {showNoteModal && (
         <NoteModal
           editing={editingNote}
-          defaultSection={filterSection || allSections[0].id}
-          sections={allSections}
+          defaultSection={filterSection || allSections[0]?.id}
+          allSections={allSections}
           sectionMap={sectionMap}
-          onClose={() => { setShowModal(false); setEditingNote(null); }}
+          onClose={() => { setShowNoteModal(false); setEditingNote(null); }}
           onSaved={handleSaved}
+        />
+      )}
+
+      {showManage && (
+        <ManageSectionsModal
+          sections={sections}
+          onAdd={handleAddSection}
+          onRemove={handleRemoveSection}
+          onColorChange={handleSectionColorChange}
+          onClose={() => setShowManage(false)}
         />
       )}
     </>
   );
 }
-
-export default NotesSection;

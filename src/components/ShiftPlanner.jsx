@@ -38,6 +38,13 @@ const SECTION_META = {
   'Histopathology/Cytology': { color: '#4abf95', bg: '#edfaf4' },
 };
 
+const SECTION_STORAGE_KEY = 'intern-app-shift-planner-sections';
+const DEFAULT_SECTION_LIST = SECTIONS.map(id => ({ id, ...SECTION_META[id] }));
+const SECTION_COLOR_PRESETS = [
+  '#ff6f91', '#ff8c5a', '#5f8dff', '#e05555', '#4abf95',
+  '#8b6fff', '#26c6da', '#f6b45f', '#b071ec', '#54c58e',
+];
+
 const DAYS_SHORT  = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const EXAM_SORT_OPTIONS = [
@@ -65,6 +72,39 @@ const WELLNESS_TIPS = [
 ───────────────────────────────────────────── */
 function toDateStr(d) {
   return d.toISOString().split('T')[0];
+}
+
+function colorToSoftBg(hex) {
+  const clean = hex.replace('#', '');
+  if (clean.length !== 6) return '#fff0f4';
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  const mix = v => Math.round(v + (255 - v) * 0.88).toString(16).padStart(2, '0');
+  return `#${mix(r)}${mix(g)}${mix(b)}`;
+}
+
+function generateSectionMeta(name) {
+  const hash = name.split('').reduce((a, c) => c.charCodeAt(0) + ((a << 5) - a), 0);
+  const color = SECTION_COLOR_PRESETS[Math.abs(hash) % SECTION_COLOR_PRESETS.length];
+  return { color, bg: colorToSoftBg(color) };
+}
+
+function normalizeSections(saved) {
+  if (!Array.isArray(saved)) return DEFAULT_SECTION_LIST;
+  const merged = saved.some(s => SECTIONS.includes(s?.id))
+    ? saved
+    : [...DEFAULT_SECTION_LIST, ...saved];
+  const seen = new Set();
+  return merged.reduce((list, section) => {
+    const id = typeof section?.id === 'string' ? section.id.trim() : '';
+    if (!id || seen.has(id.toLowerCase())) return list;
+    const meta = SECTION_META[id] ?? generateSectionMeta(id);
+    const color = section.color || meta.color;
+    seen.add(id.toLowerCase());
+    list.push({ id, color, bg: section.bg || colorToSoftBg(color) });
+    return list;
+  }, []);
 }
 
 function isToday(dateStr) {
@@ -158,13 +198,13 @@ function isMissingTableError(error) {
 /* ─────────────────────────────────────────────
    EXAM MODAL
 ───────────────────────────────────────────── */
-function ExamModal({ editing, onClose, onSaved }) {
+function ExamModal({ editing, onClose, onSaved, sections, sectionMap }) {
   const { user } = useAuth();
 
   const [form, setForm] = useState({
     exam_name:    editing?.exam_name    ?? '',
     exam_date:    editing?.exam_date    ?? toDateStr(new Date()),
-    section_name: editing?.section_name ?? SECTIONS[0],
+    section_name: editing?.section_name ?? sections[0]?.id ?? '',
     notes:        editing?.notes        ?? '',
   });
   const [saving, setSaving] = useState(false);
@@ -172,7 +212,7 @@ function ExamModal({ editing, onClose, onSaved }) {
 
   const days       = daysUntil(form.exam_date);
   const urgency    = getUrgency(days);
-  const sectionMeta = SECTION_META[form.section_name] ?? { color: '#ff6f91', bg: '#fff0f4' };
+  const sectionMeta = sectionMap[form.section_name] ?? { color: '#ff6f91', bg: '#fff0f4' };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -271,21 +311,21 @@ function ExamModal({ editing, onClose, onSaved }) {
           <div>
             <p className="em-label" style={{ marginBottom: 10 }}>Section</p>
             <div className="em-section-pills">
-              {SECTIONS.map((s) => {
-                const sm = SECTION_META[s];
-                const active = form.section_name === s;
+              {sections.map((s) => {
+                const sm = sectionMap[s.id] ?? s;
+                const active = form.section_name === s.id;
                 return (
                   <button
-                    key={s}
+                    key={s.id}
                     type="button"
                     className="em-section-pill"
                     style={active
                       ? { background: sm.color, borderColor: sm.color, color: '#fff' }
                       : { borderColor: sm.color + '66', color: sm.color }
                     }
-                    onClick={() => setForm({ ...form, section_name: s })}
+                    onClick={() => setForm({ ...form, section_name: s.id })}
                   >
-                    {s}
+                    {s.id}
                   </button>
                 );
               })}
@@ -324,13 +364,13 @@ function ExamModal({ editing, onClose, onSaved }) {
 /* ─────────────────────────────────────────────
    EXAM CARD
 ───────────────────────────────────────────── */
-function ExamCard({ exam, onEdit, onDelete }) {
+function ExamCard({ exam, onEdit, onDelete, sectionMap }) {
   const [expanded, setExpanded] = useState(false);
   const [copied,   setCopied]   = useState(false);
 
   const days     = daysUntil(exam.exam_date);
   const urgency  = getUrgency(days);
-  const secMeta  = SECTION_META[exam.section_name] ?? { color: '#ff6f91', bg: '#fff0f4' };
+  const secMeta  = sectionMap[exam.section_name] ?? { color: '#ff6f91', bg: '#fff0f4' };
   const isPast   = days < 0;
 
   const copyExam = async () => {
@@ -428,12 +468,12 @@ function ExamCard({ exam, onEdit, onDelete }) {
 /* ─────────────────────────────────────────────
    EXAMS PANEL (full exams tab content)
 ───────────────────────────────────────────── */
-function ExamsPanel({ exams, loading, error, onAdd, onEdit, onDelete }) {
+function ExamsPanel({ exams, loading, error, onAdd, onEdit, onDelete, sections, sectionMap, onManageSections }) {
   const [search,        setSearch]        = useState('');
   const [filterTab,     setFilterTab]     = useState('upcoming'); // all | upcoming | thisweek | past
   const [filterSection, setFilterSection] = useState('');
   const [sortBy,        setSortBy]        = useState('soonest');
-  const [showSort,      setShowSort]      = useState(false);
+  const [showFilters,   setShowFilters]   = useState(false);
 
   const today = useMemo(() => {
     const d = new Date(); d.setHours(0, 0, 0, 0); return d;
@@ -480,6 +520,12 @@ function ExamsPanel({ exams, loading, error, onAdd, onEdit, onDelete }) {
   }, [exams, filterTab, filterSection, search, sortBy]);
 
   const currentSortLabel = EXAM_SORT_OPTIONS.find(o => o.id === sortBy)?.label ?? 'Sort';
+  const activeFilterCount = (filterTab !== 'upcoming' ? 1 : 0) + (filterSection ? 1 : 0) + (sortBy !== 'soonest' ? 1 : 0);
+  const clearFilters = () => {
+    setFilterTab('upcoming');
+    setFilterSection('');
+    setSortBy('soonest');
+  };
 
   return (
     <div className="ex-panel">
@@ -491,26 +537,6 @@ function ExamsPanel({ exams, loading, error, onAdd, onEdit, onDelete }) {
           <span>{error}</span>
         </div>
       )}
-
-      {/* Stats row */}
-      <div className="ex-stats-row">
-        <div className="ex-stat-card">
-          <span className="ex-stat-num">{stats.total}</span>
-          <span className="ex-stat-label">Total Exams</span>
-        </div>
-        <div className="ex-stat-card upcoming">
-          <span className="ex-stat-num">{stats.upcoming}</span>
-          <span className="ex-stat-label">Upcoming</span>
-        </div>
-        <div className={`ex-stat-card thisweek ${stats.thisWeek > 0 ? 'has-items' : ''}`}>
-          <span className="ex-stat-num">{stats.thisWeek}</span>
-          <span className="ex-stat-label">This Week</span>
-        </div>
-        <div className="ex-stat-card past">
-          <span className="ex-stat-num">{stats.past}</span>
-          <span className="ex-stat-label">Completed</span>
-        </div>
-      </div>
 
       {/* Urgent banner */}
       {stats.urgent > 0 && filterTab !== 'past' && (
@@ -538,29 +564,20 @@ function ExamsPanel({ exams, loading, error, onAdd, onEdit, onDelete }) {
           )}
         </div>
 
-        {/* Sort */}
-        <div className="ex-sort-wrap">
-          <button
-            className="ex-sort-btn"
-            onClick={() => setShowSort(v => !v)}
-          >
-            <ArrowUpDown size={12} />
-            <span className="ex-sort-label">{currentSortLabel}</span>
-          </button>
-          {showSort && (
-            <div className="ex-sort-dropdown">
-              {EXAM_SORT_OPTIONS.map(opt => (
-                <button
-                  key={opt.id}
-                  className={`ex-sort-opt ${sortBy === opt.id ? 'active' : ''}`}
-                  onClick={() => { setSortBy(opt.id); setShowSort(false); }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <button
+          className={`ex-filter-toggle ${showFilters || activeFilterCount > 0 ? 'active' : ''}`}
+          onClick={() => setShowFilters(v => !v)}
+        >
+          <Filter size={13} />
+          <span>Sort & Filter</span>
+          {activeFilterCount > 0 && <span className="ex-filter-count">{activeFilterCount}</span>}
+          {showFilters ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+        </button>
+
+        <button className="ex-manage-btn" onClick={onManageSections}>
+          <Edit3 size={13} />
+          <span>Sections</span>
+        </button>
 
         <button className="ex-add-btn" onClick={onAdd}>
           <Plus size={15} />
@@ -568,55 +585,97 @@ function ExamsPanel({ exams, loading, error, onAdd, onEdit, onDelete }) {
         </button>
       </div>
 
-      {/* Tab filter */}
-      <div className="ex-tab-row">
-        {[
-          { id: 'all',      label: `All (${stats.total})`             },
-          { id: 'upcoming', label: `Upcoming (${stats.upcoming})`     },
-          { id: 'thisweek', label: `This Week (${stats.thisWeek})`    },
-          { id: 'past',     label: `Completed (${stats.past})`        },
-        ].map(t => (
-          <button
-            key={t.id}
-            className={`ex-tab ${filterTab === t.id ? 'active' : ''}`}
-            onClick={() => setFilterTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <div className={`ex-filter-panel-wrap ${showFilters ? 'open' : ''}`}>
+        <div className="ex-filter-panel-inner">
+          <div className="ex-filter-panel">
+            <div className="ex-filter-group">
+              <p className="ex-filter-group-label">Show</p>
+              <div className="ex-tab-row">
+                {[
+                  { id: 'all',      label: 'All',       count: stats.total,    Icon: FileText    },
+                  { id: 'upcoming', label: 'Upcoming',  count: stats.upcoming, Icon: Calendar    },
+                  { id: 'thisweek', label: 'This Week', count: stats.thisWeek, Icon: Zap         },
+                  { id: 'past',     label: 'Completed', count: stats.past,     Icon: CheckCircle2 },
+                ].map(t => (
+                  <button
+                    key={t.id}
+                    className={`ex-tab ${filterTab === t.id ? 'active' : ''}`}
+                    onClick={() => setFilterTab(t.id)}
+                  >
+                    <span className="ex-tab-icon"><t.Icon size={14} /></span>
+                    <span className="ex-tab-copy">{t.label}</span>
+                    <span className="ex-tab-count">{t.count}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-      {/* Section pills */}
-      <div className="ex-section-filter">
-        <span className="ex-filter-label"><Filter size={11} /> Section:</span>
-        <button
-          className={`ex-sec-pill all-pill ${!filterSection ? 'active' : ''}`}
-          onClick={() => setFilterSection('')}
-        >
-          All
-        </button>
-        {SECTIONS.map(s => {
-          const sm = SECTION_META[s];
-          const active = filterSection === s;
-          return (
-            <button
-              key={s}
-              className="ex-sec-pill"
-              style={{
-                borderColor: sm.color + '88',
-                color:       active ? '#fff' : sm.color,
-                background:  active ? sm.color : 'transparent',
-              }}
-              onClick={() => setFilterSection(active ? '' : s)}
-            >
-              {s}
-            </button>
-          );
-        })}
+            <div className="ex-filter-group">
+              <p className="ex-filter-group-label">Sort</p>
+              <div className="ex-sort-grid">
+                {EXAM_SORT_OPTIONS.map(opt => (
+                  <button
+                    key={opt.id}
+                    className={`ex-sort-chip ${sortBy === opt.id ? 'active' : ''}`}
+                    onClick={() => setSortBy(opt.id)}
+                  >
+                    <ArrowUpDown size={12} />
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="ex-filter-group">
+              <div className="ex-section-head">
+                <p className="ex-filter-group-label">Section</p>
+                <button className="ex-inline-manage" onClick={onManageSections}>
+                  <Edit3 size={11} /> Edit Sections
+                </button>
+              </div>
+              <div className="ex-section-filter">
+                <button
+                  className={`ex-sec-pill all-pill ${!filterSection ? 'active' : ''}`}
+                  onClick={() => setFilterSection('')}
+                >
+                  All
+                </button>
+                {sections.map(s => {
+                  const sm = sectionMap[s.id] ?? s;
+                  const active = filterSection === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      className="ex-sec-pill"
+                      style={{
+                        borderColor: sm.color + '88',
+                        color:       active ? '#fff' : sm.color,
+                        background:  active ? sm.color : 'transparent',
+                      }}
+                      onClick={() => setFilterSection(active ? '' : s.id)}
+                    >
+                      {s.id}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="ex-filter-actions">
+              <span className="ex-filter-summary">Sorted by {currentSortLabel}</span>
+              <button
+                className={`ex-clear-filters ${activeFilterCount === 0 ? 'hidden' : ''}`}
+                onClick={clearFilters}
+              >
+                <X size={12} /> Clear filters
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Results count */}
-      {(search || filterSection || filterTab !== 'upcoming') && (
+      {(search || filterSection || filterTab !== 'upcoming' || sortBy !== 'soonest') && (
         <p className="ex-results-count">
           Showing {filtered.length} of {exams.length} exam{exams.length !== 1 ? 's' : ''}
         </p>
@@ -657,6 +716,7 @@ function ExamsPanel({ exams, loading, error, onAdd, onEdit, onDelete }) {
               exam={exam}
               onEdit={onEdit}
               onDelete={onDelete}
+              sectionMap={sectionMap}
             />
           ))}
         </div>
@@ -668,10 +728,10 @@ function ExamsPanel({ exams, loading, error, onAdd, onEdit, onDelete }) {
 /* ─────────────────────────────────────────────
    SHIFT MODAL (existing — unchanged)
 ───────────────────────────────────────────── */
-function ShiftModal({ editing, defaultDate, onClose, onSaved }) {
+function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
   const { user } = useAuth();
   const [form, setForm] = useState({
-    section_name: editing?.section_name ?? SECTIONS[0],
+    section_name: editing?.section_name ?? sections[0]?.id ?? '',
     shift_date:   editing?.shift_date   ?? defaultDate ?? toDateStr(new Date()),
     start_time:   editing?.start_time   ?? '07:00',
     end_time:     editing?.end_time     ?? '15:00',
@@ -733,7 +793,7 @@ function ShiftModal({ editing, defaultDate, onClose, onSaved }) {
           <label className="sp-field-label">
             Section
             <select className="sp-select" value={form.section_name} onChange={(e) => setForm({ ...form, section_name: e.target.value })}>
-              {SECTIONS.map(s => <option key={s}>{s}</option>)}
+              {sections.map(s => <option key={s.id} value={s.id}>{s.id}</option>)}
             </select>
           </label>
           <label className="sp-field-label">
@@ -1078,6 +1138,86 @@ function WellnessPanel({ weekShifts }) {
 /* ─────────────────────────────────────────────
    MAIN SHIFT PLANNER
 ───────────────────────────────────────────── */
+function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose }) {
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+  const [removing, setRemoving] = useState(null);
+
+  const handleAdd = () => {
+    const label = name.trim();
+    if (!label) { setError('Please enter a section name.'); return; }
+    if (sections.some(s => s.id.toLowerCase() === label.toLowerCase())) {
+      setError('That section already exists.'); return;
+    }
+    onAdd(label);
+    setName('');
+    setError('');
+  };
+
+  return (
+    <div className="sm-overlay" onClick={onClose}>
+      <div className="sm-modal" onClick={e => e.stopPropagation()}>
+        <div className="sm-head">
+          <div>
+            <h3 className="sm-title">Manage Sections</h3>
+            <p className="sm-sub">Add, remove, and color sections used by shifts and exams.</p>
+          </div>
+          <button className="sm-close" onClick={onClose}><X size={16} /></button>
+        </div>
+
+        <div className="sm-add-box">
+          <p className="sm-label">New Section</p>
+          <div className="sm-add-row">
+            <input
+              className="sm-input"
+              placeholder="e.g. Immunology"
+              value={name}
+              onChange={e => { setName(e.target.value); setError(''); }}
+              onKeyDown={e => e.key === 'Enter' && handleAdd()}
+              maxLength={40}
+            />
+            <button className="sm-add-btn" onClick={handleAdd}><Plus size={14} /> Add</button>
+          </div>
+          {error && <p className="sm-error">{error}</p>}
+        </div>
+
+        <div className="sm-list">
+          {sections.map(section => {
+            const isRemoving = removing === section.id;
+            return (
+              <div key={section.id} className={`sm-row ${isRemoving ? 'removing' : ''}`}>
+                <div className="sm-row-main">
+                  <span className="sm-pill" style={{ background: section.bg, color: section.color, borderColor: section.color + '55' }}>
+                    <span className="sm-dot" style={{ background: section.color }} />
+                    {section.id}
+                  </span>
+                  <label className="sm-color" title={`Change ${section.id} color`}>
+                    <span style={{ background: section.color }} />
+                    <input type="color" value={section.color} onChange={e => onColorChange(section.id, e.target.value)} />
+                  </label>
+                </div>
+                {isRemoving ? (
+                  <div className="sm-confirm">
+                    <span>Remove?</span>
+                    <button className="sm-yes" onClick={() => { onRemove(section.id); setRemoving(null); }}>Yes</button>
+                    <button className="sm-no" onClick={() => setRemoving(null)}>No</button>
+                  </div>
+                ) : (
+                  <button className="sm-remove" onClick={() => setRemoving(section.id)}>
+                    <Trash2 size={12} /> Remove
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <p className="sm-note">Removing a section hides it from new shifts, exams, and filters. Existing records keep their saved label.</p>
+      </div>
+    </div>
+  );
+}
+
 export default function ShiftPlanner() {
   const location = useLocation();   
   const { user } = useAuth();
@@ -1097,6 +1237,9 @@ export default function ShiftPlanner() {
   const [examError,   setExamError]   = useState(null);
   const [showExamModal,setShowExamModal]=useState(false);
   const [editingExam, setEditingExam] = useState(null);
+  const [sections, setSections] = useState(DEFAULT_SECTION_LIST);
+  const [sectionsLoaded, setSectionsLoaded] = useState(false);
+  const [showSectionManage, setShowSectionManage] = useState(false);
 
   /* ── Page tab ── */
 const [activeTab, setActiveTab] = useState(
@@ -1107,6 +1250,23 @@ const [activeTab, setActiveTab] = useState(
     () => allExams.filter(e => daysUntil(e.exam_date) >= 0).length,
     [allExams]
   );
+  const sectionMap = useMemo(() => Object.fromEntries(sections.map(s => [s.id, s])), [sections]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`${SECTION_STORAGE_KEY}-${user.id}`);
+      setSections(saved ? normalizeSections(JSON.parse(saved)) : DEFAULT_SECTION_LIST);
+    } catch {
+      setSections(DEFAULT_SECTION_LIST);
+    }
+    setSectionsLoaded(true);
+  }, [user.id]);
+
+  useEffect(() => {
+    if (sectionsLoaded) {
+      localStorage.setItem(`${SECTION_STORAGE_KEY}-${user.id}`, JSON.stringify(sections));
+    }
+  }, [sections, sectionsLoaded, user.id]);
 
   /* ── Fetch shifts ── */
   useEffect(() => {
@@ -1181,6 +1341,17 @@ const [activeTab, setActiveTab] = useState(
   const openAddExam   = ()        => { setEditingExam(null); setShowExamModal(true); };
   const openEditExam  = (exam)    => { setEditingExam(exam); setShowExamModal(true); };
 
+  const handleAddSection = (label) => {
+    const meta = generateSectionMeta(label);
+    setSections(prev => [...prev, { id: label, ...meta }]);
+  };
+  const handleRemoveSection = (id) => {
+    setSections(prev => prev.filter(s => s.id !== id));
+  };
+  const handleSectionColorChange = (id, color) => {
+    setSections(prev => prev.map(s => s.id === id ? { ...s, color, bg: colorToSoftBg(color) } : s));
+  };
+
   const prevWeek = () => setCurrentWeek(d => { const n = new Date(d); n.setDate(d.getDate() - 7); return n; });
   const nextWeek = (cmd) => {
     if (cmd === 'today') { setCurrentWeek(new Date()); return; }
@@ -1199,35 +1370,51 @@ const [activeTab, setActiveTab] = useState(
 
         /* ── Page tabs ── */
         .sp-page-tabs {
-          display: flex; gap: 8px;
-          margin-bottom: 24px; flex-wrap: wrap;
+          display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px; margin-bottom: 24px;
         }
         .sp-page-tab {
-          display: flex; align-items: center; gap: 8px;
-          padding: 12px 22px;
-          border-radius: 999px;
-          border: 1.5px solid #ffd6e1;
-          background: rgba(255,255,255,0.8);
-          color: #aaa; font-size: 14px; font-weight: 600;
+          display: flex; align-items: center; gap: 12px;
+          padding: 16px 18px;
+          border-radius: 22px;
+          border: 1.5px solid rgba(255,224,234,0.9);
+          background: rgba(255,255,255,0.9);
+          color: #aaa; font-size: 14px; font-weight: 700;
           cursor: pointer; transition: all 0.2s;
-          position: relative;
+          position: relative; text-align: left; min-width: 0;
+          box-shadow: 0 8px 24px rgba(255,111,145,0.08);
         }
-        .sp-page-tab:hover { border-color: #ff8fb1; color: #ff5d8f; }
-        .sp-page-tab.active {
+        .sp-page-tab svg {
+          width: 42px; height: 42px; padding: 11px; border-radius: 15px;
+          color: white; flex-shrink: 0;
           background: linear-gradient(135deg,#ff8fb1,#ff6f91);
-          border-color: transparent; color: white;
-          box-shadow: 0 6px 18px rgba(255,111,145,0.3);
+          box-shadow: 0 7px 18px rgba(255,111,145,0.24);
         }
+        .sp-page-tab:nth-child(2) svg {
+          background: linear-gradient(135deg,#7ab6ff,#5f8dff);
+          box-shadow: 0 7px 18px rgba(95,141,255,0.24);
+        }
+        .sp-page-tab:hover {
+          border-color: #ffb8ce; color: #ff5d8f;
+          transform: translateY(-1px); box-shadow: 0 12px 30px rgba(255,111,145,0.14);
+        }
+        .sp-page-tab.active {
+          background: #fff;
+          border-color: #ff8fb1; color: #ff5d8f;
+          box-shadow: 0 14px 34px rgba(255,111,145,0.18);
+        }
+        .sp-page-tab-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+        .sp-page-tab-title { font-size: 14px; font-weight: 800; color: #333; line-height: 1.2; }
+        .sp-page-tab-sub { font-size: 12px; font-weight: 600; color: #bbaab2; line-height: 1.35; }
+        .sp-page-tab.active .sp-page-tab-title { color: #ff5d8f; }
         .sp-tab-badge {
           display: inline-flex; align-items: center; justify-content: center;
-          min-width: 20px; height: 20px;
-          background: rgba(255,255,255,0.3);
-          border-radius: 999px; font-size: 11px; font-weight: 700;
-          padding: 0 5px;
+          min-width: 28px; height: 26px;
+          background: #eff4ff; color: #5f8dff;
+          border-radius: 999px; font-size: 12px; font-weight: 800;
+          padding: 0 8px; margin-left: auto; flex-shrink: 0;
         }
-        .sp-page-tab:not(.active) .sp-tab-badge {
-          background: #ffe0ea; color: #ff5d8f;
-        }
+        .sp-page-tab.active .sp-tab-badge { background: currentColor; color: white; }
 
         /* ── Grid ── */
         .sp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
@@ -1460,24 +1647,6 @@ const [activeTab, setActiveTab] = useState(
           padding: 14px 18px; font-size: 13px;
         }
 
-        /* Stats row */
-        .ex-stats-row {
-          display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
-        }
-        .ex-stat-card {
-          background: rgba(255,255,255,0.88);
-          border: 1.5px solid #ffe0ea;
-          border-radius: 20px; padding: 16px 14px;
-          display: flex; flex-direction: column; gap: 4px;
-          text-align: center; transition: 0.2s;
-        }
-        .ex-stat-card:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,111,145,0.1); }
-        .ex-stat-num { font-size: 24px; font-weight: 700; color: #ff5d8f; line-height: 1; }
-        .ex-stat-label { font-size: 11px; font-weight: 600; color: #bbb; text-transform: uppercase; letter-spacing: 0.06em; }
-        .ex-stat-card.upcoming .ex-stat-num { color: #5f8dff; }
-        .ex-stat-card.thisweek.has-items .ex-stat-num { color: #ff8c5a; }
-        .ex-stat-card.past .ex-stat-num { color: #4abf95; }
-
         /* Urgent banner */
         .ex-urgent-banner {
           display: flex; align-items: center; gap: 10px;
@@ -1524,21 +1693,96 @@ const [activeTab, setActiveTab] = useState(
           font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap;
         }
         .ex-add-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,111,145,0.28); }
+        .ex-filter-toggle,
+        .ex-manage-btn {
+          display: inline-flex; align-items: center; gap: 7px;
+          border: 1.5px solid #ffd6e1; background: rgba(255,255,255,0.92);
+          color: #888; border-radius: 999px; padding: 10px 16px;
+          font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; white-space: nowrap;
+        }
+        .ex-filter-toggle:hover,
+        .ex-filter-toggle.active,
+        .ex-manage-btn:hover { border-color: #ff8fb1; color: #ff5d8f; background: #fff8fa; }
+        .ex-filter-count {
+          min-width: 18px; height: 18px; border-radius: 999px; padding: 0 5px;
+          display: inline-flex; align-items: center; justify-content: center;
+          background: #ff5d8f; color: white; font-size: 10px; font-weight: 800;
+        }
+
+        .ex-filter-panel-wrap {
+          display: grid; grid-template-rows: 0fr;
+          transition: grid-template-rows 0.3s ease, margin 0.3s ease;
+          margin-top: -8px;
+        }
+        .ex-filter-panel-wrap.open { grid-template-rows: 1fr; margin-top: 0; }
+        .ex-filter-panel-inner { min-height: 0; overflow: hidden; }
+        .ex-filter-panel {
+          background: rgba(255,255,255,0.9); border: 1.5px solid #ffe0ea;
+          border-radius: 22px; padding: 18px; display: flex; flex-direction: column; gap: 16px;
+          box-shadow: 0 8px 26px rgba(255,111,145,0.08);
+        }
+        .ex-filter-group { display: flex; flex-direction: column; gap: 10px; }
+        .ex-filter-group-label {
+          margin: 0; color: #c8b0a8; font-size: 11px; font-weight: 800;
+          letter-spacing: 0.08em; text-transform: uppercase;
+        }
+        .ex-sort-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .ex-sort-chip {
+          display: inline-flex; align-items: center; gap: 6px;
+          border: 1.5px solid #ffe0ea; background: white; color: #888;
+          border-radius: 999px; padding: 8px 13px; font-size: 12px; font-weight: 700;
+          cursor: pointer; transition: 0.18s;
+        }
+        .ex-sort-chip:hover,
+        .ex-sort-chip.active { border-color: #ff8fb1; color: #ff5d8f; background: #fff0f4; }
+        .ex-section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .ex-inline-manage {
+          border: none; background: transparent; color: #ff5d8f; font-size: 12px; font-weight: 800;
+          display: inline-flex; align-items: center; gap: 5px; cursor: pointer; font-family: inherit;
+        }
+        .ex-filter-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .ex-filter-summary { color: #bbb; font-size: 12px; font-weight: 600; }
+        .ex-clear-filters {
+          border: 1.5px solid #ffd6e1; background: white; color: #888;
+          border-radius: 999px; padding: 7px 13px; font-size: 12px; font-weight: 700;
+          display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+        }
+        .ex-clear-filters.hidden { visibility: hidden; }
 
         /* Tab filter */
-        .ex-tab-row { display: flex; gap: 6px; flex-wrap: wrap; }
+        .ex-tab-row {
+          display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 10px;
+        }
         .ex-tab {
-          padding: 8px 16px; border-radius: 999px;
-          border: 1.5px solid #ffe0ea; background: rgba(255,255,255,0.8);
-          font-size: 12px; font-weight: 600; color: #aaa; cursor: pointer; transition: 0.2s;
-          white-space: nowrap;
+          padding: 12px 13px; border-radius: 18px;
+          border: 1.5px solid #ffe0ea; background: rgba(255,255,255,0.92);
+          font-size: 12px; font-weight: 700; color: #888; cursor: pointer; transition: 0.2s;
+          display: flex; align-items: center; gap: 8px; min-width: 0;
+          box-shadow: 0 5px 18px rgba(255,111,145,0.06);
         }
-        .ex-tab:hover { border-color: #ff8fb1; color: #ff5d8f; }
+        .ex-tab:hover {
+          border-color: #ffb8ce; color: #ff5d8f;
+          transform: translateY(-1px); box-shadow: 0 8px 22px rgba(255,111,145,0.1);
+        }
         .ex-tab.active {
-          background: linear-gradient(135deg,#ff8fb1,#ff6f91);
-          border-color: transparent; color: white;
-          box-shadow: 0 4px 12px rgba(255,111,145,0.25);
+          background: #fff; border-color: #ff8fb1; color: #ff5d8f;
+          box-shadow: 0 10px 26px rgba(255,111,145,0.16);
         }
+        .ex-tab-icon {
+          width: 30px; height: 30px; border-radius: 11px;
+          display: inline-flex; align-items: center; justify-content: center;
+          color: #ff5d8f; background: #fff0f4; flex-shrink: 0;
+        }
+        .ex-tab.active .ex-tab-icon { background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white; }
+        .ex-tab-copy { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ex-tab-count {
+          margin-left: auto; min-width: 24px; height: 24px; padding: 0 7px;
+          border-radius: 999px; background: #f5eff2; color: #aaa;
+          display: inline-flex; align-items: center; justify-content: center;
+          font-size: 11px; font-weight: 800; flex-shrink: 0;
+        }
+        .ex-tab.active .ex-tab-count { background: currentColor; color: white; }
 
         /* Section filter */
         .ex-section-filter { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
@@ -1683,13 +1927,45 @@ const [activeTab, setActiveTab] = useState(
         .em-primary-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
         .em-secondary-btn { border: none; background: #f4f4f4; color: #666; border-radius: 999px; padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; }
 
+        /* Section manager */
+        .sm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(6px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .sm-modal { width: 100%; max-width: 500px; max-height: 88vh; overflow-y: auto; background: white; border-radius: 26px; padding: 24px; border: 1.5px solid #ffe0ea; box-shadow: 0 24px 70px rgba(0,0,0,0.16); display: flex; flex-direction: column; gap: 18px; }
+        .sm-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+        .sm-title { margin: 0 0 4px; color: #1c1412; font-size: 1.1rem; }
+        .sm-sub { margin: 0; color: #aaa; font-size: 13px; line-height: 1.5; }
+        .sm-close { border: none; background: #f4f0f2; color: #888; border-radius: 12px; padding: 8px; display: flex; cursor: pointer; }
+        .sm-add-box { background: #fff8fa; border: 1.5px solid #ffe0ea; border-radius: 18px; padding: 16px; }
+        .sm-label { margin: 0 0 10px; color: #c8b0a8; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+        .sm-add-row { display: flex; align-items: center; gap: 10px; }
+        .sm-input { flex: 1; border: 1.5px solid #ffd6e1; background: white; border-radius: 13px; padding: 11px 13px; outline: none; color: #444; font-family: inherit; }
+        .sm-input:focus { border-color: #ff8fb1; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
+        .sm-add-btn { border: none; background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white; border-radius: 13px; padding: 11px 16px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+        .sm-error { margin: 10px 0 0; color: #c0392b; background: #fff0f0; border-radius: 10px; padding: 8px 10px; font-size: 12px; }
+        .sm-list { display: flex; flex-direction: column; gap: 8px; }
+        .sm-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border-radius: 16px; border: 1.5px solid #ffe0ea; background: #fff8fa; }
+        .sm-row.removing { background: #fff5f5; border-color: #ffd0d0; }
+        .sm-row-main { display: flex; align-items: center; gap: 9px; min-width: 0; }
+        .sm-pill { display: inline-flex; align-items: center; gap: 7px; border: 1.5px solid; border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 800; }
+        .sm-dot { width: 7px; height: 7px; border-radius: 999px; flex-shrink: 0; }
+        .sm-color { width: 30px; height: 30px; border-radius: 999px; border: 1.5px solid #ffd6e1; background: white; display: inline-flex; align-items: center; justify-content: center; position: relative; overflow: hidden; cursor: pointer; flex-shrink: 0; }
+        .sm-color span { width: 16px; height: 16px; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
+        .sm-color input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+        .sm-remove { border: 1.5px solid #ffd6e1; background: white; color: #aaa; border-radius: 999px; padding: 6px 11px; display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 800; cursor: pointer; }
+        .sm-remove:hover { color: #e05555; border-color: #ffd0d0; background: #fff0f0; }
+        .sm-confirm { display: flex; align-items: center; gap: 7px; color: #888; font-size: 12px; font-weight: 800; }
+        .sm-yes, .sm-no { border: none; border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 800; cursor: pointer; }
+        .sm-yes { background: #e05555; color: white; }
+        .sm-no { background: #f0ecef; color: #888; }
+        .sm-note { margin: 0; color: #aaa; background: #fff8fa; border: 1px solid #ffe0ea; border-radius: 14px; padding: 11px 13px; font-size: 12px; line-height: 1.5; }
+
         /* ═══════════════════════════════════════
            RESPONSIVE — iPhone (< 768px)
         ═══════════════════════════════════════ */
         @media (max-width: 767px) {
           .sp-page-title     { font-size: 1.7rem; margin-bottom: 16px; }
-          .sp-page-tabs      { gap: 6px; }
-          .sp-page-tab       { padding: 10px 16px; font-size: 13px; }
+          .sp-page-tabs      { grid-template-columns: 1fr; gap: 8px; }
+          .sp-page-tab       { padding: 12px 14px; font-size: 13px; border-radius: 18px; }
+          .sp-page-tab svg   { width: 38px; height: 38px; padding: 10px; border-radius: 13px; }
           .sp-grid           { grid-template-columns: 1fr; }
           .sp-cal-grid       { grid-template-columns: repeat(3,1fr); gap: 6px; }
           .sp-cal-day        { min-height: 70px; padding: 8px 6px; }
@@ -1700,17 +1976,16 @@ const [activeTab, setActiveTab] = useState(
           .sp-time-row       { flex-direction: column; }
           .sp-shift-list     { max-height: 280px; }
           .sp-card           { padding: 18px; }
-          .ex-stats-row      { grid-template-columns: repeat(2,1fr); gap: 10px; }
-          .ex-stat-card      { padding: 14px 12px; }
-          .ex-stat-num       { font-size: 20px; }
           .ex-cards-grid     { grid-template-columns: 1fr; }
           .ex-toolbar        { gap: 8px; }
           .ex-add-btn span   { display: none; }
           .ex-add-btn        { padding: 10px 14px; }
+          .ex-tab-row        { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+          .ex-tab            { padding: 10px 11px; border-radius: 15px; font-size: 11px; }
+          .ex-tab-icon       { width: 26px; height: 26px; border-radius: 9px; }
           .em-modal          { padding: 20px; border-radius: 24px; }
           .em-section-pills  { gap: 5px; }
           .em-section-pill   { font-size: 11px; padding: 5px 10px; }
-          .ex-tab            { padding: 7px 12px; font-size: 11px; }
         }
 
         /* ═══════════════════════════════════════
@@ -1722,7 +1997,6 @@ const [activeTab, setActiveTab] = useState(
           .sp-cal-grid       { grid-template-columns: repeat(7,1fr); gap: 6px; }
           .sp-cal-day        { min-height: 80px; }
           .sp-modal          { max-width: 480px; }
-          .ex-stats-row      { grid-template-columns: repeat(4,1fr); }
           .ex-cards-grid     { grid-template-columns: repeat(2,1fr); }
           .em-modal          { max-width: 480px; }
         }
@@ -1746,14 +2020,20 @@ const [activeTab, setActiveTab] = useState(
             onClick={() => setActiveTab('shifts')}
           >
             <CalendarDays size={16} />
-            Shifts
+            <span className="sp-page-tab-copy">
+              <span className="sp-page-tab-title">Shifts</span>
+              <span className="sp-page-tab-sub">Weekly schedule and history</span>
+            </span>
           </button>
           <button
             className={`sp-page-tab ${activeTab === 'exams' ? 'active' : ''}`}
             onClick={() => setActiveTab('exams')}
           >
             <GraduationCap size={16} />
-            Exam Dates
+            <span className="sp-page-tab-copy">
+              <span className="sp-page-tab-title">Exam Dates</span>
+              <span className="sp-page-tab-sub">Upcoming tests and reminders</span>
+            </span>
             {upcomingExamCount > 0 && (
               <span className="sp-tab-badge">{upcomingExamCount}</span>
             )}
@@ -1796,6 +2076,9 @@ const [activeTab, setActiveTab] = useState(
             onAdd={openAddExam}
             onEdit={openEditExam}
             onDelete={handleExamDelete}
+            sections={sections}
+            sectionMap={sectionMap}
+            onManageSections={() => setShowSectionManage(true)}
           />
         )}
       </div>
@@ -1807,6 +2090,7 @@ const [activeTab, setActiveTab] = useState(
           defaultDate={modalDate}
           onClose={() => { setShowShiftModal(false); setEditingShift(null); setModalDate(''); }}
           onSaved={handleShiftSaved}
+          sections={sections}
         />
       )}
 
@@ -1816,6 +2100,18 @@ const [activeTab, setActiveTab] = useState(
           editing={editingExam}
           onClose={() => { setShowExamModal(false); setEditingExam(null); }}
           onSaved={handleExamSaved}
+          sections={sections}
+          sectionMap={sectionMap}
+        />
+      )}
+
+      {showSectionManage && (
+        <ManageSectionsModal
+          sections={sections}
+          onAdd={handleAddSection}
+          onRemove={handleRemoveSection}
+          onColorChange={handleSectionColorChange}
+          onClose={() => setShowSectionManage(false)}
         />
       )}
     </>
