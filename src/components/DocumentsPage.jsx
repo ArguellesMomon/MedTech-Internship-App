@@ -132,8 +132,14 @@ function FileViewer({ doc, onClose }) {
             <h3 className="dv-filename">{doc.file_name}</h3>
           </div>
           <div className="dv-header-right">
-            <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="dv-open-btn">
-              ↗ Open
+            <a
+              href={doc.file_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="dv-open-btn"
+              download={doc.file_name}
+            >
+              ↗ Open original
             </a>
             <button className="dv-close-btn" onClick={onClose}><X size={18} /></button>
           </div>
@@ -189,6 +195,14 @@ function FileCard({ doc, onView, onDelete, deleting }) {
         <p className="dc-card-meta">{fmtSize(doc.file_size)} · {fmtDate(doc.created_at)}</p>
       </div>
       <div className="dc-card-actions">
+        <a
+          className="dc-original-btn"
+          href={doc.file_url}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Open original
+        </a>
         <button
           className="dc-view-btn"
           style={{ background: meta.color }}
@@ -562,6 +576,10 @@ export default function DocumentsPage() {
           border-color: transparent; color: white;
           box-shadow: 0 4px 12px rgba(255,111,145,0.25);
         }
+        .dp-preview-note {
+          font-size: 12px; color: #b97093; margin: 0 0 10px;
+          max-width: 720px;
+        }
         .dp-tab-count {
           display: inline-block; background: rgba(255,255,255,0.28);
           border-radius: 999px; padding: 0 6px; font-size: 10px; margin-left: 3px;
@@ -593,12 +611,21 @@ export default function DocumentsPage() {
           display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word;
         }
         .dc-card-meta { font-size: 11px; color: #bbb; margin: 0; }
-        .dc-card-actions { display: flex; align-items: center; gap: 8px; }
+        .dc-card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .dc-original-btn,
         .dc-view-btn {
           flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-          border: none; color: white; border-radius: 12px;
-          padding: 10px 14px; font-size: 13px; font-weight: 600;
-          cursor: pointer; transition: 0.2s; font-family: inherit;
+          border-radius: 12px; padding: 10px 14px; font-size: 13px; font-weight: 600;
+          transition: 0.2s; font-family: inherit;
+          text-decoration: none;
+        }
+        .dc-original-btn {
+          border: 1.5px solid #ffd6e1; background: rgba(255,255,255,0.9); color: #ff5d8f;
+        }
+        .dc-original-btn:hover { background: rgba(255,143,177,0.12); border-color: #ff8fb1; color: #ff5d8f; transform: translateY(-1px); }
+        .dc-view-btn {
+          border: none; color: white; background: linear-gradient(135deg,#ff8fb1,#ff6f91);
+          cursor: pointer;
         }
         .dc-view-btn:hover { opacity: 0.88; transform: translateY(-1px); }
         .dc-delete-btn {
@@ -713,7 +740,9 @@ export default function DocumentsPage() {
 
         {/* Storage usage bar — always visible */}
         <StorageBar usedBytes={usedBytes} />
-
+          <p className="dp-preview-note">
+            Note: preview rendering may differ from the uploaded PPTX. Use “Open original” to verify the exact file.
+          </p>
         {/* Upload zone — locked when full */}
         <UploadZone
           onUpload={handleUpload}
