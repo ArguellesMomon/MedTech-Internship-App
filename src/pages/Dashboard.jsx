@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 
 import InternDashboard from '../components/InternDashboard';
@@ -13,6 +14,7 @@ import {
   CalendarClock,
   NotebookPen,
   Microscope,
+  FolderOpen,
 } from 'lucide-react';
 
 function Dashboard() {
@@ -76,6 +78,39 @@ function Dashboard() {
             color: #777;
             font-size: 1rem;
             line-height: 1.6;
+          }
+
+          .welcome-actions {
+            margin-top: 22px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+          }
+
+          .welcome-action-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 18px;
+            border-radius: 999px;
+            background: linear-gradient(135deg,#ff8fb1,#ff6f91);
+            color: white;
+            font-weight: 700;
+            font-size: 0.95rem;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+          }
+
+          .welcome-action-link:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 24px rgba(255,111,145,0.22);
+          }
+
+          .welcome-action-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
           }
 
           .dashboard-container {

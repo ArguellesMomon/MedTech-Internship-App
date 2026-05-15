@@ -31,6 +31,23 @@ const SECTIONS = [
 
 const SECTION_MAP = Object.fromEntries(SECTIONS.map((s) => [s.id, s]));
 
+const CUSTOM_SECTION_COLORS = [
+  { color: '#8d6fff', bg: '#f5efff' },
+  { color: '#34b3ff', bg: '#e8f6ff' },
+  { color: '#54c58e', bg: '#ecfbf2' },
+  { color: '#f6b45f', bg: '#fff4e8' },
+  { color: '#f56b8a', bg: '#fff0f4' },
+  { color: '#b071ec', bg: '#f4ecff' },
+];
+
+const CUSTOM_SECTION_STORAGE_KEY = 'intern-app-notes-custom-sections';
+
+function generateSectionMeta(sectionName) {
+  const hash = sectionName.split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+  const index = Math.abs(hash) % CUSTOM_SECTION_COLORS.length;
+  return CUSTOM_SECTION_COLORS[index];
+}
+
 const SORT_OPTIONS = [
   { id: 'newest', label: 'Newest first' },
   { id: 'oldest', label: 'Oldest first' },
@@ -55,13 +72,13 @@ function timeAgo(dateStr) {
 /* ─────────────────────────────────────────────
    NOTE MODAL  (add + edit)
 ───────────────────────────────────────────── */
-function NoteModal({ editing, defaultSection, onClose, onSaved }) {
+function NoteModal({ editing, defaultSection, onClose, onSaved, sections, sectionMap }) {
   const { user } = useAuth();
 
   const [form, setForm] = useState({
     title:        editing?.title        ?? '',
     body:         editing?.body         ?? '',
-    section_name: editing?.section_name ?? defaultSection ?? SECTIONS[0].id,
+    section_name: editing?.section_name ?? defaultSection ?? sections[0].id,
     is_staff_tip: editing?.is_staff_tip ?? false,
   });
   const [saving, setSaving] = useState(false);
@@ -104,7 +121,7 @@ function NoteModal({ editing, defaultSection, onClose, onSaved }) {
     onClose();
   };
 
-  const accentColor = SECTION_MAP[form.section_name]?.color ?? '#ff6f91';
+  const accentColor = sectionMap[form.section_name]?.color ?? generateSectionMeta(form.section_name).color;
 
   return (
     <div className="ns-overlay" onClick={onClose}>
@@ -123,7 +140,7 @@ function NoteModal({ editing, defaultSection, onClose, onSaved }) {
           <div>
             <p className="ns-field-label">Section</p>
             <div className="ns-section-pills">
-              {SECTIONS.map((s) => (
+              {sections.map((s) => (
                 <button
                   key={s.id}
                   type="button"
@@ -203,11 +220,11 @@ function NoteModal({ editing, defaultSection, onClose, onSaved }) {
 /* ─────────────────────────────────────────────
    NOTE CARD
 ───────────────────────────────────────────── */
-function NoteCard({ note, onEdit, onDelete }) {
+function NoteCard({ note, onEdit, onDelete, sectionMap }) {
   const [expanded,  setExpanded]  = useState(false);
   const [copied,    setCopied]    = useState(false);
 
-  const meta    = SECTION_MAP[note.section_name];
+  const meta    = sectionMap[note.section_name] ?? SECTION_MAP[note.section_name] ?? generateSectionMeta(note.section_name);
   const preview = note.body.length > 140 && !expanded
     ? note.body.slice(0, 140) + '…'
     : note.body;
@@ -291,15 +308,19 @@ function NoteCard({ note, onEdit, onDelete }) {
 function NotesSection() {
   const { user } = useAuth();
 
-  const [notes,        setNotes]       = useState([]);
-  const [loading,      setLoading]     = useState(true);
-  const [search,       setSearch]      = useState('');
-  const [filterType,   setFilterType]  = useState('all');   // all | notes | tips
-  const [filterSection,setFilterSection] = useState('');
-  const [sortBy,       setSortBy]      = useState('newest');
-  const [showSort,     setShowSort]    = useState(false);
-  const [showModal,    setShowModal]   = useState(false);
-  const [editingNote,  setEditingNote] = useState(null);
+  const [notes,           setNotes]          = useState([]);
+  const [loading,         setLoading]        = useState(true);
+  const [search,          setSearch]         = useState('');
+  const [filterType,      setFilterType]     = useState('all');   // all | notes | tips
+  const [filterSection,   setFilterSection]  = useState('');
+  const [sortBy,          setSortBy]         = useState('newest');
+  const [showSort,        setShowSort]       = useState(false);
+  const [showModal,       setShowModal]      = useState(false);
+  const [editingNote,     setEditingNote]    = useState(null);
+  const [customSections,  setCustomSections] = useState([]);
+  const [showManageSections, setShowManageSections] = useState(false);
+  const [newSectionName,  setNewSectionName] = useState('');
+  const [sectionError,    setSectionError]   = useState('');
 
   /* ── Fetch ── */
   useEffect(() => {
@@ -315,6 +336,35 @@ function NotesSection() {
     };
     fetchNotes();
   }, [user.id]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(`${CUSTOM_SECTION_STORAGE_KEY}-${user.id}`);
+    if (!saved) return;
+
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) setCustomSections(parsed);
+    } catch {
+      setCustomSections([]);
+    }
+  }, [user.id]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      `${CUSTOM_SECTION_STORAGE_KEY}-${user.id}`,
+      JSON.stringify(customSections)
+    );
+  }, [customSections, user.id]);
+
+  const allSections = useMemo(
+    () => [...SECTIONS, ...customSections],
+    [customSections]
+  );
+
+  const sectionMap = useMemo(
+    () => Object.fromEntries(allSections.map((s) => [s.id, s])),
+    [allSections]
+  );
 
   /* ── Derived counts ── */
   const totalTips   = notes.filter((n) => n.is_staff_tip).length;
@@ -343,6 +393,34 @@ function NotesSection() {
   }, [notes, filterSection, filterType, search, sortBy]);
 
   /* ── Handlers ── */
+  const handleAddSection = () => {
+    const label = newSectionName.trim();
+    if (!label) {
+      setSectionError('Please enter a section name.');
+      return;
+    }
+
+    const exists = allSections.some((section) => section.id.toLowerCase() === label.toLowerCase());
+    if (exists) {
+      setSectionError('That section already exists.');
+      return;
+    }
+
+    const meta = generateSectionMeta(label);
+    const nextSection = { id: label, color: meta.color, bg: meta.bg };
+
+    setCustomSections((prev) => [...prev, nextSection]);
+    setFilterSection(label);
+    setNewSectionName('');
+    setSectionError('');
+    setShowManageSections(false);
+  };
+
+  const handleRemoveSection = (sectionId) => {
+    setCustomSections((prev) => prev.filter((section) => section.id !== sectionId));
+    if (filterSection === sectionId) setFilterSection('');
+  };
+
   const handleSaved = (saved, isEdit) => {
     if (isEdit) {
       setNotes((prev) => prev.map((n) => (n.id === saved.id ? saved : n)));
@@ -614,6 +692,149 @@ function NotesSection() {
           background: #ff5d8f;
           color: white;
           border-color: #ff5d8f;
+        }
+
+        .ns-add-section-btn {
+          border: 1.5px dashed #ffbfd6;
+          background: transparent;
+          color: #ff5d8f;
+          border-radius: 999px;
+          padding: 6px 14px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: 0.2s;
+          white-space: nowrap;
+        }
+
+        .ns-add-section-btn:hover {
+          background: #fff0f4;
+          border-color: #ff8fb1;
+          color: #ff5d8f;
+        }
+
+        .ns-new-section-form {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          align-items: center;
+          margin-bottom: 18px;
+        }
+
+        .ns-input-sm {
+          flex: 1;
+          min-width: 180px;
+        }
+
+        .ns-btn-sm {
+          padding: 8px 14px;
+          font-size: 12px;
+        }
+
+        .ns-new-section-error {
+          margin: 10px 0 0;
+          width: 100%;
+        }
+
+        .ns-section-manager {
+          border: 1px solid #ffe0ea;
+          background: rgba(255, 247, 250, 0.95);
+          border-radius: 24px;
+          padding: 18px;
+          margin-top: 12px;
+          box-shadow: 0 14px 40px rgba(255, 109, 145, 0.09);
+        }
+
+        .ns-section-manager-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+
+        .ns-section-manager-title {
+          margin: 0 0 4px;
+          font-size: 14px;
+          font-weight: 700;
+          color: #333;
+        }
+
+        .ns-section-manager-subtitle {
+          margin: 0;
+          font-size: 12px;
+          color: #777;
+          line-height: 1.4;
+        }
+
+        .ns-add-section-row {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+
+        .ns-section-manager-list {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .ns-section-manager-empty {
+          padding: 16px;
+          background: white;
+          border-radius: 18px;
+          border: 1px dashed #ffd6e1;
+          color: #8a7b87;
+          font-size: 13px;
+          text-align: center;
+        }
+
+        .ns-custom-section-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          padding: 12px 14px;
+          border-radius: 16px;
+          background: white;
+          border: 1px solid #ffe6ed;
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .ns-custom-section-item:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 8px 18px rgba(255, 109, 145, 0.12);
+        }
+
+        .ns-custom-section-pill {
+          flex: 1;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 8px 12px;
+          border-radius: 999px;
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        .ns-custom-section-delete {
+          border: none;
+          background: #ffe7ef;
+          color: #d64566;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s;
+        }
+
+        .ns-custom-section-delete:hover {
+          background: #ffd0dc;
         }
 
         /* ── Note grid ── */
@@ -1065,7 +1286,7 @@ function NotesSection() {
           >
             All
           </button>
-          {SECTIONS.map((s) => (
+          {allSections.map((s) => (
             <button
               key={s.id}
               className={`ns-filter-pill ${filterSection === s.id ? 'active' : ''}`}
@@ -1079,7 +1300,71 @@ function NotesSection() {
               {s.id}
             </button>
           ))}
+          <button
+            className="ns-add-section-btn"
+            type="button"
+            onClick={() => setShowManageSections((prev) => !prev)}
+          >
+            {showManageSections ? 'Hide section manager' : 'Manage sections'}
+          </button>
         </div>
+        {showManageSections && (
+          <div className="ns-section-manager">
+            <div className="ns-section-manager-header">
+              <div>
+                <p className="ns-section-manager-title">Custom section manager</p>
+                <p className="ns-section-manager-subtitle">Add or remove your own note categories with pill-style controls.</p>
+              </div>
+              <button
+                type="button"
+                className="ns-secondary-btn ns-btn-sm"
+                onClick={() => {
+                  setShowManageSections(false);
+                  setNewSectionName('');
+                  setSectionError('');
+                }}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="ns-add-section-row">
+              <input
+                className="ns-input ns-input-sm"
+                value={newSectionName}
+                onChange={(e) => { setNewSectionName(e.target.value); setSectionError(''); }}
+                placeholder="Add custom section"
+              />
+              <button type="button" className="ns-primary-btn ns-btn-sm" onClick={handleAddSection}>
+                Add section
+              </button>
+            </div>
+            {sectionError && <p className="ns-form-error ns-new-section-error">{sectionError}</p>}
+
+            <div className="ns-section-manager-list">
+              {customSections.length === 0 ? (
+                <div className="ns-section-manager-empty">No custom sections yet — create one to get started.</div>
+              ) : (
+                customSections.map((section) => (
+                  <div key={section.id} className="ns-custom-section-item">
+                    <span className="ns-custom-section-pill" style={{ borderColor: section.color + '88', color: section.color, background: section.bg }}>
+                      {section.id}
+                    </span>
+                    <button
+                      type="button"
+                      className="ns-custom-section-delete"
+                      onClick={() => handleRemoveSection(section.id)}
+                      title={`Delete ${section.id}`}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+     
 
         {/* Results count */}
         {(search || filterSection || filterType !== 'all') && (
@@ -1122,6 +1407,7 @@ function NotesSection() {
                   note={note}
                   onEdit={openEdit}
                   onDelete={handleDelete}
+                  sectionMap={sectionMap}
                 />
               ))
             )}
@@ -1133,7 +1419,9 @@ function NotesSection() {
       {showModal && (
         <NoteModal
           editing={editingNote}
-          defaultSection={filterSection || SECTIONS[0].id}
+          defaultSection={filterSection || allSections[0].id}
+          sections={allSections}
+          sectionMap={sectionMap}
           onClose={() => { setShowModal(false); setEditingNote(null); }}
           onSaved={handleSaved}
         />

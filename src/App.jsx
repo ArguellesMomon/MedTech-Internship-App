@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Component, useState } from 'react';
 import {
   Link,
   Navigate,
@@ -19,6 +19,7 @@ import RotationGuide      from './components/RotationGuide';
 import DailyReportTracker from './components/QuotaTracker';
 import ShiftPlanner       from './components/ShiftPlanner';
 import NotesSection       from './components/NotesSection';
+import DocumentsPage from './components/DocumentsPage';
 
 import { isSupabaseConfigured } from './lib/supabase';
 import Logo from './assets/Logo.png';
@@ -27,7 +28,7 @@ import {
   Menu, X,
   LayoutDashboard, Microscope, ClipboardList,
   CalendarClock, NotebookPen,
-  User, LogOut, Info,
+  User, LogOut, Info, FolderOpen,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────
@@ -83,7 +84,9 @@ const MAIN_NAV = [
   { to: '/reports',   Icon: ClipboardList,   label: 'Daily Reports'  },
   { to: '/shifts',    Icon: CalendarClock,   label: 'Shifts & Exams' },
   { to: '/notes',     Icon: NotebookPen,     label: 'Notes'          },
+  { to: '/documents', Icon: FolderOpen,      label: 'Documents' },
   { to: '/about',     Icon: Info,            label: 'About'          },
+  
 ];
 
 /* ─────────────────────────────────────────────
@@ -333,6 +336,49 @@ function AppLayout({ children }) {
 }
 
 /* ─────────────────────────────────────────────
+   APP ERROR BOUNDARY
+───────────────────────────────────────────── */
+class AppErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error('App caught an error:', error, info);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <main style={{
+          minHeight: '100vh', display: 'flex', flexDirection: 'column',
+          justifyContent: 'center', alignItems: 'center', padding: '24px',
+          color: '#333', background: '#fff7f8',
+        }}>
+          <h1 style={{ marginBottom: '16px' }}>Something went wrong</h1>
+          <p style={{ maxWidth: '680px', textAlign: 'center', marginBottom: '18px' }}>
+            An unexpected error occurred while rendering the app. Please refresh the page or try again.
+          </p>
+          <pre style={{
+            width: '100%', maxWidth: '720px', whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word', background: '#fff', padding: '16px',
+            borderRadius: '16px', border: '1px solid #ffd6e1',
+          }}>
+            {this.state.error.message}
+          </pre>
+        </main>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/* ─────────────────────────────────────────────
    APP ROOT
 ───────────────────────────────────────────── */
 export default function App() {
@@ -346,17 +392,21 @@ export default function App() {
 
   return (
     <AppLayout>
-      <Routes>
+      <AppErrorBoundary>
+        <Routes>
         <Route path="/"          element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/rotations" element={<ProtectedRoute><RotationGuide /></ProtectedRoute>} />
         <Route path="/reports"   element={<ProtectedRoute><DailyReportTracker /></ProtectedRoute>} />
         <Route path="/shifts"    element={<ProtectedRoute><ShiftPlanner /></ProtectedRoute>} />
         <Route path="/notes"     element={<ProtectedRoute><NotesSection /></ProtectedRoute>} />
         <Route path="/profile"   element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/documents" element={<ProtectedRoute><DocumentsPage /></ProtectedRoute>} />
         <Route path="/about"     element={<About />} />
         <Route path="/login"     element={<Login />} />
         <Route path="/signup"    element={<Signup />} />
+        <Route path="*"          element={<Navigate to="/" replace />} />
       </Routes>
+      </AppErrorBoundary>
     </AppLayout>
   );
 }

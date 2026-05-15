@@ -9,6 +9,7 @@
 -- 1. DROP EXISTING TABLES  (clean slate)
 -- ─────────────────────────────────────────────
 
+drop table if exists public.documents              cascade;
 drop table if exists public.mood_logs              cascade;
 drop table if exists public.procedures             cascade;
 drop table if exists public.encouragement_messages cascade;
@@ -158,6 +159,20 @@ create table public.mood_logs (
   logged_at  timestamptz default now()
 );
 
+-- ── Documents (file library) ──────────────────
+-- Metadata for files uploaded to the documents storage bucket
+create table public.documents (
+  id           uuid        primary key default gen_random_uuid(),
+  user_id      uuid        not null references auth.users(id) on delete cascade,
+  file_name    text        not null,
+  file_url     text        not null,
+  storage_path text        not null,
+  file_type    text        not null check (file_type in ('pdf','docx','pptx','other')),
+  file_size    bigint,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
+);
+
 -- ── Procedures (Rotation Guide library) ───────
 -- Shared across all authenticated users; not user-scoped
 create table public.procedures (
@@ -204,6 +219,9 @@ create index if not exists idx_mood_logs_user
 create index if not exists idx_procedures_section
   on public.procedures (section_name);
 
+create index if not exists idx_documents_user
+  on public.documents (user_id, created_at desc);
+
 
 -- ─────────────────────────────────────────────
 -- 4. ROW LEVEL SECURITY
@@ -220,6 +238,7 @@ alter table public.notes                enable row level security;
 alter table public.encouragement_messages enable row level security;
 alter table public.mood_logs            enable row level security;
 alter table public.procedures           enable row level security;
+alter table public.documents            enable row level security;
 
 
 -- ── Profiles ──────────────────────────────────
@@ -313,6 +332,13 @@ create policy "procedures_delete_authenticated"
   on public.procedures for delete
   to authenticated
   using (true);
+
+
+-- ── Documents ─────────────────────────────────
+create policy "documents_all_own"
+  on public.documents for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 
 -- ─────────────────────────────────────────────
@@ -525,5 +551,71 @@ create policy "Users can delete own avatar"
   to authenticated
   using (
     bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+
+-- ─────────────────────────────────────────────
+-- 7. STORAGE — DOCUMENTS BUCKET
+-- ─────────────────────────────────────────────
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'documents',
+  'documents',
+  true,
+  52428800,  -- 50 MB max per file
+  array[
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  ]
+)
+on conflict (id) do update
+  set public             = true,
+      file_size_limit    = 52428800,
+      allowed_mime_types = array[
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+      ];
+
+drop policy if exists "Documents are publicly accessible"  on storage.objects;
+drop policy if exists "Users can upload own documents"     on storage.objects;
+drop policy if exists "Users can update own documents"     on storage.objects;
+drop policy if exists "Users can delete own documents"     on storage.objects;
+
+-- Public read so direct file_url links work without auth tokens
+create policy "Documents are publicly accessible"
+  on storage.objects for select
+  to public
+  using (bucket_id = 'documents');
+
+-- Each user uploads only into their own folder (documents/<user_id>/...)
+create policy "Users can upload own documents"
+  on storage.objects for insert
+  to authenticated
+  with check (
+    bucket_id = 'documents'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+create policy "Users can update own documents"
+  on storage.objects for update
+  to authenticated
+  using (
+    bucket_id = 'documents'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+create policy "Users can delete own documents"
+  on storage.objects for delete
+  to authenticated
+  using (
+    bucket_id = 'documents'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
