@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
-import { Sparkles, Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { Sparkles, Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
 import Logo from '../assets/Logo.png';
 
 export default function Login() {
@@ -17,21 +17,19 @@ export default function Login() {
   const cardRef = useRef(null);
   const passwordRef = useRef(null);
 
-  /* ── Keyboard detection ── */
+  /* Keyboard detection */
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-
     function onResize() {
       const shrinkRatio = vv.height / window.innerHeight;
       setKeyboardOpen(shrinkRatio < 0.75);
     }
-
     vv.addEventListener('resize', onResize);
     return () => vv.removeEventListener('resize', onResize);
   }, []);
 
-  /* ── Scroll active input into view when keyboard opens ── */
+  /* Scroll active input into view */
   useEffect(() => {
     if (!keyboardOpen) return;
     const active = document.activeElement;
@@ -63,20 +61,20 @@ export default function Login() {
   return (
     <>
       <style>{`
-        *,
-        *::before,
-        *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,600;1,9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         html, body, #root {
           width: 100%;
-          min-height: 100%;
+          min-height: 100vh;
           min-height: 100dvh;
           overflow-x: hidden;
         }
 
         body {
-          font-family: 'Poppins', sans-serif;
-          background: linear-gradient(135deg, #fff5f7 0%, #ffe4ec 50%, #fff0e5 100%);
+          font-family: 'DM Sans', sans-serif;
+          background: linear-gradient(135deg, #fff0f5 0%, #fce8f0 100%);
           background-attachment: fixed;
         }
 
@@ -91,6 +89,7 @@ export default function Login() {
           align-items: center;
           padding: 28px 20px;
           transition: padding 0.25s ease;
+          position: relative;  /* for absolute positioning of back button */
         }
 
         .login-page.keyboard-open {
@@ -98,18 +97,57 @@ export default function Login() {
           padding-top: 20px;
         }
 
+        /* ── BACK BUTTON ── */
+        .back-btn {
+          position: absolute;
+          top: 20px;
+          left: 20px;
+          z-index: 10;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1.5px solid rgba(255, 200, 220, 0.5);
+          color: #ff5d8f;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: background 0.25s, border-color 0.25s, transform 0.15s, box-shadow 0.25s;
+          box-shadow: 0 4px 16px rgba(255, 111, 145, 0.12);
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+
+        .back-btn:hover {
+          background: white;
+          border-color: #ff8fb1;
+          box-shadow: 0 8px 24px rgba(255, 111, 145, 0.18);
+          transform: scale(1.04);
+        }
+
+        .back-btn:active {
+          transform: scale(0.96);
+        }
+
         /* ── CARD ── */
         .login-card {
           width: 100%;
           max-width: 480px;
-          background: rgba(255, 255, 255, 0.94);
+          background: rgba(255, 255, 255, 0.92);
           backdrop-filter: blur(18px);
           -webkit-backdrop-filter: blur(18px);
-          border-radius: 32px;
+          border-radius: 36px;
           padding: 42px 32px;
-          box-shadow: 0 12px 48px rgba(255, 111, 145, 0.18);
-          border: 1px solid rgba(255, 255, 255, 0.7);
+          box-shadow:
+            0 12px 48px rgba(255, 93, 143, 0.18),
+            0 4px 16px rgba(0,0,0,0.04);
+          border: 1px solid rgba(255, 200, 220, 0.5);
           transition: padding 0.2s ease, border-radius 0.2s ease;
+          position: relative;
+          z-index: 1;
         }
 
         /* ── LOGO ── */
@@ -117,54 +155,72 @@ export default function Login() {
           display: flex;
           justify-content: center;
           align-items: center;
-          margin: 0 auto 10px;
+          margin: 0 auto 16px;
           transition: transform 0.2s ease;
         }
 
         .logo-img {
-          width: 500px;
+          width: 200px;
           height: auto;
           object-fit: contain;
           display: block;
-          /* Preserve transparency */
           background: transparent;
-          transition: transform 0.2s ease, width 0.2s ease;
+          transition: width 0.2s ease;
         }
 
         .keyboard-open .logo-wrapper {
-          margin-bottom: 4px;
+          margin-bottom: 8px;
         }
-
         .keyboard-open .logo-img {
           width: 80px;
         }
 
-        /* ── TITLE ── */
-        .login-title {
+        /* ── HEADING ── */
+        .login-heading {
           text-align: center;
-          font-size: 2.1rem;
-          font-weight: 700;
-          color: #ff5d8f;
-          margin-bottom: 0;
-          line-height: 1;
-          padding-bottom: 6px;
+          margin-bottom: 24px;
         }
 
-        .keyboard-open .login-subtitle {
+        .login-title {
+          font-family: 'Fraunces', serif;
+          font-size: 2rem;
+          font-weight: 700;
+          line-height: 1.1;
+          letter-spacing: -0.02em;
+          color: #1c1012;
+        }
+
+        .login-title em {
+          color: #ff5d8f;
+          font-style: italic;
+          font-weight: 600;
+        }
+
+        .login-subtitle {
+          margin-top: 6px;
+          font-size: 0.95rem;
+          color: #7a5560;
+          font-weight: 400;
+        }
+
+        .keyboard-open .login-heading {
           margin-bottom: 18px;
+        }
+        .keyboard-open .login-title {
+          font-size: 1.5rem;
         }
 
         /* ── FORM GROUP ── */
         .form-group {
-          margin-bottom: 16px;
+          margin-bottom: 18px;
         }
 
         .form-label {
           display: block;
           margin-bottom: 8px;
-          font-size: 0.88rem;
+          font-size: 0.85rem;
           font-weight: 600;
-          color: #666;
+          color: #7a5560;
           letter-spacing: 0.01em;
         }
 
@@ -177,26 +233,25 @@ export default function Login() {
 
         .input-icon {
           position: absolute;
-          left: 15px;
+          left: 16px;
           color: #ffaac5;
           pointer-events: none;
           display: flex;
           align-items: center;
           z-index: 1;
-          flex-shrink: 0;
         }
 
         .form-input {
           width: 100%;
-          border: 1.5px solid #ffd3df;
-          background: #fff8fa;
+          border: 1.5px solid rgba(255, 150, 180, 0.4);
+          background: rgba(255, 248, 250, 0.8);
           border-radius: 18px;
-          padding: 14px 48px 14px 44px;
+          padding: 14px 48px 14px 46px;
           font-size: 15px;
-          font-family: 'Poppins', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           outline: none;
           transition: border-color 0.22s, box-shadow 0.22s, background 0.22s;
-          color: #444;
+          color: #3a2d30;
           -webkit-appearance: none;
           appearance: none;
         }
@@ -211,13 +266,12 @@ export default function Login() {
           padding-right: 16px;
         }
 
-        /* ── Hide browser-native password icons ── */
         .form-input[type="password"]::-ms-reveal,
         .form-input[type="password"]::-ms-clear { display: none !important; }
         .form-input::-webkit-credentials-auto-fill-button { display: none !important; visibility: hidden; pointer-events: none; }
         .form-input::-webkit-contacts-auto-fill-button { display: none !important; visibility: hidden; pointer-events: none; }
 
-        /* ── Eye toggle ── */
+        /* ── EYE TOGGLE ── */
         .eye-toggle {
           position: absolute;
           right: 0;
@@ -233,7 +287,6 @@ export default function Login() {
           color: #ffaac5;
           border-radius: 0 18px 18px 0;
           transition: color 0.18s, background 0.18s;
-          flex-shrink: 0;
           z-index: 2;
           touch-action: manipulation;
           -webkit-tap-highlight-color: transparent;
@@ -264,19 +317,19 @@ export default function Login() {
           border-radius: 20px;
           padding: 15px;
           margin-top: 6px;
-          background: linear-gradient(135deg, #ff8fb1, #ff6f91);
+          background: linear-gradient(135deg, #ff8fb1, #ff5d8f);
           color: white;
           font-size: 15px;
           font-weight: 600;
-          font-family: 'Poppins', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           cursor: pointer;
           transition: transform 0.22s, box-shadow 0.22s, opacity 0.22s;
-          box-shadow: 0 8px 22px rgba(255, 111, 145, 0.28);
+          box-shadow: 0 8px 22px rgba(255, 93, 143, 0.28);
           -webkit-tap-highlight-color: transparent;
           touch-action: manipulation;
         }
 
-        .submit-btn:hover   { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(255,111,145,0.35); }
+        .submit-btn:hover   { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(255,93,143,0.35); }
         .submit-btn:active  { transform: scale(0.98); }
         .submit-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
 
@@ -292,13 +345,14 @@ export default function Login() {
           text-align: center;
           margin-top: 22px;
           font-size: 14px;
-          color: #888;
+          color: #7a5560;
         }
 
         .bottom-link {
           color: #ff5d8f;
           font-weight: 600;
           text-decoration: none;
+          transition: text-decoration 0.2s;
         }
 
         .bottom-link:hover { text-decoration: underline; }
@@ -306,35 +360,46 @@ export default function Login() {
         .footer-note {
           text-align: center;
           margin-top: 16px;
-          color: #bbb;
+          color: #c8a0b0;
           font-size: 12px;
         }
 
         /* ── RESPONSIVE ── */
-
         @media (max-width: 600px) {
           .login-page { padding: 20px 16px; }
-          .login-card { border-radius: 26px; padding: 32px 22px; }
+          .login-card { border-radius: 28px; padding: 32px 22px; }
           .keyboard-open .login-card { padding-top: 24px; border-radius: 24px; }
-          .login-title { font-size: 1.75rem; }
-          .form-input { font-size: 16px; }
-          .logo-img { width: 300px; }
-          .eye-toggle { width: 48px; }
+          .login-title { font-size: 1.7rem; }
+          .form-input { font-size: 16px; padding: 14px 46px 14px 42px; }
+          .logo-img { width: 160px; }
+          .eye-toggle { width: 44px; }
+          .back-btn {
+            top: 12px;
+            left: 12px;
+            width: 40px;
+            height: 40px;
+          }
         }
 
         @media (max-width: 812px) and (orientation: landscape) {
           .login-page { justify-content: flex-start; padding-top: 16px; }
           .login-card { padding: 24px 28px; border-radius: 24px; }
-          .logo-img { width: 300px; }
+          .logo-img { width: 140px; }
           .login-title { font-size: 1.5rem; }
           .form-group { margin-bottom: 12px; }
+          .back-btn {
+            top: 10px;
+            left: 10px;
+            width: 36px;
+            height: 36px;
+          }
         }
 
         @media (min-width: 601px) and (max-width: 1024px) and (orientation: portrait) {
           .login-card { max-width: 520px; padding: 48px 40px; }
           .login-title { font-size: 2.3rem; }
-          .logo-img { width: 500px; }
-          .form-input { font-size: 16px; padding: 15px 50px 15px 46px; }
+          .logo-img { width: 220px; }
+          .form-input { font-size: 16px; padding: 15px 52px 15px 48px; }
           .eye-toggle { width: 52px; }
           .submit-btn { padding: 17px; font-size: 16px; }
         }
@@ -347,8 +412,16 @@ export default function Login() {
       `}</style>
 
       <div className={`login-page${keyboardOpen ? ' keyboard-open' : ''}`}>
-        <div className="login-card" ref={cardRef}>
+        {/* Back button */}
+        <button
+          className="back-btn"
+          onClick={() => navigate('/')}
+          aria-label="Back to landing page"
+        >
+          <ArrowLeft size={20} strokeWidth={2} />
+        </button>
 
+        <div className="login-card" ref={cardRef}>
           {/* Logo */}
           <div className="logo-wrapper">
             <img
@@ -359,10 +432,18 @@ export default function Login() {
             />
           </div>
 
+          {/* Heading */}
+          <div className="login-heading">
+            <h1 className="login-title">
+              Welcome back, <em>intern</em>.
+            </h1>
+            <p className="login-subtitle">
+              Log in to continue your journey.
+            </p>
+          </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} noValidate>
-
             {/* Email */}
             <div className="form-group">
               <label className="form-label" htmlFor="login-email">
@@ -370,7 +451,7 @@ export default function Login() {
               </label>
               <div className="input-wrapper">
                 <span className="input-icon">
-                  <Mail size={17} />
+                  <Mail size={18} />
                 </span>
                 <input
                   id="login-email"
@@ -395,7 +476,7 @@ export default function Login() {
               </label>
               <div className="input-wrapper">
                 <span className="input-icon">
-                  <Lock size={17} />
+                  <Lock size={18} />
                 </span>
                 <input
                   id="login-password"

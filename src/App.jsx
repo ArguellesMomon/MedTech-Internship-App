@@ -9,17 +9,18 @@ import {
 
 import { useAuth } from './auth/AuthProvider';
 
-import Dashboard from './pages/Dashboard';
-import Login from './pages/Login';
-import Profile from './pages/Profile';
-import Signup from './pages/Signup';
+import Dashboard          from './pages/Dashboard';
+import Login              from './pages/Login';
+import Profile            from './pages/Profile';
+import Signup             from './pages/Signup';
+import LandingPage        from './pages/LandingPage';
 
 import About              from './components/About';
 import RotationGuide      from './components/RotationGuide';
 import DailyReportTracker from './components/QuotaTracker';
 import ShiftPlanner       from './components/ShiftPlanner';
 import NotesSection       from './components/NotesSection';
-import DocumentsPage from './components/DocumentsPage';
+import DocumentsPage      from './components/DocumentsPage';
 
 import { isSupabaseConfigured } from './lib/supabase';
 import Logo from './assets/Logo.png';
@@ -57,9 +58,11 @@ function SetupRequired() {
 
 /* ─────────────────────────────────────────────
    PROTECTED ROUTE
+   — redirects unauthenticated users to /landing
 ───────────────────────────────────────────── */
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
+
   if (loading) {
     return (
       <main style={{
@@ -71,7 +74,9 @@ function ProtectedRoute({ children }) {
       </main>
     );
   }
-  if (!user) return <Navigate to="/login" replace />;
+
+  // Send unauthenticated visitors to the landing page
+  if (!user) return <Navigate to="/landing" replace />;
   return children;
 }
 
@@ -84,9 +89,8 @@ const MAIN_NAV = [
   { to: '/reports',   Icon: ClipboardList,   label: 'Daily Reports'  },
   { to: '/shifts',    Icon: CalendarClock,   label: 'Shifts & Exams' },
   { to: '/notes',     Icon: NotebookPen,     label: 'Notes'          },
-  { to: '/documents', Icon: FolderOpen,      label: 'Documents' },
+  { to: '/documents', Icon: FolderOpen,      label: 'Documents'      },
   { to: '/about',     Icon: Info,            label: 'About'          },
-  
 ];
 
 /* ─────────────────────────────────────────────
@@ -98,7 +102,7 @@ function HamburgerMenu({ open, setOpen }) {
 
   const displayName = profile?.full_name?.trim().split(/\s+/)[0] || 'there';
   const initial     = (profile?.full_name?.trim() || user?.email || 'M')[0].toUpperCase();
-  const avatarUrl   = profile?.avatar_url
+  const avatarUrl   = profile?.avatar_url;
 
   return (
     <>
@@ -114,7 +118,6 @@ function HamburgerMenu({ open, setOpen }) {
         {/* Profile chip */}
         <Link to="/profile" className="menu-profile-chip" onClick={() => setOpen(false)}>
           <div className="menu-avatar">
-            {/* ← changed: show image if available, otherwise initial */}
             {avatarUrl ? (
               <img
                 src={avatarUrl}
@@ -165,14 +168,23 @@ function HamburgerMenu({ open, setOpen }) {
 
 /* ─────────────────────────────────────────────
    APP LAYOUT
+   — hides the top bar + hamburger on pages that
+     have their own full-screen chrome:
+     /landing, /login, /signup
 ───────────────────────────────────────────── */
 function AppLayout({ children }) {
-  
-  const { user, } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const isAuthPage = ['/login', '/signup'].includes(location.pathname);
+  // Pages that render their own full-screen layout
+  const SHELL_FREE = ['/landing', '/login', '/signup'];
+  const hideShell  = SHELL_FREE.includes(location.pathname);
+
+  // If this page manages its own layout, just render children
+  if (hideShell) {
+    return <>{children}</>;
+  }
 
   return (
     <>
@@ -217,7 +229,7 @@ function AppLayout({ children }) {
         /* ── MAIN ── */
         .main-content {
           width: 100%; min-height: calc(100vh - 68px);
-          padding: 0 20px 80px;
+          padding: 24px 20px calc(132px + env(safe-area-inset-bottom, 0px));
         }
 
         /* ── BACKDROP ── */
@@ -273,6 +285,7 @@ function AppLayout({ children }) {
           font-size: 16px; font-weight: 700; color: white;
           flex-shrink: 0;
           box-shadow: 0 4px 12px rgba(255,111,145,0.3);
+          overflow: hidden;
         }
         .menu-profile-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         .menu-profile-name {
@@ -316,16 +329,14 @@ function AppLayout({ children }) {
           <Link to="/" className="brand-link">
             <img src={Logo} alt="MedTech Mate Logo" className="brand-logo" />
           </Link>
-          {user && !isAuthPage && (
+          {user && (
             <button className="menu-toggle" onClick={() => setMenuOpen(true)}>
               <Menu size={20} />
             </button>
           )}
         </header>
 
-        {user && !isAuthPage && (
-          <HamburgerMenu open={menuOpen} setOpen={setMenuOpen} />
-        )}
+        {user && <HamburgerMenu open={menuOpen} setOpen={setMenuOpen} />}
 
         <main className="main-content">
           {children}
@@ -394,18 +405,26 @@ export default function App() {
     <AppLayout>
       <AppErrorBoundary>
         <Routes>
-        <Route path="/"          element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/rotations" element={<ProtectedRoute><RotationGuide /></ProtectedRoute>} />
-        <Route path="/reports"   element={<ProtectedRoute><DailyReportTracker /></ProtectedRoute>} />
-        <Route path="/shifts"    element={<ProtectedRoute><ShiftPlanner /></ProtectedRoute>} />
-        <Route path="/notes"     element={<ProtectedRoute><NotesSection /></ProtectedRoute>} />
-        <Route path="/profile"   element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/documents" element={<ProtectedRoute><DocumentsPage /></ProtectedRoute>} />
-        <Route path="/about"     element={<About />} />
-        <Route path="/login"     element={<Login />} />
-        <Route path="/signup"    element={<Signup />} />
-        <Route path="*"          element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* ── Public / shell-free routes ── */}
+          <Route path="/landing"   element={<LandingPage />} />
+          <Route path="/login"     element={<Login />} />
+          <Route path="/signup"    element={<Signup />} />
+
+          {/* ── Protected routes ── */}
+          <Route path="/"          element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/rotations" element={<ProtectedRoute><RotationGuide /></ProtectedRoute>} />
+          <Route path="/reports"   element={<ProtectedRoute><DailyReportTracker /></ProtectedRoute>} />
+          <Route path="/shifts"    element={<ProtectedRoute><ShiftPlanner /></ProtectedRoute>} />
+          <Route path="/notes"     element={<ProtectedRoute><NotesSection /></ProtectedRoute>} />
+          <Route path="/profile"   element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/documents" element={<ProtectedRoute><DocumentsPage /></ProtectedRoute>} />
+
+          {/* ── Public utility ── */}
+          <Route path="/about"     element={<About />} />
+
+          {/* ── Catch-all: unauthenticated → landing, authenticated → dashboard ── */}
+          <Route path="*"          element={<Navigate to="/" replace />} />
+        </Routes>
       </AppErrorBoundary>
     </AppLayout>
   );

@@ -44,14 +44,14 @@ function daysUntil(dateStr) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const [y, m, d] = dateStr.split('-').map(Number);
-  const target = new Date(y, m - 1, d); // local midnight, no timezone offset
+  const target = new Date(y, m - 1, d);
   return Math.round((target - today) / 86400000);
 }
 
 function getUrgency(days) {
   if (days < 0)   return { color: '#4abf95', bg: '#edfaf4', label: `${Math.abs(days)}d ago`  };
   if (days === 0) return { color: '#000000', bg: '#fff0f0', label: 'Today!'                   };
-  if (days === 1) return { color: '#ffafaf', bg: '#fce4ec', label: 'Tomorrow'                 }; // ← darker rose on deeper pink
+  if (days === 1) return { color: '#ffafaf', bg: '#fce4ec', label: 'Tomorrow'                 };
   if (days <= 3)  return { color: '#ff8c5a', bg: '#fff5ee', label: `In ${days} days`          };
   if (days <= 7)  return { color: '#5f8dff', bg: '#eff4ff', label: `In ${days} days`          };
   return                 { color: '#aaa',    bg: '#f5f5f5', label: `In ${days} days`          };
@@ -106,7 +106,7 @@ function Skeleton({ height = 16, width = '100%', radius = 10 }) {
 }
 
 /* ─────────────────────────────────────────────
-   DASHBOARD HEADER (greeting)
+   DASHBOARD HEADER (restyled to match landing page)
 ───────────────────────────────────────────── */
 function DashboardHeader({ profile, daysInternship }) {
   const { text, emoji } = getGreeting();
@@ -169,12 +169,15 @@ function CurrentRotation() {
     : null;
 
   return (
-    <div className="id-card id-rotation-card" style={{ '--a': meta.color, '--ab': meta.bg }}>
+    <div
+      className="id-card id-rotation-card"
+      style={{ '--a': meta.color, '--ab': meta.bg }}
+      onClick={() => navigate('/rotations')}
+    >
       {/* Colored gradient header strip */}
       <div
         className="id-rotation-strip"
         style={{ background: `linear-gradient(135deg, ${meta.color}ee 0%, ${meta.color}99 100%)` }}
-        onClick={() => navigate('/rotations')}
       >
         {/* Decorative circles */}
         <div className="id-strip-circle id-strip-circle-1" />
@@ -274,10 +277,7 @@ function UpcomingShifts() {
   }, [user.id]);
 
   return (
-    <div className="id-card"
-    onClick={() => navigate('/shifts')} 
-    >
-      
+    <div className="id-card id-colored-card id-shifts-card" onClick={() => navigate('/shifts')}>
       {/* Header */}
       <div className="id-card-head">
         <div className="id-icon-wrap orange"><CalendarDays size={18} /></div>
@@ -395,9 +395,7 @@ function ExamDates() {
   const upcomingCount = exams.filter(e => daysUntil(e.exam_date) >= 0).length;
 
   return (
-    <div className="id-card"
-    onClick={() => navigate('/shifts', { state: { tab: 'exams' } })}    
-    >
+    <div className="id-card id-colored-card id-exams-card" onClick={() => navigate('/shifts', { state: { tab: 'exams' } })}>
       <div className="id-card-head">
         <div className="id-icon-wrap blue"><GraduationCap size={18} /></div>
         <div className="id-head-text">
@@ -514,7 +512,6 @@ function OverallProgress() {
       });
       setProgress(Object.entries(grouped));
       setLoading(false);
-      // Trigger bar animations after mount
       setTimeout(() => setAnimated(true), 80);
     };
     fetch();
@@ -526,8 +523,7 @@ function OverallProgress() {
   const doneCount      = progress.filter(([, v]) => v.total > 0 && v.completed >= v.total).length;
 
   return (
-    <div className="id-card id-progress-card"
-    onClick={() => navigate('/reports')}>
+    <div className="id-card id-colored-card id-progress-card" onClick={() => navigate('/reports')}>
       <div className="id-card-head">
         <div className="id-icon-wrap green"><ClipboardCheck size={18} /></div>
         <div className="id-head-text">
@@ -559,7 +555,6 @@ function OverallProgress() {
           </div>
         ) : (
           <>
-            {/* Grand total ring + numbers */}
             <div className="id-grand-row">
               <div className="id-ring-wrap">
                 <ProgressRing pct={animated ? grandPct : 0} color="#ff6f91" size={84} />
@@ -582,10 +577,8 @@ function OverallProgress() {
               </div>
             </div>
 
-            {/* Divider */}
             <div className="id-progress-divider" />
 
-            {/* Per-section bars */}
             <div className="id-section-bars">
               {progress.map(([section, { total, completed }], idx) => {
                 const pct  = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
@@ -646,7 +639,7 @@ function InternDashboard() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,600;1,9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
         /* ─── Base ─── */
         .intern-dashboard {
@@ -654,71 +647,104 @@ function InternDashboard() {
           font-family: 'DM Sans', sans-serif;
           display: flex;
           flex-direction: column;
-          gap: 28px;
+          gap: 24px;
         }
 
-        /* ─── Greeting header ─── */
+        /* ══════════════════════════════════════
+           HEADER — landing page style
+        ══════════════════════════════════════ */
         .id-header {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
-          gap: 16px;
+          gap: 24px;
           flex-wrap: wrap;
           animation: id-fade-up 0.5s ease both;
         }
 
-        .id-header-left { display: flex; flex-direction: column; gap: 6px; }
+        .id-header-left {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
 
         .id-header-date {
-          font-size: 11px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 12px;
           font-weight: 600;
           letter-spacing: 0.12em;
           text-transform: uppercase;
-          color: #c8a8b8;
+          color: #c8a0b0;
           margin: 0;
         }
 
         .id-greeting {
-          font-family: 'Sora', sans-serif;
-          font-size: 2.1rem;
+          font-family: 'Fraunces', serif;
+          font-size: clamp(2rem, 6vw, 2.8rem);
           font-weight: 700;
-          color: #2a2a2a;
+          line-height: 1.08;
+          letter-spacing: 0;
+          color: #1c1012;
           margin: 0;
-          line-height: 1.2;
-          letter-spacing: -0.02em;
         }
 
-        .id-greeting-name { color: #ff5d8f; }
+        .id-greeting-name {
+          color: #ff5d8f;
+          font-style: italic;
+          font-weight: 700;
+        }
 
         .id-internship-day {
+          font-family: 'DM Sans', sans-serif;
           font-size: 13px;
-          color: #aaa;
-          margin: 0;
+          color: #7a5560;
+          margin: 6px 0 0;
           display: flex;
           align-items: center;
           gap: 5px;
+          background: rgba(255,255,255,0.7);
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(255,200,220,0.4);
+          border-radius: 999px;
+          padding: 4px 14px;
+          width: fit-content;
         }
 
-        .id-internship-day strong { color: #ff6f91; }
+        .id-internship-day strong {
+          color: #ff5d8f;
+          font-weight: 700;
+        }
 
-        .id-zap-icon { color: #ffb300; }
+        .id-zap-icon {
+          color: #ffb300;
+          flex-shrink: 0;
+        }
 
         .id-header-badge {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          background: linear-gradient(135deg, #ff8fb1, #ff6f91);
+          background: linear-gradient(135deg, #ff8fb1, #ff5d8f);
           color: white;
           border-radius: 999px;
-          padding: 10px 20px;
+          padding: 10px 22px;
+          font-family: 'DM Sans', sans-serif;
           font-size: 12px;
           font-weight: 700;
           letter-spacing: 0.02em;
-          box-shadow: 0 6px 20px rgba(255,111,145,0.32);
+          box-shadow: 0 8px 28px rgba(255,93,143,0.32),
+                      0 2px 0 rgba(255,255,255,0.18) inset;
           flex-shrink: 0;
           white-space: nowrap;
           align-self: flex-start;
           margin-top: 4px;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .id-header-badge:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 12px 32px rgba(255,93,143,0.42),
+                      0 2px 0 rgba(255,255,255,0.18) inset;
         }
 
         /* ─── Grid ─── */
@@ -730,21 +756,21 @@ function InternDashboard() {
 
         /* ─── Card ─── */
         .id-card {
-  background: rgba(255,255,255,0.9);
-  border-radius: 28px;
-  border: 1px solid rgba(255,220,232,0.55);
-  box-shadow:
-    0 2px 12px rgba(255,111,145,0.05),
-    0 6px 28px rgba(0,0,0,0.04),
-    inset 0 1px 0 rgba(255,255,255,0.9);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: box-shadow 0.28s ease, transform 0.28s ease;
-  animation: id-fade-up 0.5s ease both;
-  backdrop-filter: blur(12px);
-  cursor: pointer;  /* ← add this */
-}
+          background: rgba(255,255,255,0.9);
+          border-radius: 28px;
+          border: 1px solid rgba(255,220,232,0.55);
+          box-shadow:
+            0 2px 12px rgba(255,111,145,0.05),
+            0 6px 28px rgba(0,0,0,0.04),
+            inset 0 1px 0 rgba(255,255,255,0.9);
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          transition: box-shadow 0.28s ease, transform 0.28s ease;
+          animation: id-fade-up 0.5s ease both;
+          backdrop-filter: blur(12px);
+          cursor: pointer;
+        }
 
         .id-card:hover {
           box-shadow:
@@ -758,6 +784,18 @@ function InternDashboard() {
         .id-card:nth-child(2) { animation-delay: 0.14s; }
         .id-card:nth-child(3) { animation-delay: 0.20s; }
         .id-card:nth-child(4) { animation-delay: 0.26s; }
+
+        .id-shifts-card {
+          background: linear-gradient(180deg, #fff8f2 0%, rgba(255,255,255,0.94) 42%, rgba(255,255,255,0.9) 100%);
+        }
+
+        .id-exams-card {
+          background: linear-gradient(180deg, #f7faff 0%, rgba(255,255,255,0.94) 42%, rgba(255,255,255,0.9) 100%);
+        }
+
+        .id-progress-card {
+          background: linear-gradient(180deg, #f4fdf8 0%, rgba(255,255,255,0.94) 42%, rgba(255,255,255,0.9) 100%);
+        }
 
         @keyframes id-fade-up {
           from { opacity: 0; transform: translateY(18px); }
@@ -776,7 +814,6 @@ function InternDashboard() {
           min-height: 88px;
         }
 
-        /* Decorative blobs on strip */
         .id-strip-circle {
           position: absolute;
           border-radius: 50%;
@@ -823,10 +860,53 @@ function InternDashboard() {
 
         /* ─── Standard card header ─── */
         .id-card-head {
+          position: relative;
           display: flex;
           align-items: center;
           gap: 12px;
           padding: 20px 22px 16px;
+        }
+
+        .id-colored-card .id-card-head {
+          min-height: 88px;
+          overflow: hidden;
+          color: white;
+          padding: 20px 22px;
+        }
+
+        .id-colored-card .id-card-head::before,
+        .id-colored-card .id-card-head::after {
+          content: "";
+          position: absolute;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.12);
+          pointer-events: none;
+        }
+
+        .id-colored-card .id-card-head::before {
+          width: 100px;
+          height: 100px;
+          right: -20px;
+          top: -30px;
+        }
+
+        .id-colored-card .id-card-head::after {
+          width: 60px;
+          height: 60px;
+          right: 55px;
+          bottom: -20px;
+        }
+
+        .id-shifts-card .id-card-head {
+          background: linear-gradient(135deg, #ffb37a 0%, #ff8c5a 100%);
+        }
+
+        .id-exams-card .id-card-head {
+          background: linear-gradient(135deg, #7ab6ff 0%, #5f8dff 100%);
+        }
+
+        .id-progress-card .id-card-head {
+          background: linear-gradient(135deg, #6dd6b1 0%, #4abf95 100%);
         }
 
         .id-icon-wrap {
@@ -838,27 +918,45 @@ function InternDashboard() {
         .id-icon-wrap.orange { background: linear-gradient(135deg,#ffb37a,#ff8c5a); box-shadow: 0 4px 12px rgba(255,140,90,0.3); }
         .id-icon-wrap.blue   { background: linear-gradient(135deg,#7ab6ff,#5f8dff); box-shadow: 0 4px 12px rgba(95,141,255,0.3); }
         .id-icon-wrap.green  { background: linear-gradient(135deg,#6dd6b1,#4abf95); box-shadow: 0 4px 12px rgba(74,191,149,0.3); }
+        .id-colored-card .id-icon-wrap {
+          background: rgba(255,255,255,0.22);
+          backdrop-filter: blur(8px);
+          box-shadow: none;
+          position: relative;
+          z-index: 1;
+        }
 
-        .id-head-text { flex: 1; min-width: 0; }
+        .id-head-text { flex: 1; min-width: 0; position: relative; z-index: 1; }
 
         .id-card-title {
           font-family: 'Sora', sans-serif;
           font-size: 0.95rem; font-weight: 700;
           margin: 0; color: #2a2a2a;
-          letter-spacing: -0.01em;
+          letter-spacing: 0;
         }
 
         .id-card-sub { font-size: 11px; color: #c0aab5; margin: 2px 0 0; }
+        .id-colored-card .id-card-title,
+        .id-colored-card .id-card-sub {
+          color: white;
+        }
+        .id-colored-card .id-card-sub { opacity: 0.82; }
 
         .id-badge-chip {
           border-radius: 999px;
           padding: 5px 11px;
           font-size: 11px; font-weight: 700;
           white-space: nowrap; flex-shrink: 0;
+          position: relative; z-index: 1;
         }
         .id-badge-chip.orange { background: #fff5ee; color: #ff8c5a; }
         .id-badge-chip.blue   { background: #eff4ff; color: #5f8dff; }
         .id-badge-chip.green  { background: #edfaf4; color: #4abf95; }
+        .id-colored-card .id-badge-chip {
+          background: rgba(255,255,255,0.22);
+          color: white;
+          backdrop-filter: blur(8px);
+        }
 
         /* ─── Card body ─── */
         .id-card-body { padding: 0 22px 22px; flex: 1; }
@@ -1043,7 +1141,7 @@ function InternDashboard() {
         .id-stamp-day {
           font-family: 'Sora', sans-serif;
           font-size: 20px; font-weight: 800;
-          line-height: 1; letter-spacing: -0.02em;
+          line-height: 1; letter-spacing: 0;
           color: #e05555
         }
 
@@ -1110,6 +1208,7 @@ function InternDashboard() {
 
         /* ─── Progress ─── */
         .id-progress-card .id-card-head { padding-bottom: 14px; }
+        .id-colored-card.id-progress-card .id-card-head { padding: 20px 22px; }
 
         .id-grand-row {
           display: flex;
@@ -1144,7 +1243,7 @@ function InternDashboard() {
           font-family: 'Sora', sans-serif;
           font-size: 24px; font-weight: 700;
           color: #2a2a2a; margin: 0 0 2px;
-          letter-spacing: -0.02em;
+          letter-spacing: 0;
         }
 
         .id-grand-total { font-size: 15px; color: #d0c0c8; font-weight: 400; }
@@ -1194,15 +1293,16 @@ function InternDashboard() {
           transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        /* ─── Responsive: iPhone (< 768px) ─── */
+        /* ─── Responsive ─── */
         @media (max-width: 767px) {
           .intern-dashboard { gap: 20px; }
-          .id-greeting       { font-size: 1.6rem; }
+          .id-greeting       { font-size: 1.8rem; }
           .id-header-badge   { display: none; }
           .id-grid           { grid-template-columns: 1fr; gap: 14px; }
           .id-card           { border-radius: 22px; }
           .id-rotation-strip { padding: 16px 18px; min-height: 72px; }
           .id-card-head      { padding: 16px 18px 12px; }
+          .id-colored-card .id-card-head { min-height: 72px; padding: 16px 18px; }
           .id-card-body      { padding: 0 18px 18px; }
           .id-grand-row      { gap: 14px; }
           .id-grand-num      { font-size: 20px; }
@@ -1211,15 +1311,14 @@ function InternDashboard() {
           .id-stamp-day      { font-size: 17px; }
           .id-strip-circle-1 { width: 70px; height: 70px; }
           .id-strip-circle-2 { width: 40px; height: 40px; }
+          .id-internship-day { font-size: 11px; padding: 3px 10px; }
         }
 
-        /* ─── Responsive: iPad portrait (768–1023px) ─── */
         @media (min-width: 768px) and (max-width: 1023px) {
           .id-grid           { grid-template-columns: 1fr; gap: 18px; }
-          .id-greeting       { font-size: 1.85rem; }
+          .id-greeting       { font-size: 2.2rem; }
         }
 
-        /* ─── Responsive: iPad landscape + desktop (1024px+) ─── */
         @media (min-width: 1024px) {
           .id-grid { grid-template-columns: repeat(2, 1fr); }
         }
@@ -1239,4 +1338,4 @@ function InternDashboard() {
   );
 }
 
-export default InternDashboard; 
+export default InternDashboard;

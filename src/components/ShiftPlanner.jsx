@@ -1465,9 +1465,32 @@ export default function ShiftPlanner() {
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
         /* ── Page ── */
-        .sp-page { width: 100%; }
-        .sp-page-title { font-size: 2rem; font-weight: 700; color: #ff5d8f; margin-bottom: 20px; }
+        .sp-page {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          font-family: 'DM Sans', sans-serif;
+          background: rgba(255,255,255,0.9);
+          border: 1px solid rgba(255,220,232,0.55);
+          border-radius: 28px;
+          box-shadow: 0 2px 12px rgba(255,111,145,0.05), 0 6px 28px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.9);
+          backdrop-filter: blur(12px);
+          padding: 28px;
+        }
+        .sp-page-title {
+          font-family: 'Fraunces', serif;
+          font-size: clamp(2rem, 5vw, 2.55rem);
+          font-weight: 700;
+          color: #1c1012;
+          margin: 0 0 6px;
+          line-height: 1.08;
+          letter-spacing: 0;
+        }
+        .sp-title-accent { color: #ff5d8f; font-style: italic; }
 
         /* ── Page tabs ── */
         .sp-page-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
@@ -1808,31 +1831,32 @@ export default function ShiftPlanner() {
         .msm-count { display: inline-flex; align-items: center; justify-content: center; background: #fff0f4; color: #ff6f91; border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 700; }
         .msm-add-box { background: #fff8fa; border: 1px solid rgba(255,200,220,0.4); border-radius: 18px; padding: 18px; }
         .msm-add-row { display: flex; gap: 10px; align-items: center; }
-        .msm-input { flex: 1; border: 1.5px solid rgba(255,200,220,0.6); background: white; border-radius: 12px; padding: 11px 14px; font-size: 14px; outline: none; transition: 0.2s; color: #444; font-family: inherit; }
+        .msm-input { flex: 1 1 auto; min-width: 0; width: 100%; border: 1.5px solid rgba(255,200,220,0.6); background: white; border-radius: 12px; padding: 11px 14px; font-size: 14px; outline: none; transition: 0.2s; color: #444; font-family: inherit; }
         .msm-input:focus { border-color: #ff8fb1; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
-        .msm-add-btn { display: inline-flex; align-items: center; gap: 6px; border: none; background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white; border-radius: 12px; padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; font-family: inherit; }
+        .msm-add-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; border: none; background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white; border-radius: 12px; padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; font-family: inherit; }
         .msm-add-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(255,111,145,0.25); }
         .msm-error { background: #fde8e8; color: #c0392b; border-radius: 10px; padding: 8px 12px; font-size: 12px; margin-top: 10px; }
         .msm-empty { text-align: center; padding: 24px 16px; background: #fff8fa; border-radius: 16px; border: 1px dashed rgba(255,200,220,0.5); display: flex; flex-direction: column; align-items: center; gap: 6px; color: #bbb; font-size: 13px; }
         .msm-list { display: flex; flex-direction: column; gap: 8px; }
-        .msm-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 16px; border: 1.5px solid rgba(255,200,220,0.4); background: #fff8fa; transition: 0.2s; }
+        .msm-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 16px; border: 1.5px solid rgba(255,200,220,0.4); background: #fff8fa; transition: 0.2s; }
         .msm-row:hover { border-color: #ffb8ce; background: white; }
         .msm-row-rem { border-color: #ffd0d0; background: #fff5f5; }
         .msm-row-main { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
-        .msm-sec-pill { display: inline-flex; align-items: center; gap: 7px; border: 1.5px solid; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; }
+        .msm-sec-pill { display: inline-flex; align-items: center; gap: 7px; min-width: 0; max-width: 100%; border: 1.5px solid; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .msm-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
         .msm-color-ctrl { width: 30px; height: 30px; border: 1.5px solid rgba(255,200,220,0.5); background: white; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; position: relative; overflow: hidden; }
         .msm-color-ctrl input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
         .msm-color-swatch { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
-        .msm-rm-btn { display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid rgba(255,200,220,0.5); background: white; color: #aaa; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit; }
+        .msm-rm-btn { display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid rgba(255,200,220,0.5); background: white; color: #aaa; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit; flex-shrink: 0; white-space: nowrap; }
         .msm-rm-btn:hover { border-color: #ffd0d0; background: #fde8e8; color: #e05555; }
-        .msm-confirm { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #888; flex-shrink: 0; font-weight: 600; }
+        .msm-confirm { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #888; flex-shrink: 0; font-weight: 600; white-space: nowrap; }
         .msm-yes { border: none; background: linear-gradient(135deg,#ff8f8f,#e05555); color: white; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
         .msm-no  { border: none; background: #f0f0f0; color: #888; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
         .msm-note { display: flex; align-items: flex-start; gap: 8px; background: #fff8fa; border: 1px solid rgba(255,200,220,0.4); border-radius: 14px; padding: 12px 14px; font-size: 12px; color: #bbb; line-height: 1.6; }
 
         /* ── Responsive ── */
         @media (max-width: 767px) {
+          .sp-page { border-radius: 22px; padding: 20px 20px 56px; }
           .sp-page-title { font-size: 1.7rem; margin-bottom: 16px; }
           .sp-page-tabs  { grid-template-columns: 1fr; gap: 8px; }
           .sp-page-tab   { padding: 12px 14px; border-radius: 18px; }
@@ -1858,11 +1882,12 @@ export default function ShiftPlanner() {
           .esw-stat-val  { font-size: 18px; }
           .esw-goal-presets { gap: 4px; }
           .esw-preset-chip { padding: 3px 8px; font-size: 10px; }
-          .msm-add-row { flex-direction: column; }
-          .msm-add-btn { justify-content: center; }
+          .msm-add-row { gap: 8px; }
+          .msm-add-btn { padding-inline: 16px; }
         }
 
         @media (min-width: 768px) and (max-width: 1023px) {
+          .sp-page { padding: 24px; }
           .sp-page-title { font-size: 1.8rem; }
           .sp-grid       { grid-template-columns: 1fr; }
           .sp-cal-grid   { grid-template-columns: repeat(7,1fr); gap: 6px; }
@@ -1877,7 +1902,7 @@ export default function ShiftPlanner() {
       `}</style>
 
       <div className="sp-page">
-        <h2 className="sp-page-title">Shift Planner ✨</h2>
+        <h2 className="sp-page-title">Shift <span className="sp-title-accent">Planner</span></h2>
 
         {/* Tab switcher */}
         <div className="sp-page-tabs">

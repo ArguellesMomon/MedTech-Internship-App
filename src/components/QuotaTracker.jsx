@@ -1107,9 +1107,32 @@ export default function DailyReportTracker() {
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
         /* ─── Page ─── */
-        .qtr-page { width: 100%; }
-        .qtr-title { font-size: 2rem; font-weight: 700; color: #ff5d8f; margin-bottom: 6px; }
+        .qtr-page {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          font-family: 'DM Sans', sans-serif;
+          background: rgba(255,255,255,0.9);
+          border: 1px solid rgba(255,220,232,0.55);
+          border-radius: 28px;
+          box-shadow: 0 2px 12px rgba(255,111,145,0.05), 0 6px 28px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.9);
+          backdrop-filter: blur(12px);
+          padding: 28px;
+        }
+        .qtr-title {
+          font-family: 'Fraunces', serif;
+          font-size: clamp(2rem, 5vw, 2.55rem);
+          font-weight: 700;
+          color: #1c1012;
+          margin: 0 0 6px;
+          line-height: 1.08;
+          letter-spacing: 0;
+        }
+        .qtr-title-accent { color: #ff5d8f; font-style: italic; }
         .qtr-sub { color: #888; font-size: 0.92rem; margin-bottom: 24px; line-height: 1.6; }
 
         .qtr-error {
@@ -1415,30 +1438,31 @@ export default function DailyReportTracker() {
         .ms-count { display: inline-flex; align-items: center; justify-content: center; background: #fff0f4; color: #ff6f91; border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 700; }
         .ms-add-box { background: #fff8fa; border: 1px solid rgba(255,200,220,0.4); border-radius: 18px; padding: 18px; }
         .ms-add-row { display: flex; gap: 10px; align-items: center; }
-        .ms-input { flex: 1; border: 1.5px solid rgba(255,200,220,0.6); background: white; border-radius: 12px; padding: 11px 14px; font-size: 14px; outline: none; transition: 0.2s; color: #444; font-family: inherit; }
+        .ms-input { flex: 1 1 auto; min-width: 0; width: 100%; border: 1.5px solid rgba(255,200,220,0.6); background: white; border-radius: 12px; padding: 11px 14px; font-size: 14px; outline: none; transition: 0.2s; color: #444; font-family: inherit; }
         .ms-input:focus { border-color: #ff8fb1; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
-        .ms-add-btn { display: inline-flex; align-items: center; gap: 6px; border: none; background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white; border-radius: 12px; padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; font-family: inherit; }
+        .ms-add-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; border: none; background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white; border-radius: 12px; padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; font-family: inherit; }
         .ms-add-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(255,111,145,0.25); }
         .ms-error { background: #fde8e8; color: #c0392b; border-radius: 10px; padding: 8px 12px; font-size: 12px; margin-top: 10px; }
         .ms-list { display: flex; flex-direction: column; gap: 8px; }
-        .ms-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 16px; border: 1.5px solid rgba(255,200,220,0.4); background: #fff8fa; transition: 0.2s; }
+        .ms-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 16px; border: 1.5px solid rgba(255,200,220,0.4); background: #fff8fa; transition: 0.2s; }
         .ms-row:hover { border-color: #ffb8ce; background: white; }
         .ms-row-rem { border-color: #ffd0d0; background: #fff5f5; }
         .ms-row-main { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
-        .ms-sec-pill { display: inline-flex; align-items: center; gap: 7px; border: 1.5px solid; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+        .ms-sec-pill { display: inline-flex; align-items: center; gap: 7px; min-width: 0; max-width: 100%; border: 1.5px solid; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ms-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
         .ms-color-control { width: 30px; height: 30px; border: 1.5px solid rgba(255,200,220,0.5); background: white; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; position: relative; overflow: hidden; }
         .ms-color-control input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
         .ms-color-swatch { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
-        .ms-rm-btn { display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid rgba(255,200,220,0.5); background: white; color: #aaa; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit; flex-shrink: 0; }
+        .ms-rm-btn { display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid rgba(255,200,220,0.5); background: white; color: #aaa; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit; flex-shrink: 0; white-space: nowrap; }
         .ms-rm-btn:hover { border-color: #ffd0d0; background: #fde8e8; color: #e05555; }
-        .ms-confirm { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #888; flex-shrink: 0; font-weight: 600; }
+        .ms-confirm { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #888; flex-shrink: 0; font-weight: 600; white-space: nowrap; }
         .ms-yes { border: none; background: linear-gradient(135deg,#ff8f8f,#e05555); color: white; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
         .ms-no  { border: none; background: #f0f0f0; color: #888; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
         .ms-note { display: flex; align-items: flex-start; gap: 8px; background: #fff8fa; border: 1px solid rgba(255,200,220,0.4); border-radius: 14px; padding: 12px 14px; font-size: 12px; color: #bbb; line-height: 1.6; }
 
         /* ─── Responsive ─── */
         @media (max-width: 767px) {
+          .qtr-page { border-radius: 22px; padding: 20px 20px 56px; }
           .qtr-title { font-size: 1.7rem; }
           .hs-row { gap: 8px; }
           .hs-card { min-width: 60px; padding: 12px 8px; }
@@ -1448,16 +1472,17 @@ export default function DailyReportTracker() {
           .lm-row2 { flex-direction: column; }
           .qb-edit-nums { flex-direction: column; }
           .dl-toolbar { gap: 8px; }
-          .ms-add-row { flex-direction: column; }
-          .ms-add-btn { justify-content: center; }
+          .ms-add-row { gap: 8px; }
+          .ms-add-btn { padding-inline: 16px; }
         }
         @media (min-width: 768px) and (max-width: 1023px) {
+          .qtr-page { padding: 24px; }
           .qb-overview { grid-template-columns: repeat(3,1fr); }
         }
       `}</style>
 
       <div className="qtr-page">
-        <h2 className="qtr-title">📋 Daily Logbook & Quota Tracker</h2>
+        <h2 className="qtr-title">Daily Logbook &amp; <span className="qtr-title-accent">Quota Tracker</span></h2>
 
         {dbError && (
           <div className="qtr-error">

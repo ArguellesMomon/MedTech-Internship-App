@@ -440,9 +440,32 @@ export default function DocumentsPage() {
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
         /* ── Page ── */
-        .dp-page { width: 100%; display: flex; flex-direction: column; gap: 20px; padding-top: 8px; }
-        .dp-title { font-size: 2rem; font-weight: 700; color: #ff5d8f; margin: 0 0 4px; }
+        .dp-page {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          font-family: 'DM Sans', sans-serif;
+          background: rgba(255,255,255,0.9);
+          border: 1px solid rgba(255,220,232,0.55);
+          border-radius: 28px;
+          box-shadow: 0 2px 12px rgba(255,111,145,0.05), 0 6px 28px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.9);
+          backdrop-filter: blur(12px);
+          padding: 28px;
+        }
+        .dp-title {
+          font-family: 'Fraunces', serif;
+          font-size: clamp(2rem, 5vw, 2.55rem);
+          font-weight: 700;
+          color: #1c1012;
+          margin: 0 0 6px;
+          line-height: 1.08;
+          letter-spacing: 0;
+        }
+        .dp-title-accent { color: #ff5d8f; font-style: italic; }
         .dp-subtitle { font-size: 13px; color: #bbb; margin: 0; }
 
         /* ── Storage bar ── */
@@ -726,6 +749,7 @@ export default function DocumentsPage() {
 
         /* ── Responsive ── */
         @media (max-width: 767px) {
+          .dp-page          { border-radius: 22px; padding: 20px 20px 56px; }
           .dp-title         { font-size: 1.7rem; }
           .dp-grid          { grid-template-columns: 1fr; }
           .dp-skeleton-grid { grid-template-columns: 1fr; }
@@ -733,6 +757,7 @@ export default function DocumentsPage() {
           .dc-card-icon-wrap{ height: 70px; }
         }
         @media (min-width: 768px) and (max-width: 1023px) {
+          .dp-page  { padding: 24px; }
           .dp-grid  { grid-template-columns: repeat(2,1fr); }
           .dv-modal { margin: 20px; border-radius: 20px; }
         }
@@ -745,7 +770,7 @@ export default function DocumentsPage() {
       <div className="dp-page">
         {/* Header */}
         <div>
-          <h1 className="dp-title">My Documents</h1>
+          <h1 className="dp-title">My <span className="dp-title-accent">Documents</span></h1>
         </div>
 
         {/* Storage usage bar — always visible */}

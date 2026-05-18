@@ -64,7 +64,7 @@ function Dashboard() {
           }
 
           .welcome-section {
-            margin-bottom: 28px;
+            margin-bottom: 0;
           }
 
           .welcome-title {
@@ -184,17 +184,17 @@ function Dashboard() {
           .dashboard-content {
             flex: 1;
 
-            background: rgba(255,255,255,0.72);
-            backdrop-filter: blur(14px);
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(12px);
 
-            border-radius: 30px;
+            border-radius: 28px;
 
-            padding: 32px;
+            padding: 28px;
 
             min-height: 720px;
 
-            box-shadow: 0 8px 24px rgba(255, 111, 145, 0.08);
-            border: 1px solid rgba(255,255,255,0.4);
+            box-shadow: 0 2px 12px rgba(255,111,145,0.05), 0 6px 28px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.9);
+            border: 1px solid rgba(255,220,232,0.55);
           }
 
           .user-card {
@@ -230,6 +230,7 @@ function Dashboard() {
           @media (max-width: 768px) {
             .dashboard-container {
               flex-direction: column;
+              gap: 26px;
             }
 
             .dashboard-nav {
@@ -249,7 +250,9 @@ function Dashboard() {
             }
 
             .dashboard-content {
-              padding: 20px;
+              margin-top: 10px;
+              border-radius: 22px;
+              padding: 20px 20px 56px;
               min-height: auto;
             }
 
@@ -270,7 +273,7 @@ function Dashboard() {
             }
 
             .dashboard-content {
-              padding: 26px;
+              padding: 24px;
             }
           }
         `}

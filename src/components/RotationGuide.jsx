@@ -181,26 +181,16 @@ function getDuration(start, end) {
 /* ─────────────────────────────────────────────
    MANAGE SECTIONS MODAL
 ───────────────────────────────────────────── */
-function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onRename, onClose }) {
+function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose }) {
   const [name,      setName]      = useState('');
   const [error,     setError]     = useState('');
   const [removing,  setRemoving]  = useState(null);
-  const [editingId, setEditingId] = useState(null);
-  const [editName,  setEditName]  = useState('');
 
   const handleAdd = () => {
     const label = name.trim();
     if (!label) { setError('Enter a section name.'); return; }
     if (sections.some(s => s.id.toLowerCase() === label.toLowerCase())) { setError('Section already exists.'); return; }
     onAdd(label); setName(''); setError('');
-  };
-
-  const handleRenameSubmit = (id) => {
-    const label = editName.trim();
-    if (!label) return;
-    if (label !== id && sections.some(s => s.id.toLowerCase() === label.toLowerCase())) return;
-    onRename(id, label);
-    setEditingId(null); setEditName('');
   };
 
   return (
@@ -211,7 +201,7 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onRenam
             <div className="msm-head-icon"><Settings2 size={18} /></div>
             <div>
               <h3 className="msm-title">Manage Sections</h3>
-              <p className="msm-sub">Add, rename, recolor, or remove rotation sections</p>
+              <p className="msm-sub">Add, recolor, or remove rotation sections</p>
             </div>
           </div>
           <button className="msm-close" onClick={onClose}><X size={16} /></button>
@@ -239,33 +229,19 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onRenam
             <div className="msm-list">
               {sections.map(sec => {
                 const isRem  = removing  === sec.id;
-                const isEdit = editingId === sec.id;
                 return (
                   <div key={sec.id} className={`msm-row ${isRem ? 'msm-row-rem' : ''}`}>
                     <div className="msm-row-main">
                       <div className="msm-sec-pill"
                         style={{ background: sec.cardBg || colorToSoftBg(sec.color), color: sec.color, borderColor: sec.color+'55' }}>
                         <span className="msm-dot" style={{ background: sec.color }} />
-                        {isEdit ? (
-                          <input className="msm-rename-input" value={editName}
-                            onChange={e => setEditName(e.target.value)}
-                            onKeyDown={e => { if (e.key==='Enter') handleRenameSubmit(sec.id); if (e.key==='Escape') { setEditingId(null); } }}
-                            autoFocus style={{ color: sec.color }} />
-                        ) : sec.id}
+                        {sec.id}
                       </div>
 
                       <label className="msm-color-ctrl" title="Change color">
                         <span className="msm-color-swatch" style={{ background: sec.color }} />
                         <input type="color" value={sec.color} onChange={e => onColorChange(sec.id, e.target.value)} />
                       </label>
-
-                      {isEdit ? (
-                        <button className="msm-rename-ok" onClick={() => handleRenameSubmit(sec.id)}><Check size={12} /></button>
-                      ) : (
-                        <button className="msm-edit-btn" onClick={() => { setEditingId(sec.id); setEditName(sec.id); }} title="Rename">
-                          <Edit3 size={12} />
-                        </button>
-                      )}
                     </div>
 
                     {isRem ? (
@@ -612,9 +588,7 @@ function RotationsTab({ sections, onManageSections }) {
     <div className="rt-wrap">
       {/* Toolbar */}
       <div className="rt-toolbar">
-        <div>
-          <p className="rt-desc">Manage your rotation schedule. One rotation can be active at a time.</p>
-        </div>
+       
         <div className="rt-toolbar-actions">
           <button className="rg-manage-btn" onClick={onManageSections}>
             <Settings2 size={14} /> Manage Sections
@@ -1259,33 +1233,50 @@ export default function RotationGuide() {
     }));
   };
 
-  const handleRename = (id, newName) => {
-    setSections(prev => prev.map(s => s.id !== id ? s : { ...s, id: newName, label: newName }));
-  };
-
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
         /* ── Page ── */
-        .rg-page { width: 100%; }
-        .rg-header { margin-bottom: 20px; }
-        .rg-title {
-          font-size: 2rem; font-weight: 700; color: #ff5d8f;
-          margin: 0 0 6px;
+        .rg-page {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          font-family: 'DM Sans', sans-serif;
+          background: rgba(255,255,255,0.9);
+          border: 1px solid rgba(255,220,232,0.55);
+          border-radius: 28px;
+          box-shadow: 0 2px 12px rgba(255,111,145,0.05), 0 6px 28px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.9);
+          backdrop-filter: blur(12px);
+          padding: 28px;
         }
+        .rg-header { margin-bottom: 2px; }
+        .rg-title {
+          font-family: 'Fraunces', serif;
+          font-size: clamp(2rem, 5vw, 2.55rem); font-weight: 700; color: #1c1012;
+          margin: 0 0 6px;
+          line-height: 1.08;
+          letter-spacing: 0;
+        }
+        .rg-title-accent { color: #ff5d8f; font-style: italic; }
         .rg-sub {
           margin: 0; color: #888; font-size: 0.92rem; line-height: 1.6;
         }
 
         /* ── Main tab switcher ── */
         .rg-main-tabs {
-          display: flex; gap: 12px;
-          margin-bottom: 28px; flex-wrap: wrap;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+          margin-bottom: 12px;
         }
 
         .rg-main-tab {
           display: flex; align-items: center; gap: 10px;
-          padding: 14px 22px; border-radius: 20px;
+          width: 100%; min-width: 0;
+          padding: 14px 18px; border-radius: 20px;
           border: 1.5px solid rgba(255,220,234,0.7);
           background: rgba(255,255,255,0.88);
           color: #aaa; font-size: 14px; font-weight: 700;
@@ -1310,20 +1301,20 @@ export default function RotationGuide() {
           color: #ff5d8f; box-shadow: 0 10px 28px rgba(255,111,145,0.16);
         }
 
-        .rg-tab-copy { display: flex; flex-direction: column; gap: 2px; }
+        .rg-tab-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
         .rg-tab-title { font-size: 14px; font-weight: 800; color: #333; line-height:1.2; }
         .rg-tab-sub   { font-size: 12px; color: #bbb; line-height:1.3; }
         .rg-main-tab.active .rg-tab-title { color: #ff5d8f; }
 
         /* ── Rotations tab ── */
-        .rt-wrap { width: 100%; display: flex; flex-direction: column; gap: 22px; }
+        .rt-wrap { width: 100%; display: flex; flex-direction: column; gap: 14px; }
 
         .rt-toolbar {
           display: flex; align-items: flex-start;
           justify-content: space-between; gap: 16px; flex-wrap: wrap;
+          margin-bottom: 4px;
         }
 
-        .rt-desc { margin: 0; color: #aaa; font-size: 13px; line-height: 1.6; max-width: 480px; }
 
         .rt-toolbar-actions { display: flex; gap: 10px; align-items: center; flex-shrink:0; }
 
@@ -1504,9 +1495,12 @@ export default function RotationGuide() {
 
         /* ── Empty states ── */
         .rg-empty {
-          text-align: center; padding: 40px 0; color: #ccc;
+          text-align: center; padding: 40px 18px; color: #9a7b86;
           font-size: 14px; display: flex; flex-direction: column;
           align-items: center; gap: 10px;
+          background: linear-gradient(135deg,#fff8fb 0%,#eff4ff 100%);
+          border: 1.5px dashed rgba(255,143,177,0.42);
+          border-radius: 22px;
         }
 
         .rg-empty-spinner {
@@ -1520,16 +1514,28 @@ export default function RotationGuide() {
         .rg-empty-hero {
           text-align: center; padding: 56px 24px;
           display: flex; flex-direction: column;
-          align-items: center; gap: 12px;
-          background: rgba(255,255,255,0.6);
-          border-radius: 28px; border: 1.5px dashed #ffd6e1;
+          align-items: center; gap: 14px;
+          background:
+            radial-gradient(circle at top left, rgba(255,143,177,0.18), transparent 32%),
+            radial-gradient(circle at bottom right, rgba(95,141,255,0.16), transparent 34%),
+            linear-gradient(135deg,#fff8fb 0%,#f7f9ff 54%,#edfaf4 100%);
+          border-radius: 26px; border: 1.5px solid rgba(255,200,220,0.56);
+          box-shadow: 0 8px 28px rgba(255,111,145,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
         }
 
-        .rg-empty-hero-icon { font-size: 48px; line-height: 1; margin-bottom: 4px; }
+        .rg-empty-hero-icon {
+          width: 68px; height: 68px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 34px; line-height: 1; margin-bottom: 4px;
+          background: rgba(255,255,255,0.72);
+          border: 1px solid rgba(255,200,220,0.5);
+          border-radius: 22px;
+          box-shadow: 0 8px 22px rgba(255,111,145,0.1);
+        }
 
         .rg-empty-hero h3 { margin: 0; font-size: 1.3rem; color: #333; font-weight: 700; }
 
-        .rg-empty-hero p  { margin: 0; color: #aaa; font-size: 14px; max-width: 340px; line-height: 1.6; }
+        .rg-empty-hero p  { margin: 0; color: #8d7580; font-size: 14px; max-width: 340px; line-height: 1.6; }
 
         /* ── Shared buttons ── */
         .rg-primary-btn {
@@ -1934,7 +1940,7 @@ export default function RotationGuide() {
         .msm-add-row { display: flex; gap: 10px; align-items: center; }
 
         .msm-input {
-          flex: 1; border: 1.5px solid rgba(255,200,220,0.6);
+          flex: 1 1 auto; min-width: 0; width: 100%; border: 1.5px solid rgba(255,200,220,0.6);
           background: white; border-radius: 12px; padding: 10px 14px;
           font-size: 14px; outline: none; transition: 0.2s; color: #444; font-family: inherit;
         }
@@ -1942,7 +1948,7 @@ export default function RotationGuide() {
         .msm-input:focus { border-color: #ff8fb1; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
 
         .msm-add-btn {
-          display: inline-flex; align-items: center; gap: 6px; border: none;
+          display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; border: none;
           background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white;
           border-radius: 12px; padding: 10px 16px; font-size: 13px; font-weight: 600;
           cursor: pointer; transition: 0.2s; white-space: nowrap; font-family: inherit;
@@ -1983,12 +1989,6 @@ export default function RotationGuide() {
 
         .msm-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
-        .msm-rename-input {
-          border: none; background: transparent; outline: none;
-          font-size: 12px; font-weight: 700; font-family: inherit;
-          width: 100px; min-width: 60px;
-        }
-
         .msm-color-ctrl {
           width: 28px; height: 28px; border: 1.5px solid rgba(255,200,220,0.5);
           background: white; border-radius: 999px;
@@ -1999,20 +1999,6 @@ export default function RotationGuide() {
         .msm-color-ctrl input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
         .msm-color-swatch { width: 15px; height: 15px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
-
-        .msm-edit-btn {
-          border: none; background: #f4f4f4; color: #bbb; border-radius: 8px;
-          width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
-          cursor: pointer; transition: 0.15s;
-        }
-
-        .msm-edit-btn:hover { background: #ffe4ec; color: #ff5d8f; }
-
-        .msm-rename-ok {
-          border: none; background: #4abf95; color: white; border-radius: 8px;
-          width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
-          cursor: pointer;
-        }
 
         .msm-rm-btn {
           display: inline-flex; align-items: center; gap: 5px;
@@ -2039,6 +2025,8 @@ export default function RotationGuide() {
 
         /* ── Responsive ── */
         @media (max-width: 768px) {
+          .rg-page         { border-radius: 22px; padding: 20px 20px 56px; }
+          .rg-title        { font-size: 1.7rem; }
           .rg-main-tabs    { gap: 8px; }
           .rg-main-tab     { padding: 12px 14px; border-radius: 16px; font-size: 13px; }
           .rg-main-tab svg { width: 34px; height: 34px; padding: 9px; border-radius: 11px; }
@@ -2055,13 +2043,15 @@ export default function RotationGuide() {
           .sub-tabs        { overflow-x: auto; gap: 0; }
           .sub-tab         { padding: 12px 13px; font-size: 12px; }
           .sg-add-row      { gap: 6px; }
-          .msm-add-row     { flex-direction: column; }
-          .msm-add-btn     { justify-content: center; }
+          .msm-add-row     { gap: 8px; }
+          .msm-add-btn     { padding-inline: 16px; }
           .rm-row2         { flex-direction: column; }
           .rm-modal        { padding: 20px; }
         }
 
         @media (min-width: 769px) and (max-width: 1024px) {
+          .rg-page      { padding: 24px; }
+          .rg-title     { font-size: 1.8rem; }
           .rt-cards-grid { grid-template-columns: repeat(2,1fr); }
           .safety-grid   { grid-template-columns: 1fr; }
         }
@@ -2069,8 +2059,7 @@ export default function RotationGuide() {
 
       <div className="rg-page">
         <div className="rg-header">
-          <h1 className="rg-title">Rotation Guide</h1>
-          <p className="rg-sub">Track your clinical rotations and review section procedures, safety reminders, and learning objectives.</p>
+          <h1 className="rg-title">Rotation <span className="rg-title-accent">Guide</span></h1>
         </div>
         {/* Main tab switcher */}
         <div className="rg-main-tabs">
@@ -2080,7 +2069,6 @@ export default function RotationGuide() {
             <RotateCcw size={16} />
             <span className="rg-tab-copy">
               <span className="rg-tab-title">My Rotations</span>
-              <span className="rg-tab-sub">Track clinical assignments</span>
             </span>
           </button>
           <button
@@ -2089,7 +2077,6 @@ export default function RotationGuide() {
             <Microscope size={16} />
             <span className="rg-tab-copy">
               <span className="rg-tab-title">Procedure Guide</span>
-              <span className="rg-tab-sub">Safety & learning objectives</span>
             </span>
           </button>
         </div>
@@ -2108,7 +2095,6 @@ export default function RotationGuide() {
           onAdd={handleAddSection}
           onRemove={handleRemoveSection}
           onColorChange={handleColorChange}
-          onRename={handleRename}
           onClose={() => setShowSectionModal(false)}
         />
       )}

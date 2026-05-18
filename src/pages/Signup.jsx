@@ -5,6 +5,7 @@ import {
   Sparkles, Eye, EyeOff,
   User, School, GraduationCap, BookOpen,
   Mail, Lock, ChevronRight, ChevronLeft, Check,
+  ArrowLeft,
 } from 'lucide-react';
 import Logo from '../assets/Logo.png';
 
@@ -114,6 +115,8 @@ export default function Signup() {
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,600;1,9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         html, body, #root {
@@ -124,8 +127,8 @@ export default function Signup() {
         }
 
         body {
-          font-family: 'Poppins', sans-serif;
-          background: linear-gradient(135deg, #fff5f7 0%, #ffe4ec 50%, #fff0e5 100%);
+          font-family: 'DM Sans', sans-serif;
+          background: linear-gradient(135deg, #fff0f5 0%, #fce8f0 100%);
           background-attachment: fixed;
         }
 
@@ -140,6 +143,7 @@ export default function Signup() {
           justify-content: center;
           padding: 28px 20px;
           transition: justify-content 0.2s ease, padding 0.2s ease;
+          position: relative;
         }
 
         .su-page.keyboard-open {
@@ -147,18 +151,57 @@ export default function Signup() {
           padding-top: 20px;
         }
 
+        /* ── BACK BUTTON ── */
+        .back-btn {
+          position: absolute;
+          top: 20px;
+          left: 20px;
+          z-index: 10;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1.5px solid rgba(255, 200, 220, 0.5);
+          color: #ff5d8f;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: background 0.25s, border-color 0.25s, transform 0.15s, box-shadow 0.25s;
+          box-shadow: 0 4px 16px rgba(255, 111, 145, 0.12);
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+
+        .back-btn:hover {
+          background: white;
+          border-color: #ff8fb1;
+          box-shadow: 0 8px 24px rgba(255, 111, 145, 0.18);
+          transform: scale(1.04);
+        }
+
+        .back-btn:active {
+          transform: scale(0.96);
+        }
+
         /* ── CARD ── */
         .su-card {
           width: 100%;
           max-width: 480px;
-          background: rgba(255,255,255,0.93);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border-radius: 32px;
-          padding: 36px 30px 30px;
-          box-shadow: 0 12px 48px rgba(255,111,145,0.18);
-          border: 1px solid rgba(255,255,255,0.7);
+          background: rgba(255, 255, 255, 0.92);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          border-radius: 36px;
+          padding: 42px 32px;
+          box-shadow:
+            0 12px 48px rgba(255, 93, 143, 0.18),
+            0 4px 16px rgba(0,0,0,0.04);
+          border: 1px solid rgba(255, 200, 220, 0.5);
           overflow: hidden;
+          position: relative;
+          z-index: 1;
         }
 
         /* ── LOGO ── */
@@ -166,12 +209,12 @@ export default function Signup() {
           display: flex;
           justify-content: center;
           align-items: center;
-          margin: 0 auto 12px;
+          margin: 0 auto 16px;
           transition: transform 0.2s ease;
         }
 
         .su-logo-img {
-          width: 110px;
+          width: 200px;
           height: auto;
           object-fit: contain;
           display: block;
@@ -181,28 +224,43 @@ export default function Signup() {
           user-select: none;
         }
 
-        .keyboard-open .su-logo-wrap { margin-bottom: 4px; }
-        .keyboard-open .su-logo-img  { width: 72px; }
+        .keyboard-open .su-logo-wrap { margin-bottom: 8px; }
+        .keyboard-open .su-logo-img  { width: 80px; }
 
-        /* ── HEADER ── */
-        .su-title {
+        /* ── HEADING ── */
+        .su-heading {
           text-align: center;
-          font-size: 1.9rem;
+          margin-bottom: 24px;
+        }
+
+        .su-title {
+          font-family: 'Fraunces', serif;
+          font-size: 2rem;
           font-weight: 700;
+          line-height: 1.1;
+          letter-spacing: -0.02em;
+          color: #1c1012;
+        }
+
+        .su-title em {
           color: #ff5d8f;
-          margin-bottom: 4px;
-          line-height: 1.15;
+          font-style: italic;
+          font-weight: 600;
         }
 
         .su-subtitle {
-          text-align: center;
-          color: #999;
-          font-size: 0.88rem;
-          margin-bottom: 22px;
-          transition: margin 0.2s ease;
+          margin-top: 6px;
+          font-size: 0.95rem;
+          color: #7a5560;
+          font-weight: 400;
         }
 
-        .keyboard-open .su-subtitle { margin-bottom: 12px; }
+        .keyboard-open .su-heading {
+          margin-bottom: 18px;
+        }
+        .keyboard-open .su-title {
+          font-size: 1.5rem;
+        }
 
         /* ── STEP INDICATORS ── */
         .su-steps {
@@ -230,15 +288,15 @@ export default function Signup() {
         }
 
         .su-step-bubble.done {
-          background: linear-gradient(135deg, #ff8fb1, #ff6f91);
+          background: linear-gradient(135deg, #ff8fb1, #ff5d8f);
           color: white;
-          box-shadow: 0 4px 12px rgba(255,111,145,0.35);
+          box-shadow: 0 4px 12px rgba(255,93,143,0.35);
         }
 
         .su-step-bubble.active {
-          background: linear-gradient(135deg, #ff8fb1, #ff6f91);
+          background: linear-gradient(135deg, #ff8fb1, #ff5d8f);
           color: white;
-          box-shadow: 0 4px 16px rgba(255,111,145,0.4);
+          box-shadow: 0 4px 16px rgba(255,93,143,0.4);
           transform: scale(1.1);
         }
 
@@ -255,7 +313,7 @@ export default function Signup() {
         }
 
         .su-step-connector.filled {
-          background: linear-gradient(90deg, #ff8fb1, #ff6f91);
+          background: linear-gradient(90deg, #ff8fb1, #ff5d8f);
         }
 
         .su-step-label {
@@ -272,7 +330,7 @@ export default function Signup() {
         }
 
         .su-step-bubble.active .su-step-label,
-        .su-step-bubble.done  .su-step-label { color: #ff8fb1; }
+        .su-step-bubble.done  .su-step-label { color: #ff5d8f; }
 
         /* ── STEP PANEL ── */
         .su-panel-wrap {
@@ -301,13 +359,13 @@ export default function Signup() {
         .su-step-heading {
           font-size: 1rem;
           font-weight: 700;
-          color: #333;
+          color: #1c1012;
           margin-bottom: 4px;
         }
 
         .su-step-desc {
           font-size: 12px;
-          color: #bbb;
+          color: #7a5560;
           margin-bottom: 18px;
         }
 
@@ -319,7 +377,7 @@ export default function Signup() {
           margin-bottom: 7px;
           font-size: 0.85rem;
           font-weight: 600;
-          color: #666;
+          color: #7a5560;
         }
 
         .su-input-wrap {
@@ -330,7 +388,7 @@ export default function Signup() {
 
         .su-input-icon {
           position: absolute;
-          left: 14px;
+          left: 16px;
           color: #ffaac5;
           pointer-events: none;
           display: flex;
@@ -340,15 +398,15 @@ export default function Signup() {
 
         .su-input {
           width: 100%;
-          border: 1.5px solid #ffd3df;
-          background: #fff8fa;
-          border-radius: 16px;
-          padding: 13px 16px 13px 42px;
+          border: 1.5px solid rgba(255, 150, 180, 0.4);
+          background: rgba(255, 248, 250, 0.8);
+          border-radius: 18px;
+          padding: 14px 16px 14px 46px;
           font-size: 15px;
-          font-family: 'Poppins', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           outline: none;
           transition: border-color 0.22s, box-shadow 0.22s, background 0.22s;
-          color: #444;
+          color: #3a2d30;
           -webkit-appearance: none;
           appearance: none;
         }
@@ -356,7 +414,7 @@ export default function Signup() {
         .su-input:focus {
           border-color: #ff8fb1;
           background: #fff;
-          box-shadow: 0 0 0 4px rgba(255,143,177,0.16);
+          box-shadow: 0 0 0 4px rgba(255, 143, 177, 0.16);
         }
 
         .su-input.with-eye { padding-right: 50px; }
@@ -376,15 +434,15 @@ export default function Signup() {
           border: none;
           cursor: pointer;
           color: #ffaac5;
-          border-radius: 0 16px 16px 0;
+          border-radius: 0 18px 18px 0;
           z-index: 2;
           flex-shrink: 0;
           touch-action: manipulation;
           -webkit-tap-highlight-color: transparent;
           transition: color 0.18s, background 0.18s;
         }
-        .su-eye-toggle:hover  { color: #ff6f91; background: rgba(255,111,145,0.07); }
-        .su-eye-toggle:active { color: #ff6f91; background: rgba(255,111,145,0.14); }
+        .su-eye-toggle:hover  { color: #ff5d8f; background: rgba(255,111,145,0.07); }
+        .su-eye-toggle:active { color: #ff5d8f; background: rgba(255,111,145,0.14); }
 
         /* ── PASSWORD STRENGTH ── */
         .su-strength {
@@ -457,49 +515,54 @@ export default function Signup() {
 
         .su-back-btn {
           display: flex; align-items: center; gap: 6px;
-          border: 1.5px solid #ffd3df;
-          background: transparent;
-          color: #ff8fb1;
-          border-radius: 16px;
+          border: 1.5px solid rgba(255, 200, 220, 0.5);
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(8px);
+          color: #ff5d8f;
+          border-radius: 18px;
           padding: 13px 18px;
           font-size: 14px;
           font-weight: 600;
-          font-family: 'Poppins', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           cursor: pointer;
           transition: all 0.22s ease;
           touch-action: manipulation;
           -webkit-tap-highlight-color: transparent;
           flex-shrink: 0;
         }
-        .su-back-btn:hover { background: #fff0f4; border-color: #ff8fb1; }
+        .su-back-btn:hover {
+          background: white;
+          border-color: #ff8fb1;
+          box-shadow: 0 8px 24px rgba(255, 111, 145, 0.15);
+        }
 
         .su-next-btn {
           flex: 1;
           display: flex; align-items: center; justify-content: center; gap: 8px;
           border: none;
-          background: linear-gradient(135deg, #ff8fb1, #ff6f91);
+          background: linear-gradient(135deg, #ff8fb1, #ff5d8f);
           color: white;
-          border-radius: 16px;
+          border-radius: 18px;
           padding: 13px 20px;
           font-size: 15px;
           font-weight: 600;
-          font-family: 'Poppins', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           cursor: pointer;
           transition: all 0.22s ease;
-          box-shadow: 0 8px 20px rgba(255,111,145,0.25);
+          box-shadow: 0 8px 22px rgba(255, 93, 143, 0.28);
           touch-action: manipulation;
           -webkit-tap-highlight-color: transparent;
         }
-        .su-next-btn:hover   { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(255,111,145,0.35); }
+        .su-next-btn:hover   { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(255,93,143,0.35); }
         .su-next-btn:active  { transform: scale(0.98); }
         .su-next-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
 
         /* ── BOTTOM ── */
         .su-bottom {
           text-align: center;
-          margin-top: 20px;
-          font-size: 13px;
-          color: #888;
+          margin-top: 22px;
+          font-size: 14px;
+          color: #7a5560;
         }
 
         .su-bottom-link {
@@ -512,48 +575,69 @@ export default function Signup() {
         .su-footer {
           text-align: center;
           margin-top: 14px;
-          color: #bbb;
-          font-size: 11px;
+          color: #c8a0b0;
+          font-size: 12px;
         }
 
         /* ── RESPONSIVE ── */
         @media (max-width: 480px) {
           .su-page  { padding: 16px; }
-          .su-card  { padding: 28px 20px 24px; border-radius: 26px; }
-          .su-title { font-size: 1.65rem; }
+          .su-card  { padding: 32px 22px; border-radius: 28px; }
+          .su-title { font-size: 1.7rem; }
           .su-input { font-size: 16px; }
-          .su-logo-img { width: 90px; }
+          .su-logo-img { width: 160px; }
           .su-next-btn, .su-back-btn { padding: 13px 16px; font-size: 14px; }
           .su-step-connector { width: 28px; }
+          .back-btn {
+            top: 12px;
+            left: 12px;
+            width: 40px;
+            height: 40px;
+          }
         }
 
         @media (max-width: 812px) and (orientation: landscape) {
           .su-page  { justify-content: flex-start; padding-top: 14px; }
-          .su-card  { padding: 20px 24px; border-radius: 22px; }
-          .su-logo-img { width: 60px; }
-          .su-title { font-size: 1.45rem; }
-          .su-subtitle { margin-bottom: 10px; font-size: 0.8rem; }
+          .su-card  { padding: 24px 28px; border-radius: 24px; }
+          .su-logo-img { width: 140px; }
+          .su-title { font-size: 1.5rem; }
+          .su-subtitle { margin-bottom: 12px; font-size: 0.8rem; }
           .su-steps { margin-bottom: 16px; }
           .su-group { margin-bottom: 10px; }
+          .back-btn {
+            top: 10px;
+            left: 10px;
+            width: 36px;
+            height: 36px;
+          }
         }
 
         @media (min-width: 481px) and (max-width: 1024px) and (orientation: portrait) {
-          .su-card  { max-width: 560px; padding: 44px 38px 36px; }
-          .su-title { font-size: 2.2rem; }
-          .su-logo-img { width: 120px; }
-          .su-input { font-size: 16px; }
+          .su-card  { max-width: 560px; padding: 48px 40px; }
+          .su-title { font-size: 2.3rem; }
+          .su-logo-img { width: 220px; }
+          .su-input { font-size: 16px; padding: 15px 52px 15px 48px; }
           .su-eye-toggle { width: 52px; }
           .su-next-btn, .su-back-btn { padding: 15px 22px; font-size: 15px; }
         }
 
         @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
-          .su-card  { max-width: 520px; padding: 36px 34px 30px; }
+          .su-card  { max-width: 520px; padding: 40px 36px; }
           .su-input { font-size: 16px; }
           .su-eye-toggle { width: 52px; }
         }
       `}</style>
 
       <div className={`su-page${keyboardOpen ? ' keyboard-open' : ''}`}>
+        {/* Back button to landing page */}
+        <button
+          className="back-btn"
+          onClick={() => navigate('/')}
+          aria-label="Back to landing page"
+        >
+          <ArrowLeft size={20} strokeWidth={2} />
+        </button>
+
         <div className="su-card">
 
           {/* Logo */}
@@ -566,9 +650,15 @@ export default function Signup() {
             />
           </div>
 
-          {/* Title */}
-          <h1 className="su-title">Create Account</h1>
-          <p className="su-subtitle">Your medtech internship companion ✨</p>
+          {/* Heading */}
+          <div className="su-heading">
+            <h1 className="su-title">
+              Start your journey, <em>intern</em>.
+            </h1>
+            <p className="su-subtitle">
+              Your medtech internship companion ✨
+            </p>
+          </div>
 
           {/* Step indicators */}
           <div className="su-steps">
@@ -606,7 +696,7 @@ export default function Signup() {
                   <div className="su-group">
                     <label className="su-label" htmlFor="su-fullname">Full Name *</label>
                     <div className="su-input-wrap">
-                      <span className="su-input-icon"><User size={16} /></span>
+                      <span className="su-input-icon"><User size={18} /></span>
                       <input
                         id="su-fullname"
                         className="su-input"
@@ -630,7 +720,7 @@ export default function Signup() {
                   <div className="su-group">
                     <label className="su-label" htmlFor="su-school">School / University</label>
                     <div className="su-input-wrap">
-                      <span className="su-input-icon"><School size={16} /></span>
+                      <span className="su-input-icon"><School size={18} /></span>
                       <input
                         id="su-school"
                         className="su-input"
@@ -645,7 +735,7 @@ export default function Signup() {
                   <div className="su-group">
                     <label className="su-label" htmlFor="su-yearlevel">Year Level</label>
                     <div className="su-input-wrap">
-                      <span className="su-input-icon"><GraduationCap size={16} /></span>
+                      <span className="su-input-icon"><GraduationCap size={18} /></span>
                       <input
                         id="su-yearlevel"
                         className="su-input"
@@ -659,7 +749,7 @@ export default function Signup() {
                   <div className="su-group">
                     <label className="su-label" htmlFor="su-program">Program</label>
                     <div className="su-input-wrap">
-                      <span className="su-input-icon"><BookOpen size={16} /></span>
+                      <span className="su-input-icon"><BookOpen size={18} /></span>
                       <input
                         id="su-program"
                         className="su-input"
@@ -681,7 +771,7 @@ export default function Signup() {
                   <div className="su-group">
                     <label className="su-label" htmlFor="su-email">Email Address *</label>
                     <div className="su-input-wrap">
-                      <span className="su-input-icon"><Mail size={16} /></span>
+                      <span className="su-input-icon"><Mail size={18} /></span>
                       <input
                         id="su-email"
                         className="su-input"
@@ -699,7 +789,7 @@ export default function Signup() {
                   <div className="su-group">
                     <label className="su-label" htmlFor="su-password">Password *</label>
                     <div className="su-input-wrap">
-                      <span className="su-input-icon"><Lock size={16} /></span>
+                      <span className="su-input-icon"><Lock size={18} /></span>
                       <input
                         id="su-password"
                         className="su-input with-eye"
@@ -721,8 +811,8 @@ export default function Signup() {
                         }}
                       >
                         {showPassword
-                          ? <EyeOff size={17} strokeWidth={2} />
-                          : <Eye    size={17} strokeWidth={2} />}
+                          ? <EyeOff size={18} strokeWidth={2} />
+                          : <Eye    size={18} strokeWidth={2} />}
                       </button>
                     </div>
 
