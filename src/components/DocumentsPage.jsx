@@ -647,12 +647,14 @@ export default function DocumentsPage() {
 
         /* ── Empty ── */
         .dp-empty {
-          text-align: center; padding: 52px 24px;
-          display: flex; flex-direction: column; align-items: center; gap: 10px;
+          text-align: center; padding: 56px 24px;
+          display: flex; flex-direction: column; align-items: center; gap: 12px;
+          background: rgba(255,255,255,0.6);
+          border-radius: 28px; border: 1.5px dashed #ffd6e1;
         }
-        .dp-empty-icon  { font-size: 48px; margin-bottom: 4px; }
-        .dp-empty-title { font-size: 16px; font-weight: 700; color: #bbb; margin: 0; }
-        .dp-empty-hint  { font-size: 13px; color: #d0c0c8; margin: 0; }
+        .dp-empty-icon  { font-size: 48px; line-height: 1; margin-bottom: 4px; }
+        .dp-empty-title { margin: 0; font-size: 1.3rem; color: #333; font-weight: 700; }
+        .dp-empty-hint  { margin: 0; color: #aaa; font-size: 14px; max-width: 340px; line-height: 1.6; }
 
         /* ── Skeleton ── */
         .dp-skeleton-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; }
@@ -848,3 +850,4 @@ export default function DocumentsPage() {
     </>
   );
 }
+

@@ -20,6 +20,7 @@ drop table if exists public.quota_tasks            cascade;
 drop table if exists public.daily_reports          cascade;
 drop table if exists public.quotas                 cascade;
 drop table if exists public.rotations              cascade;
+drop table if exists public.user_settings          cascade;
 drop table if exists public.profiles               cascade;
 
 
@@ -40,6 +41,17 @@ create table public.profiles (
   preferred_reminder_time time,
   created_at              timestamptz default now(),
   updated_at              timestamptz default now()
+);
+
+-- â”€â”€ User Settings (replaces browser localStorage) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+create table public.user_settings (
+  id         uuid        primary key default gen_random_uuid(),
+  user_id    uuid        not null references auth.users(id) on delete cascade,
+  key        text        not null,
+  value      jsonb       not null default '{}'::jsonb,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  constraint user_settings_user_key_unique unique (user_id, key)
 );
 
 -- ── Rotations ─────────────────────────────────
@@ -222,6 +234,9 @@ create index if not exists idx_procedures_section
 create index if not exists idx_documents_user
   on public.documents (user_id, created_at desc);
 
+create index if not exists idx_user_settings_user_key
+  on public.user_settings (user_id, key);
+
 
 -- ─────────────────────────────────────────────
 -- 4. ROW LEVEL SECURITY
@@ -239,6 +254,7 @@ alter table public.encouragement_messages enable row level security;
 alter table public.mood_logs            enable row level security;
 alter table public.procedures           enable row level security;
 alter table public.documents            enable row level security;
+alter table public.user_settings        enable row level security;
 
 
 -- ── Profiles ──────────────────────────────────
@@ -294,6 +310,12 @@ create policy "exams_all_own"
 -- ── Notes ─────────────────────────────────────
 create policy "notes_all_own"
   on public.notes for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- â”€â”€ User Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+create policy "user_settings_all_own"
+  on public.user_settings for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 

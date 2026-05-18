@@ -26,7 +26,7 @@ const CUSTOM_SECTION_COLORS = [
   { color: '#26c6da', bg: '#e0f7fa' }, { color: '#ef6c00', bg: '#fff3e0' },
 ];
 
-const CUSTOM_SECTION_STORAGE_KEY = 'intern-app-notes-custom-sections';
+const CUSTOM_SECTION_STORAGE_KEY = 'rotation_guide.sections';
 
 function colorToSoftBg(hex) {
   const clean = hex.replace('#', '');
@@ -509,17 +509,26 @@ export default function NotesSection() {
 
   /* ── Custom sections ── */
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(`${CUSTOM_SECTION_STORAGE_KEY}-${user.id}`);
-      setSections(saved ? normalizeStoredSections(JSON.parse(saved)) : SECTIONS);
-    } catch { setSections(SECTIONS); }
-    setSectionsLoaded(true);
+    const loadSections = async () => {
+      const { data } = await supabase
+        .from('user_settings')
+        .select('value')
+        .eq('user_id', user.id)
+        .eq('key', CUSTOM_SECTION_STORAGE_KEY)
+        .maybeSingle();
+      setSections(data?.value ? normalizeStoredSections(data.value) : SECTIONS);
+      setSectionsLoaded(true);
+    };
+    loadSections();
   }, [user.id]);
 
   useEffect(() => {
-    if (sectionsLoaded) {
-      localStorage.setItem(`${CUSTOM_SECTION_STORAGE_KEY}-${user.id}`, JSON.stringify(sections));
-    }
+    if (!sectionsLoaded) return;
+    supabase.from('user_settings').upsert([{
+      user_id: user.id,
+      key: CUSTOM_SECTION_STORAGE_KEY,
+      value: sections,
+    }], { onConflict: 'user_id,key' });
   }, [sections, sectionsLoaded, user.id]);
 
   const allSections = sections;
@@ -1013,18 +1022,14 @@ font-size: 2rem; font-weight: 700; color: #ff5d8f; margin-bottom: 6px;         }
         ════════════════════════════════ */
         .ns-empty {
           grid-column: 1/-1;
-          text-align: center; padding: 64px 24px;
+          text-align: center; padding: 56px 24px;
           display: flex; flex-direction: column; align-items: center; gap: 12px;
+          background: rgba(255,255,255,0.6);
+          border-radius: 28px; border: 1.5px dashed #ffd6e1;
         }
-        .ns-empty-blob {
-          width: 80px; height: 80px; border-radius: 28px;
-          background: linear-gradient(135deg, #fff0f4, #ffd6e1);
-          display: flex; align-items: center; justify-content: center;
-          font-size: 34px; margin-bottom: 4px;
-          box-shadow: 0 8px 24px rgba(255,111,145,0.15);
-        }
-        .ns-empty-title { font-family: 'Fraunces', serif; font-style: italic; font-size: 1.4rem; color: #888; margin: 0; }
-        .ns-empty-hint  { font-size: 13px; color: #d0c0c8; margin: 0; }
+        .ns-empty-blob { font-size: 48px; line-height: 1; margin-bottom: 4px; }
+        .ns-empty-title { margin: 0; font-size: 1.3rem; color: #333; font-weight: 700; font-family: inherit; font-style: normal; }
+        .ns-empty-hint  { margin: 0; color: #aaa; font-size: 14px; max-width: 340px; line-height: 1.6; }
 
         /* ════════════════════════════════
            LOADING SKELETON
@@ -1410,7 +1415,7 @@ font-size: 2rem; font-weight: 700; color: #ff5d8f; margin-bottom: 6px;         }
                 {notes.length === 0 && (
                   <button className="ns-new-btn" style={{ marginTop: 6 }}
                     onClick={() => { setEditingNote(null); setShowNoteModal(true); }}>
-                    <Plus size={15} /> Write your first note
+                    <Plus size={15} /> Add First Note
                   </button>
                 )}
               </div>
