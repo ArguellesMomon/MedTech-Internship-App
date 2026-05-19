@@ -44,8 +44,8 @@ const SECTION_COLOR_PRESETS = [
 ];
 
 const STUDY_GOAL_STORAGE_KEY = 'shift_planner.study_goal_mins';
-
 const DAYS_SHORT  = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const GOAL_PRESETS = [30, 60, 90, 120, 180, 240];
 
 const WELLNESS_TIPS = [
   { emoji: '💧', tip: 'Drink a glass of water every 2 hours — dehydration kills focus.' },
@@ -75,16 +75,9 @@ const STUDY_TIPS = [
   { emoji: '👥', tip: 'Teach a concept to a classmate. The act of explaining reveals gaps in your knowledge.' },
 ];
 
-// NEW: study timer goal preset options (in minutes)
-const GOAL_PRESETS = [30, 60, 90, 120, 180, 240];
-
 /* ─────────────────────────────────────────────
-   HELPERS
+   HELPERS  (unchanged)
 ───────────────────────────────────────────── */
-
-// ✅ FIX 1: Use local date parts instead of toISOString() (which is UTC-based).
-// For users in UTC+ timezones (e.g. Philippines UTC+8), midnight local time would
-// be the *previous* day in UTC, causing dates to appear one day behind.
 function toDateStr(d) {
   const year  = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -194,7 +187,476 @@ function isMissingTableError(error) {
 }
 
 /* ─────────────────────────────────────────────
-   EXAM MODAL
+   SHARED MODAL STYLES  (injected once)
+───────────────────────────────────────────── */
+const MODAL_STYLES = `
+  /* ═══════════════════════════════════════════
+     SHARED BOTTOM-SHEET / CENTERED MODAL BASE
+     Mirrors NoteSection modal pattern exactly
+  ═══════════════════════════════════════════ */
+
+  /* Overlay */
+  .m-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.30);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1100;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+
+  /* Sheet — slides up from bottom on all sizes */
+  .m-sheet {
+    background: #fff;
+    width: 100%;
+    max-width: 620px;
+    border-radius: 28px 28px 0 0;
+    box-shadow: 0 -12px 60px rgba(0,0,0,0.16), 0 -2px 0 rgba(255,200,220,0.3);
+    max-height: 94vh;
+    display: flex;
+    flex-direction: column;
+    animation: m-rise 0.32s cubic-bezier(0.34, 1.18, 0.64, 1) both;
+    overflow: hidden;
+  }
+
+  @keyframes m-rise {
+    from { transform: translateY(72px); opacity: 0; }
+    to   { transform: translateY(0);   opacity: 1; }
+  }
+
+  /* On tablets/desktop: center it like NoteSection does */
+  @media (min-width: 640px) {
+    .m-overlay {
+      align-items: center;
+      padding: 24px;
+    }
+    .m-sheet {
+      border-radius: 28px;
+      max-height: 88vh;
+    }
+  }
+
+  /* Drag pill */
+  .m-drag-pill {
+    width: 36px; height: 4px;
+    background: rgba(255,255,255,0.45);
+    border-radius: 999px;
+    margin: 0 auto;
+    flex-shrink: 0;
+    position: absolute;
+    top: 10px; left: 50%;
+    transform: translateX(-50%);
+  }
+  @media (min-width: 640px) { .m-drag-pill { display: none; } }
+
+  /* Gradient header */
+  .m-header {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 22px 22px 20px;
+    gap: 12px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .m-header-left {
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .m-header-icon {
+    width: 36px; height: 36px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.22);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .m-header-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1.05rem; font-weight: 800;
+    color: white; margin: 0; line-height: 1.2;
+  }
+
+  .m-header-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px; color: rgba(255,255,255,0.72);
+    margin: 2px 0 0; font-weight: 500;
+  }
+
+  .m-close-btn {
+    width: 34px; height: 34px;
+    border: none; border-radius: 11px;
+    background: rgba(255,255,255,0.18);
+    color: white; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.18s; flex-shrink: 0;
+  }
+  .m-close-btn:hover { background: rgba(255,255,255,0.30); }
+
+  /* Scrollable body */
+  .m-body {
+    flex: 1; overflow-y: auto;
+    padding: 22px;
+    display: flex; flex-direction: column; gap: 18px;
+    overscroll-behavior: contain;
+  }
+  .m-body::-webkit-scrollbar { width: 4px; }
+  .m-body::-webkit-scrollbar-track { background: transparent; }
+  .m-body::-webkit-scrollbar-thumb { background: #ffd6e1; border-radius: 4px; }
+
+  /* Field label */
+  .m-label {
+    display: flex; flex-direction: column; gap: 8px;
+    font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.09em;
+    color: #c8b0a8; margin: 0;
+  }
+
+  /* Text input */
+  .m-input {
+    border: 1.5px solid rgba(255,200,220,0.6);
+    background: #fff8fa; border-radius: 14px;
+    padding: 13px 15px; font-size: 15px;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    color: #1c1412; font-family: 'DM Sans', sans-serif;
+    width: 100%; box-sizing: border-box;
+  }
+  .m-input:focus {
+    border-color: var(--m-accent, #ff8fb1);
+    background: white;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-accent, #ff8fb1) 18%, transparent);
+  }
+
+  /* Textarea */
+  .m-textarea {
+    border: 1.5px solid rgba(255,200,220,0.6);
+    background: #fff8fa; border-radius: 14px;
+    padding: 13px 15px; font-size: 14px;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    color: #444; resize: vertical; min-height: 90px;
+    font-family: 'DM Sans', sans-serif; line-height: 1.7;
+    width: 100%; box-sizing: border-box;
+  }
+  .m-textarea:focus {
+    border-color: var(--m-accent, #ff8fb1);
+    background: white;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-accent, #ff8fb1) 18%, transparent);
+  }
+
+  /* Pill row */
+  .m-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .m-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: 999px;
+    border: 1.5px solid; background: transparent;
+    font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all 0.18s;
+    font-family: 'DM Sans', sans-serif;
+    white-space: nowrap;
+  }
+  .m-pill.active {
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--pill-color, #ff6f91) 30%, transparent);
+  }
+
+  /* Duration preview chip */
+  .m-duration-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border-radius: 14px;
+    background: var(--m-bg, #fff5ee);
+    border: 1.5px solid color-mix(in srgb, var(--m-accent, #ff8c5a) 25%, transparent);
+    font-size: 13px; color: var(--m-accent, #ff8c5a); font-weight: 600;
+    align-self: flex-start;
+  }
+
+  /* 2-col time row */
+  .m-time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Error */
+  .m-err {
+    background: #fde8e8; color: #c0392b;
+    border-radius: 12px; padding: 10px 14px;
+    font-size: 13px; margin: 0;
+  }
+
+  /* Action buttons */
+  .m-actions { display: flex; gap: 10px; padding-top: 4px; padding-bottom: 8px; }
+
+  .m-submit {
+    display: inline-flex; align-items: center; gap: 7px;
+    border: none; color: white; border-radius: 999px;
+    padding: 13px 24px; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+    font-family: 'DM Sans', sans-serif; flex: 1;
+    justify-content: center;
+  }
+  .m-submit:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(255,111,145,0.32);
+  }
+  .m-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .m-cancel {
+    border: none; background: #f0ecea; color: #888;
+    border-radius: 999px; padding: 13px 20px;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s;
+  }
+  .m-cancel:hover { background: #e8e2e4; }
+
+  /* Select field */
+  .m-select {
+    border: 1.5px solid rgba(255,200,220,0.6);
+    background: #fff8fa; border-radius: 14px;
+    padding: 13px 15px; font-size: 15px;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    color: #444; font-family: 'DM Sans', sans-serif;
+    width: 100%; box-sizing: border-box; cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c8b0a8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+  .m-select:focus {
+    border-color: var(--m-accent, #ff8fb1);
+    background-color: white;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-accent, #ff8fb1) 18%, transparent);
+  }
+
+  /* Divider */
+  .m-divider {
+    height: 1px;
+    background: rgba(255,200,220,0.3);
+    margin: 2px 0;
+  }
+
+  /* ══ Exam modal countdown preview ══ */
+  .m-countdown {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; border-radius: 16px;
+    border: 1.5px solid; flex-wrap: wrap;
+  }
+  .m-countdown-icon { font-size: 20px; line-height: 1; }
+
+  /* ══ Manage Sections Modal ══ */
+  .msm-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.30);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1100;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .msm-modal {
+    background: white; border-radius: 28px; padding: 26px;
+    width: 100%; max-width: 460px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.14);
+    border: 1px solid rgba(255,200,220,0.4);
+    max-height: 90vh; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 22px;
+    animation: m-rise 0.28s ease both;
+  }
+  .msm-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .msm-head-left { display: flex; align-items: center; gap: 12px; }
+  .msm-head-icon { width: 40px; height: 40px; border-radius: 14px; background: linear-gradient(135deg,#ff8fb1,#ff6f91); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+  .msm-title  { margin: 0 0 3px; font-size: 1.05rem; font-weight: 700; color: #1c1412; }
+  .msm-sub    { margin: 0; font-size: 12px; color: #bbb; }
+  .msm-close  { border: none; background: #f4f0f2; border-radius: 10px; padding: 7px; cursor: pointer; display: flex; color: #888; transition: 0.2s; flex-shrink: 0; }
+  .msm-close:hover { background: #ffe4ec; color: #ff5d8f; }
+  .msm-box-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #c8b0a8; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .msm-count { display: inline-flex; align-items: center; justify-content: center; background: #fff0f4; color: #ff6f91; border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 700; }
+  .msm-add-box { background: #fff8fa; border: 1px solid rgba(255,200,220,0.4); border-radius: 18px; padding: 18px; }
+  .msm-add-row { display: flex; gap: 10px; align-items: center; }
+  .msm-input { flex: 1 1 auto; min-width: 0; border: 1.5px solid rgba(255,200,220,0.6); background: white; border-radius: 12px; padding: 11px 14px; font-size: 14px; outline: none; transition: 0.2s; color: #444; font-family: inherit; }
+  .msm-input:focus { border-color: #ff8fb1; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
+  .msm-add-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; border: none; background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white; border-radius: 12px; padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; font-family: inherit; }
+  .msm-add-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(255,111,145,0.25); }
+  .msm-error { background: #fde8e8; color: #c0392b; border-radius: 10px; padding: 8px 12px; font-size: 12px; margin-top: 10px; }
+  .msm-empty { text-align: center; padding: 24px 16px; background: #fff8fa; border-radius: 16px; border: 1px dashed rgba(255,200,220,0.5); display: flex; flex-direction: column; align-items: center; gap: 6px; color: #bbb; font-size: 13px; }
+  .msm-list { display: flex; flex-direction: column; gap: 8px; }
+  .msm-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 16px; border: 1.5px solid rgba(255,200,220,0.4); background: #fff8fa; transition: 0.2s; }
+  .msm-row:hover { border-color: #ffb8ce; background: white; }
+  .msm-row-rem { border-color: #ffd0d0; background: #fff5f5; }
+  .msm-row-main { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+  .msm-sec-pill { display: inline-flex; align-items: center; gap: 7px; min-width: 0; max-width: 100%; border: 1.5px solid; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .msm-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .msm-color-ctrl { width: 30px; height: 30px; border: 1.5px solid rgba(255,200,220,0.5); background: white; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; position: relative; overflow: hidden; }
+  .msm-color-ctrl input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .msm-color-swatch { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
+  .msm-rm-btn { display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid rgba(255,200,220,0.5); background: white; color: #aaa; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit; flex-shrink: 0; white-space: nowrap; }
+  .msm-rm-btn:hover { border-color: #ffd0d0; background: #fde8e8; color: #e05555; }
+  .msm-confirm { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #888; flex-shrink: 0; font-weight: 600; white-space: nowrap; }
+  .msm-yes { border: none; background: linear-gradient(135deg,#ff8f8f,#e05555); color: white; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .msm-no  { border: none; background: #f0f0f0; color: #888; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .msm-note { display: flex; align-items: flex-start; gap: 8px; background: #fff8fa; border: 1px solid rgba(255,200,220,0.4); border-radius: 14px; padding: 12px 14px; font-size: 12px; color: #bbb; line-height: 1.6; }
+`;
+
+/* ─────────────────────────────────────────────
+   SHIFT MODAL  ← completely redesigned
+───────────────────────────────────────────── */
+function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
+  const { user } = useAuth();
+  const [form, setForm] = useState({
+    section_name: editing?.section_name ?? sections[0]?.id ?? '',
+    shift_date:   editing?.shift_date   ?? defaultDate ?? toDateStr(new Date()),
+    start_time:   editing?.start_time   ?? '07:00',
+    end_time:     editing?.end_time     ?? '15:00',
+    shift_type:   editing?.shift_type   ?? 'morning',
+    notes:        editing?.notes        ?? '',
+  });
+  const [saving, setSaving] = useState(false);
+  const [error,  setError]  = useState('');
+
+  const meta       = SHIFT_TYPES[form.shift_type] ?? SHIFT_TYPES.other;
+  const ShiftIcon  = meta.icon;
+  const accentColor = meta.color;
+  const accentBg    = meta.bg;
+  const duration   = calcDuration(form.start_time, form.end_time);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault(); setSaving(true); setError('');
+    let result;
+    if (editing) {
+      result = await supabase.from('shifts')
+        .update({ ...form, updated_at: new Date().toISOString() })
+        .eq('id', editing.id).select().single();
+    } else {
+      result = await supabase.from('shifts')
+        .insert([{ ...form, user_id: user.id }]).select().single();
+    }
+    setSaving(false);
+    if (result.error) { setError(result.error.message); return; }
+    onSaved(result.data, Boolean(editing));
+    onClose();
+  };
+
+  return (
+    <div className="m-overlay" onClick={onClose}>
+      <style>{MODAL_STYLES}</style>
+      <div
+        className="m-sheet"
+        style={{ '--m-accent': accentColor, '--m-bg': accentBg }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="m-drag-pill" />
+
+        {/* Gradient header */}
+        <div
+          className="m-header"
+          style={{ background: `linear-gradient(135deg, ${accentColor}d0, ${accentColor})` }}
+        >
+          <div className="m-header-left">
+            <div className="m-header-icon">
+              <ShiftIcon size={17} color="white" />
+            </div>
+            <div>
+              <p className="m-header-title">{editing ? 'Edit Shift' : 'New Shift'}</p>
+              <p className="m-header-sub">{meta.label} · {form.shift_date ? formatDateFull(form.shift_date) : 'Pick a date'}</p>
+            </div>
+          </div>
+          <button className="m-close-btn" onClick={onClose}><X size={16} /></button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="m-body">
+
+          {/* Shift type pills */}
+          <div>
+            <p className="m-label" style={{ marginBottom: 10 }}>Shift Type</p>
+            <div className="m-pills">
+              {Object.entries(SHIFT_TYPES).map(([key, val]) => {
+                const TIcon = val.icon;
+                const on = form.shift_type === key;
+                return (
+                  <button key={key} type="button"
+                    className={`m-pill ${on ? 'active' : ''}`}
+                    style={on
+                      ? { background: val.color, borderColor: val.color, color: '#fff', '--pill-color': val.color }
+                      : { borderColor: val.color + '66', color: val.color }}
+                    onClick={() => setForm({ ...form, shift_type: key })}>
+                    <TIcon size={13} />
+                    {val.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="m-divider" />
+
+          {/* Section */}
+          <label className="m-label">
+            Section
+            <select
+              className="m-select"
+              value={form.section_name}
+              onChange={e => setForm({ ...form, section_name: e.target.value })}>
+              {sections.map(s => <option key={s.id} value={s.id}>{s.id}</option>)}
+            </select>
+          </label>
+
+          {/* Date */}
+          <label className="m-label">
+            Date *
+            <input type="date" className="m-input" value={form.shift_date}
+              onChange={e => setForm({ ...form, shift_date: e.target.value })} required />
+          </label>
+
+          {/* Times */}
+          <div className="m-time-row">
+            <label className="m-label">
+              Start Time *
+              <input type="time" className="m-input" value={form.start_time}
+                onChange={e => setForm({ ...form, start_time: e.target.value })} required />
+            </label>
+            <label className="m-label">
+              End Time *
+              <input type="time" className="m-input" value={form.end_time}
+                onChange={e => setForm({ ...form, end_time: e.target.value })} required />
+            </label>
+          </div>
+
+          {/* Duration chip */}
+          {duration && (
+            <div className="m-duration-chip">
+              <Timer size={14} />
+              <span>Duration: <strong>{duration}</strong></span>
+            </div>
+          )}
+
+          {/* Notes */}
+          <label className="m-label">
+            Notes
+            <textarea className="m-textarea" rows={3}
+              placeholder="Any reminders, preparations, or notes…"
+              value={form.notes}
+              onChange={e => setForm({ ...form, notes: e.target.value })} />
+          </label>
+
+          {error && <p className="m-err">{error}</p>}
+
+          <div className="m-actions">
+            <button type="submit" className="m-submit"
+              style={{ background: `linear-gradient(135deg, ${accentColor}cc, ${accentColor})` }}
+              disabled={saving}>
+              <Check size={15} />
+              {saving ? 'Saving…' : editing ? 'Update Shift' : 'Add Shift'}
+            </button>
+            <button type="button" className="m-cancel" onClick={onClose}>Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   EXAM MODAL  ← completely redesigned
 ───────────────────────────────────────────── */
 function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMap }) {
   const { user } = useAuth();
@@ -207,9 +669,11 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState('');
 
-  const days        = daysUntil(form.exam_date);
-  const urgency     = getUrgency(days);
-  const sectionMeta = sectionMap[form.section_name] ?? { color: '#ff6f91', bg: '#fff0f4' };
+  const days        = form.exam_date ? daysUntil(form.exam_date) : null;
+  const urgency     = days !== null ? getUrgency(days) : null;
+  const sectionMeta = sectionMap[form.section_name] ?? { color: '#5f8dff', bg: '#eff4ff' };
+  const accentColor = sectionMeta.color;
+  const accentBg    = sectionMeta.bg;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -217,9 +681,12 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
     setSaving(true); setError('');
     let result;
     if (editing) {
-      result = await supabase.from('exams').update({ ...form, updated_at: new Date().toISOString() }).eq('id', editing.id).select().single();
+      result = await supabase.from('exams')
+        .update({ ...form, updated_at: new Date().toISOString() })
+        .eq('id', editing.id).select().single();
     } else {
-      result = await supabase.from('exams').insert([{ ...form, user_id: user.id }]).select().single();
+      result = await supabase.from('exams')
+        .insert([{ ...form, user_id: user.id }]).select().single();
     }
     setSaving(false);
     if (result.error) { setError(result.error.message); return; }
@@ -228,52 +695,78 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
   };
 
   return (
-    <div className="em-overlay" onClick={onClose}>
-      <div className="em-modal" onClick={e => e.stopPropagation()}>
-        <div className="em-header">
-          <div className="em-header-left">
-            <div className="em-header-icon" style={{ background: sectionMeta.bg }}>
-              <GraduationCap size={20} style={{ color: sectionMeta.color }} />
+    <div className="m-overlay" onClick={onClose}>
+      <style>{MODAL_STYLES}</style>
+      <div
+        className="m-sheet"
+        style={{ '--m-accent': accentColor, '--m-bg': accentBg }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="m-drag-pill" />
+
+        {/* Gradient header */}
+        <div
+          className="m-header"
+          style={{ background: `linear-gradient(135deg, ${accentColor}d0, ${accentColor})` }}
+        >
+          <div className="m-header-left">
+            <div className="m-header-icon">
+              <GraduationCap size={17} color="white" />
             </div>
             <div>
-              <h3 className="em-header-title">{editing ? 'Edit Exam' : 'Add Exam Date'}</h3>
-              <p className="em-header-sub">Track your upcoming assessment</p>
+              <p className="m-header-title">{editing ? 'Edit Exam' : 'Add Exam Date'}</p>
+              <p className="m-header-sub">
+                {form.exam_date
+                  ? urgency ? `${urgency.icon} ${urgency.label}` : 'Pick a date'
+                  : 'Track your upcoming assessment'}
+              </p>
             </div>
           </div>
-          <button className="em-close-btn" onClick={onClose}><X size={16} /></button>
+          <button className="m-close-btn" onClick={onClose}><X size={16} /></button>
         </div>
 
-        {form.exam_date && (
-          <div className="em-countdown-preview"
-            style={{ background: urgency.badgeBg, borderColor: urgency.borderColor + '55' }}>
-            <span className="em-countdown-icon">{urgency.icon}</span>
-            <span style={{ color: urgency.badgeColor, fontWeight: 700, fontSize: 13 }}>{urgency.label}</span>
-            <span style={{ color: '#aaa', fontSize: 12 }}>— {formatDateLong(form.exam_date)}</span>
-          </div>
-        )}
+        <form onSubmit={handleSubmit} className="m-body">
 
-        <form onSubmit={handleSubmit} className="em-form">
-          <label className="em-label">
+          {/* Countdown preview */}
+          {form.exam_date && urgency && (
+            <div className="m-countdown"
+              style={{ background: urgency.badgeBg, borderColor: urgency.borderColor + '55' }}>
+              <span className="m-countdown-icon">{urgency.icon}</span>
+              <span style={{ color: urgency.badgeColor, fontWeight: 700, fontSize: 13 }}>{urgency.label}</span>
+              <span style={{ color: '#aaa', fontSize: 12 }}>— {formatDateLong(form.exam_date)}</span>
+            </div>
+          )}
+
+          {/* Exam name */}
+          <label className="m-label">
             Exam Name *
-            <input className="em-input" placeholder="e.g. Hematology Midterm Exam"
-              value={form.exam_name} onChange={e => setForm({ ...form, exam_name: e.target.value })}
-              required maxLength={120} />
+            <input className="m-input" required maxLength={120}
+              placeholder="e.g. Hematology Midterm Exam"
+              value={form.exam_name}
+              onChange={e => setForm({ ...form, exam_name: e.target.value })} />
           </label>
-          <label className="em-label">
+
+          {/* Exam date */}
+          <label className="m-label">
             Exam Date *
-            <input type="date" className="em-input" value={form.exam_date}
-              onChange={e => setForm({ ...form, exam_date: e.target.value })} required />
+            <input type="date" className="m-input" value={form.exam_date} required
+              onChange={e => setForm({ ...form, exam_date: e.target.value })} />
           </label>
+
+          <div className="m-divider" />
+
+          {/* Section pills */}
           <div>
-            <p className="em-label" style={{ marginBottom: 10 }}>Section</p>
-            <div className="em-section-pills">
+            <p className="m-label" style={{ marginBottom: 10 }}>Section</p>
+            <div className="m-pills">
               {sections.map(s => {
                 const sm = sectionMap[s.id] ?? s;
-                const active = form.section_name === s.id;
+                const on = form.section_name === s.id;
                 return (
-                  <button key={s.id} type="button" className="em-section-pill"
-                    style={active
-                      ? { background: sm.color, borderColor: sm.color, color: '#fff' }
+                  <button key={s.id} type="button"
+                    className={`m-pill ${on ? 'active' : ''}`}
+                    style={on
+                      ? { background: sm.color, borderColor: sm.color, color: '#fff', '--pill-color': sm.color }
                       : { borderColor: sm.color + '66', color: sm.color }}
                     onClick={() => setForm({ ...form, section_name: s.id })}>
                     {s.id}
@@ -282,18 +775,26 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
               })}
             </div>
           </div>
-          <label className="em-label">
+
+          {/* Notes */}
+          <label className="m-label">
             Description & Study Notes
-            <textarea className="em-textarea" rows={4}
-              placeholder="Topics covered, what to review, key concepts, study tips..."
-              value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
+            <textarea className="m-textarea" rows={4}
+              placeholder="Topics covered, what to review, key concepts, study tips…"
+              value={form.notes}
+              onChange={e => setForm({ ...form, notes: e.target.value })} />
           </label>
-          {error && <p className="em-error">{error}</p>}
-          <div className="em-actions">
-            <button type="submit" className="em-primary-btn" disabled={saving}>
-              <Check size={15} />{saving ? 'Saving…' : editing ? 'Update Exam' : 'Save Exam'}
+
+          {error && <p className="m-err">{error}</p>}
+
+          <div className="m-actions">
+            <button type="submit" className="m-submit"
+              style={{ background: `linear-gradient(135deg, ${accentColor}cc, ${accentColor})` }}
+              disabled={saving}>
+              <Check size={15} />
+              {saving ? 'Saving…' : editing ? 'Update Exam' : 'Save Exam'}
             </button>
-            <button type="button" className="em-secondary-btn" onClick={onClose}>Cancel</button>
+            <button type="button" className="m-cancel" onClick={onClose}>Cancel</button>
           </div>
         </form>
       </div>
@@ -302,7 +803,109 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
 }
 
 /* ─────────────────────────────────────────────
-   EXAM CALENDAR  (monthly view)
+   MANAGE SECTIONS MODAL  (restyled, same logic)
+───────────────────────────────────────────── */
+function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose }) {
+  const [name,     setName]     = useState('');
+  const [error,    setError]    = useState('');
+  const [removing, setRemoving] = useState(null);
+
+  const handleAdd = () => {
+    const label = name.trim();
+    if (!label) { setError('Please enter a section name.'); return; }
+    if (sections.some(s => s.id.toLowerCase() === label.toLowerCase())) {
+      setError('That section already exists.'); return;
+    }
+    onAdd(label); setName(''); setError('');
+  };
+
+  return (
+    <div className="msm-overlay" onClick={onClose}>
+      <style>{MODAL_STYLES}</style>
+      <div className="msm-modal" onClick={e => e.stopPropagation()}>
+
+        <div className="msm-head">
+          <div className="msm-head-left">
+            <div className="msm-head-icon"><Settings2 size={18} /></div>
+            <div>
+              <h3 className="msm-title">Manage Sections</h3>
+              <p className="msm-sub">Add, remove, and color sections for shifts and exams</p>
+            </div>
+          </div>
+          <button className="msm-close" onClick={onClose}><X size={16} /></button>
+        </div>
+
+        <div className="msm-add-box">
+          <p className="msm-box-label">New Section</p>
+          <div className="msm-add-row">
+            <input className="msm-input"
+              placeholder="e.g. Immunology, Parasitology…"
+              value={name}
+              onChange={e => { setName(e.target.value); setError(''); }}
+              onKeyDown={e => e.key === 'Enter' && handleAdd()}
+              maxLength={40} autoFocus />
+            <button className="msm-add-btn" onClick={handleAdd}><Plus size={14} /> Add</button>
+          </div>
+          {error && <p className="msm-error">{error}</p>}
+        </div>
+
+        <div>
+          <p className="msm-box-label">
+            Sections
+            {sections.length > 0 && <span className="msm-count">{sections.length}</span>}
+          </p>
+          {sections.length === 0 ? (
+            <div className="msm-empty">
+              <span style={{ fontSize: 28 }}>🗂️</span>
+              <p>No sections yet.</p>
+            </div>
+          ) : (
+            <div className="msm-list">
+              {sections.map(sec => {
+                const isRem = removing === sec.id;
+                return (
+                  <div key={sec.id} className={`msm-row ${isRem ? 'msm-row-rem' : ''}`}>
+                    <div className="msm-row-main">
+                      <div className="msm-sec-pill"
+                        style={{ background: sec.bg, color: sec.color, borderColor: sec.color + '55' }}>
+                        <span className="msm-dot" style={{ background: sec.color }} />
+                        {sec.id}
+                      </div>
+                      <label className="msm-color-ctrl" title={`Change ${sec.id} color`}>
+                        <span className="msm-color-swatch" style={{ background: sec.color }} />
+                        <input type="color" value={sec.color}
+                          onChange={e => onColorChange(sec.id, e.target.value)} />
+                      </label>
+                    </div>
+                    {isRem ? (
+                      <div className="msm-confirm">
+                        <span>Remove?</span>
+                        <button className="msm-yes" onClick={() => { onRemove(sec.id); setRemoving(null); }}>Yes</button>
+                        <button className="msm-no"  onClick={() => setRemoving(null)}>No</button>
+                      </div>
+                    ) : (
+                      <button className="msm-rm-btn" onClick={() => setRemoving(sec.id)}>
+                        <Trash2 size={12} /> Remove
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="msm-note">
+          <Sparkles size={12} style={{ color: '#ff8fb1', flexShrink: 0 }} />
+          Removing a section hides it from new shifts, exams, and filters. Existing records keep their saved label.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   All remaining sub-components (unchanged logic)
 ───────────────────────────────────────────── */
 function ExamCalendar({ exams, onAdd, onEdit, currentMonth, onPrevMonth, onNextMonth }) {
   const year  = currentMonth.getFullYear();
@@ -353,39 +956,28 @@ function ExamCalendar({ exams, onAdd, onEdit, currentMonth, onPrevMonth, onNextM
       </div>
 
       <div className="ec-month-grid">
-        {DAYS_SHORT.map(d => (
-          <div key={d} className="ec-dow-header">{d}</div>
-        ))}
-
+        {DAYS_SHORT.map(d => <div key={d} className="ec-dow-header">{d}</div>)}
         {cells.map((dateStr, i) => {
           if (!dateStr) return <div key={`blank-${i}`} className="ec-cell ec-cell-blank" />;
-
           const dayExams  = exams.filter(e => e.exam_date === dateStr);
           const today     = dateStr === todayStr;
           const dayNum    = parseInt(dateStr.slice(-2), 10);
           const isPast    = dateStr < todayStr;
-
           return (
             <div key={dateStr}
               className={`ec-cell ${today ? 'ec-today' : ''} ${isPast ? 'ec-past' : ''} ${dayExams.length > 0 ? 'ec-has-exam' : ''}`}
               onClick={() => onAdd(dateStr)}
               title={`Add exam — ${formatDateFull(dateStr)}`}>
-
               <div className="ec-cell-top">
                 <span className={`ec-day-num ${today ? 'ec-today-num' : ''}`}>{dayNum}</span>
               </div>
-
               <div className="ec-cell-exams">
-                {dayExams.length === 0 && (
-                  <div className="ec-empty-hint"><Plus size={9} /></div>
-                )}
+                {dayExams.length === 0 && <div className="ec-empty-hint"><Plus size={9} /></div>}
                 {dayExams.map(exam => {
-                  const days    = daysUntil(exam.exam_date);
-                  const urgency = getUrgency(days);
+                  const u = getUrgency(daysUntil(exam.exam_date));
                   return (
-                    <div key={exam.id}
-                      className="ec-exam-pill"
-                      style={{ background: urgency.badgeBg, borderColor: urgency.borderColor + '99', color: urgency.badgeColor }}
+                    <div key={exam.id} className="ec-exam-pill"
+                      style={{ background: u.badgeBg, borderColor: u.borderColor + '99', color: u.badgeColor }}
                       onClick={e => { e.stopPropagation(); onEdit(exam); }}
                       title={exam.exam_name}>
                       <GraduationCap size={8} />
@@ -402,9 +994,6 @@ function ExamCalendar({ exams, onAdd, onEdit, currentMonth, onPrevMonth, onNextM
   );
 }
 
-/* ─────────────────────────────────────────────
-   EXAM HISTORY LIST
-───────────────────────────────────────────── */
 function ExamHistoryList({ allExams, onEdit, onDelete, sectionMap }) {
   const [filterTab,  setFilterTab]  = useState('upcoming');
   const [filterSec,  setFilterSec]  = useState('');
@@ -447,34 +1036,26 @@ function ExamHistoryList({ allExams, onEdit, onDelete, sectionMap }) {
     <div className="sp-card">
       <div className="sp-card-header">
         <div className="sp-icon-wrap blue"><BookOpen size={20} /></div>
-        <div>
-          <h3>Exam Schedule</h3>
-          <p>{allExams.length} exam{allExams.length !== 1 ? 's' : ''} total</p>
-        </div>
+        <div><h3>Exam Schedule</h3><p>{allExams.length} exam{allExams.length !== 1 ? 's' : ''} total</p></div>
       </div>
-
       <div className="ehl-tabs">
         {[
           { id: 'all',      label: 'All',      count: allExams.length },
           { id: 'upcoming', label: 'Upcoming', count: upcomingCount   },
           { id: 'past',     label: 'Past',     count: pastCount       },
         ].map(t => (
-          <button key={t.id}
-            className={`ehl-tab ${filterTab === t.id ? 'active' : ''}`}
+          <button key={t.id} className={`ehl-tab ${filterTab === t.id ? 'active' : ''}`}
             onClick={() => setFilterTab(t.id)}>
-            {t.label}
-            <span className="ehl-tab-count">{t.count}</span>
+            {t.label}<span className="ehl-tab-count">{t.count}</span>
           </button>
         ))}
       </div>
-
       <div className="ehl-search-wrap">
         <Search size={12} className="ehl-search-icon" />
         <input className="ehl-search" placeholder="Search exams…"
           value={search} onChange={e => setSearch(e.target.value)} />
         {search && <button className="ehl-search-clear" onClick={() => setSearch('')}><X size={11} /></button>}
       </div>
-
       {grouped.length === 0 ? (
         <div className="sp-empty">
           <p>{search ? `No exams match "${search}"` : filterTab === 'past' ? 'No past exams yet.' : 'No upcoming exams — you\'re clear! ✨'}</p>
@@ -493,22 +1074,18 @@ function ExamHistoryList({ allExams, onEdit, onDelete, sectionMap }) {
                 const secMeta = sectionMap[exam.section_name] ?? { color: '#ff6f91', bg: '#fff0f4' };
                 const isPast  = days < 0;
                 const isConf  = confirmDel === exam.id;
-
                 return (
                   <div key={exam.id}
                     className={`ehl-row ${isToday(exam.exam_date) ? 'ehl-row-today' : ''} ${isPast ? 'ehl-row-past' : ''}`}
                     style={{ borderLeftColor: urgency.borderColor }}>
-
                     <div className="ehl-row-left">
-                      <div className="ehl-row-icon"
-                        style={{ background: urgency.badgeBg, color: urgency.badgeColor }}>
+                      <div className="ehl-row-icon" style={{ background: urgency.badgeBg, color: urgency.badgeColor }}>
                         <GraduationCap size={14} />
                       </div>
                       <div className="ehl-row-info">
                         <div className="ehl-row-name-row">
                           <span className={`ehl-row-name ${isPast ? 'past' : ''}`}>{exam.exam_name}</span>
-                          <span className="ehl-countdown"
-                            style={{ background: urgency.badgeBg, color: urgency.badgeColor }}>
+                          <span className="ehl-countdown" style={{ background: urgency.badgeBg, color: urgency.badgeColor }}>
                             {urgency.icon} {urgency.label}
                           </span>
                         </div>
@@ -518,18 +1095,14 @@ function ExamHistoryList({ allExams, onEdit, onDelete, sectionMap }) {
                             {formatDateFull(exam.exam_date)}
                           </span>
                           {exam.section_name && (
-                            <span className="ehl-row-sec"
-                              style={{ background: secMeta.bg, color: secMeta.color }}>
+                            <span className="ehl-row-sec" style={{ background: secMeta.bg, color: secMeta.color }}>
                               {exam.section_name}
                             </span>
                           )}
                         </div>
-                        {exam.notes && (
-                          <p className="ehl-row-notes">{exam.notes.length > 80 ? exam.notes.slice(0, 80) + '…' : exam.notes}</p>
-                        )}
+                        {exam.notes && <p className="ehl-row-notes">{exam.notes.length > 80 ? exam.notes.slice(0, 80) + '…' : exam.notes}</p>}
                       </div>
                     </div>
-
                     <div className="ehl-row-actions">
                       {isConf ? (
                         <div className="ehl-confirm">
@@ -539,8 +1112,8 @@ function ExamHistoryList({ allExams, onEdit, onDelete, sectionMap }) {
                         </div>
                       ) : (
                         <>
-                          <button className="sp-icon-btn" onClick={() => onEdit(exam)} title="Edit"><Edit3 size={13} /></button>
-                          <button className="sp-icon-btn danger" onClick={() => setConfirmDel(exam.id)} title="Delete"><Trash2 size={13} /></button>
+                          <button className="sp-icon-btn" onClick={() => onEdit(exam)}><Edit3 size={13} /></button>
+                          <button className="sp-icon-btn danger" onClick={() => setConfirmDel(exam.id)}><Trash2 size={13} /></button>
                         </>
                       )}
                     </div>
@@ -555,9 +1128,6 @@ function ExamHistoryList({ allExams, onEdit, onDelete, sectionMap }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   EXAM STUDY WELLNESS  (updated with configurable timer goal)
-───────────────────────────────────────────── */
 function ExamStudyWellness({ exams }) {
   const { user } = useAuth();
   const [tipIndex,    setTipIndex]    = useState(() => Math.floor(Math.random() * STUDY_TIPS.length));
@@ -571,12 +1141,8 @@ function ExamStudyWellness({ exams }) {
   useEffect(() => {
     const load = async () => {
       if (!user?.id) return;
-      const { data } = await supabase
-        .from('user_settings')
-        .select('value')
-        .eq('user_id', user.id)
-        .eq('key', STUDY_GOAL_STORAGE_KEY)
-        .maybeSingle();
+      const { data } = await supabase.from('user_settings').select('value')
+        .eq('user_id', user.id).eq('key', STUDY_GOAL_STORAGE_KEY).maybeSingle();
       const parsed = Number(data?.value);
       setStudyGoal(Number.isFinite(parsed) && parsed >= 5 ? parsed : 120);
       setGoalLoaded(true);
@@ -586,14 +1152,9 @@ function ExamStudyWellness({ exams }) {
 
   useEffect(() => {
     if (!user?.id || !goalLoaded) return;
-    supabase.from('user_settings').upsert([{
-      user_id: user.id,
-      key: STUDY_GOAL_STORAGE_KEY,
-      value: studyGoal,
-    }], { onConflict: 'user_id,key' });
+    supabase.from('user_settings').upsert([{ user_id: user.id, key: STUDY_GOAL_STORAGE_KEY, value: studyGoal }], { onConflict: 'user_id,key' });
   }, [studyGoal, goalLoaded, user?.id]);
 
-  // Count-up timer — increments studyMins every real minute
   useEffect(() => {
     if (!timerOn) return;
     const id = setInterval(() => setStudyMins(m => m + 1), 60000);
@@ -601,44 +1162,28 @@ function ExamStudyWellness({ exams }) {
   }, [timerOn]);
 
   const nextExam = useMemo(() => {
-    return [...exams]
-      .filter(e => daysUntil(e.exam_date) >= 0)
+    return [...exams].filter(e => daysUntil(e.exam_date) >= 0)
       .sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date))[0] ?? null;
   }, [exams]);
 
   const stats = useMemo(() => {
     const upcoming = exams.filter(e => daysUntil(e.exam_date) >= 0);
-    const week7    = upcoming.filter(e => daysUntil(e.exam_date) <= 7);
-    const urgent   = upcoming.filter(e => daysUntil(e.exam_date) <= 3);
-    return { upcoming: upcoming.length, week7: week7.length, urgent: urgent.length };
+    return { upcoming: upcoming.length, week7: upcoming.filter(e => daysUntil(e.exam_date) <= 7).length, urgent: upcoming.filter(e => daysUntil(e.exam_date) <= 3).length };
   }, [exams]);
 
   const tip         = STUDY_TIPS[tipIndex];
   const nextUrgency = nextExam ? getUrgency(daysUntil(nextExam.exam_date)) : null;
-  // Clamp progress to 0–100
   const studyPct    = Math.min(100, studyGoal > 0 ? Math.round((studyMins / studyGoal) * 100) : 0);
   const goalReached = studyMins >= studyGoal && studyGoal > 0;
 
-  // Apply a custom goal from the input field
   const applyGoal = () => {
     const val = parseInt(goalInput, 10);
-    if (!isNaN(val) && val >= 5 && val <= 1440) {
-      setStudyGoal(val);
-      setStudyMins(0);
-      setTimerOn(false);
-    } else {
-      setGoalInput(String(studyGoal)); // reset to valid value
-    }
+    if (!isNaN(val) && val >= 5 && val <= 1440) { setStudyGoal(val); setStudyMins(0); setTimerOn(false); }
+    else setGoalInput(String(studyGoal));
     setEditingGoal(false);
   };
 
-  // Apply a preset goal
-  const applyPreset = (mins) => {
-    setStudyGoal(mins);
-    setGoalInput(String(mins));
-    setStudyMins(0);
-    setTimerOn(false);
-  };
+  const applyPreset = (mins) => { setStudyGoal(mins); setGoalInput(String(mins)); setStudyMins(0); setTimerOn(false); };
 
   return (
     <div className="sp-card sp-wellness-card">
@@ -646,14 +1191,11 @@ function ExamStudyWellness({ exams }) {
         <div className="sp-icon-wrap green"><Brain size={20} /></div>
         <div><h3>Study & Wellness</h3><p>Prepare smart, not just hard</p></div>
       </div>
-
-      {/* Next exam countdown */}
       {nextExam ? (
         <div className="esw-next-exam" style={{ borderColor: nextUrgency.borderColor + '55', background: nextUrgency.badgeBg }}>
           <div className="esw-next-top">
             <span className="esw-next-label">Next Exam</span>
-            <span className="esw-next-badge"
-              style={{ background: nextUrgency.borderColor, color: '#fff' }}>
+            <span className="esw-next-badge" style={{ background: nextUrgency.borderColor, color: '#fff' }}>
               {nextUrgency.icon} {nextUrgency.label}
             </span>
           </div>
@@ -661,122 +1203,64 @@ function ExamStudyWellness({ exams }) {
           <p className="esw-next-date">{formatDateLong(nextExam.exam_date)}</p>
         </div>
       ) : (
-        <div className="esw-no-exam">
-          <CheckCircle2 size={18} style={{ color: '#4abf95' }} />
-          <span>No upcoming exams scheduled.</span>
-        </div>
+        <div className="esw-no-exam"><CheckCircle2 size={18} style={{ color: '#4abf95' }} /><span>No upcoming exams scheduled.</span></div>
       )}
-
-      {/* Quick stats */}
       <div className="esw-stats">
-        <div className="esw-stat">
-          <span className="esw-stat-val" style={{ color: '#5f8dff' }}>{stats.upcoming}</span>
-          <span className="esw-stat-label">Upcoming</span>
-        </div>
+        <div className="esw-stat"><span className="esw-stat-val" style={{ color: '#5f8dff' }}>{stats.upcoming}</span><span className="esw-stat-label">Upcoming</span></div>
         <div className="esw-stat-div" />
-        <div className="esw-stat">
-          <span className="esw-stat-val" style={{ color: stats.week7 > 0 ? '#ff8c5a' : '#4abf95' }}>{stats.week7}</span>
-          <span className="esw-stat-label">This Week</span>
-        </div>
+        <div className="esw-stat"><span className="esw-stat-val" style={{ color: stats.week7 > 0 ? '#ff8c5a' : '#4abf95' }}>{stats.week7}</span><span className="esw-stat-label">This Week</span></div>
         <div className="esw-stat-div" />
-        <div className="esw-stat">
-          <span className="esw-stat-val" style={{ color: stats.urgent > 0 ? '#e05555' : '#4abf95' }}>{stats.urgent}</span>
-          <span className="esw-stat-label">Urgent (≤3d)</span>
-        </div>
+        <div className="esw-stat"><span className="esw-stat-val" style={{ color: stats.urgent > 0 ? '#e05555' : '#4abf95' }}>{stats.urgent}</span><span className="esw-stat-label">Urgent (≤3d)</span></div>
       </div>
-
-      {/* ── Study timer ── */}
       <div className="esw-timer">
         <div className="esw-timer-header">
           <span className="sp-section-label"><Timer size={13} /> Study Timer</span>
-          {/* Goal display / inline edit */}
           {editingGoal ? (
             <div className="esw-goal-edit">
-              <input
-                className="esw-goal-input"
-                type="number"
-                min={5}
-                max={1440}
-                value={goalInput}
+              <input className="esw-goal-input" type="number" min={5} max={1440} value={goalInput}
                 onChange={e => setGoalInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') applyGoal(); if (e.key === 'Escape') { setEditingGoal(false); setGoalInput(String(studyGoal)); } }}
-                autoFocus
-              />
+                autoFocus />
               <span className="esw-goal-unit">min</span>
               <button className="esw-goal-apply" onClick={applyGoal}><Check size={11} /></button>
               <button className="esw-goal-cancel" onClick={() => { setEditingGoal(false); setGoalInput(String(studyGoal)); }}><X size={11} /></button>
             </div>
           ) : (
-            <button
-              className="esw-goal-display"
-              onClick={() => { setEditingGoal(true); setGoalInput(String(studyGoal)); }}
-              title="Click to change goal"
-            >
-              <span style={{ color: timerOn ? '#ff5d8f' : '#888', fontWeight: 700, fontSize: 12 }}>
-                {studyMins}m / {studyGoal}m
-              </span>
+            <button className="esw-goal-display" onClick={() => { setEditingGoal(true); setGoalInput(String(studyGoal)); }}>
+              <span style={{ color: timerOn ? '#ff5d8f' : '#888', fontWeight: 700, fontSize: 12 }}>{studyMins}m / {studyGoal}m</span>
               <Edit3 size={10} style={{ color: '#ccc', marginLeft: 4 }} />
             </button>
           )}
         </div>
-
-        {/* Goal preset chips */}
         <div className="esw-goal-presets">
           {GOAL_PRESETS.map(mins => (
-            <button
-              key={mins}
-              className={`esw-preset-chip ${studyGoal === mins ? 'active' : ''}`}
-              onClick={() => applyPreset(mins)}
-              title={`Set goal to ${mins} minutes`}
-            >
+            <button key={mins} className={`esw-preset-chip ${studyGoal === mins ? 'active' : ''}`}
+              onClick={() => applyPreset(mins)}>
               {mins >= 60 ? `${mins / 60}h` : `${mins}m`}
             </button>
           ))}
         </div>
-
-        {/* Progress bar */}
         <div className="esw-timer-bar-wrap">
           <div className="esw-timer-bar">
-            <div
-              className="esw-timer-fill"
-              style={{
-                width: `${studyPct}%`,
-                background: goalReached
-                  ? 'linear-gradient(90deg,#6dd6b1,#4abf95)'
-                  : 'linear-gradient(90deg,#ff8fb1,#ff6f91)',
-                transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
-              }}
-            />
+            <div className="esw-timer-fill" style={{
+              width: `${studyPct}%`,
+              background: goalReached ? 'linear-gradient(90deg,#6dd6b1,#4abf95)' : 'linear-gradient(90deg,#ff8fb1,#ff6f91)',
+              transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
+            }} />
           </div>
-          <span className="esw-timer-pct" style={{ color: goalReached ? '#4abf95' : '#bbb' }}>
-            {studyPct}%
-          </span>
+          <span className="esw-timer-pct" style={{ color: goalReached ? '#4abf95' : '#bbb' }}>{studyPct}%</span>
         </div>
-
-        {/* Controls */}
         <div className="esw-timer-btns">
-          <button
-            className={`esw-timer-toggle ${timerOn ? 'on' : ''}`}
-            onClick={() => setTimerOn(v => !v)}>
+          <button className={`esw-timer-toggle ${timerOn ? 'on' : ''}`} onClick={() => setTimerOn(v => !v)}>
             {timerOn ? '⏸ Pause' : '▶ Start'}
           </button>
-          <button className="esw-timer-reset" onClick={() => { setTimerOn(false); setStudyMins(0); }}>
-            Reset
-          </button>
+          <button className="esw-timer-reset" onClick={() => { setTimerOn(false); setStudyMins(0); }}>Reset</button>
         </div>
-
-        {goalReached && (
-          <p className="esw-timer-done">✅ Daily study goal reached! Great work! 🎉</p>
-        )}
+        {goalReached && <p className="esw-timer-done">✅ Daily study goal reached! Great work! 🎉</p>}
       </div>
-
-      {/* Study tip */}
       <div className="sp-tip-card">
         <div className="sp-tip-emoji">{tip.emoji}</div>
-        <div>
-          <p className="sp-tip-label">Study Tip</p>
-          <p className="sp-tip-text">{tip.tip}</p>
-        </div>
+        <div><p className="sp-tip-label">Study Tip</p><p className="sp-tip-text">{tip.tip}</p></div>
       </div>
       <button className="sp-next-tip-btn" onClick={() => setTipIndex(i => (i + 1) % STUDY_TIPS.length)}>
         Next tip →
@@ -785,26 +1269,15 @@ function ExamStudyWellness({ exams }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   EXAMS PANEL
-───────────────────────────────────────────── */
 function ExamsPanel({ exams, loading, error, onAdd, onEdit, onDelete, sections, sectionMap,
-  onManageSections, currentMonth, onPrevMonth, onNextMonth }) {
-
-  const stats = useMemo(() => {
-    const upcoming = exams.filter(e => daysUntil(e.exam_date) >= 0);
-    const urgent   = upcoming.filter(e => daysUntil(e.exam_date) <= 3);
-    return { urgent: urgent.length };
-  }, [exams]);
-
+  currentMonth, onPrevMonth, onNextMonth }) {
+  const stats = useMemo(() => ({
+    urgent: exams.filter(e => daysUntil(e.exam_date) >= 0 && daysUntil(e.exam_date) <= 3).length,
+  }), [exams]);
   if (loading) return <div className="ex-empty"><p>Loading your exams…</p></div>;
-
   return (
     <div className="ex-panel">
-      {error && (
-        <div className="ex-error-box"><AlertCircle size={15} /><span>{error}</span></div>
-      )}
-
+      {error && <div className="ex-error-box"><AlertCircle size={15} /><span>{error}</span></div>}
       {stats.urgent > 0 && (
         <div className="ex-urgent-banner">
           <Zap size={14} />
@@ -812,163 +1285,31 @@ function ExamsPanel({ exams, loading, error, onAdd, onEdit, onDelete, sections, 
           {stats.urgent > 1 ? ' are' : ' is'} happening within 3 days — study hard! 💪
         </div>
       )}
-
-      <ExamCalendar
-        exams={exams}
-        onAdd={onAdd}
-        onEdit={onEdit}
-        currentMonth={currentMonth}
-        onPrevMonth={onPrevMonth}
-        onNextMonth={onNextMonth}
-      />
-
+      <ExamCalendar exams={exams} onAdd={onAdd} onEdit={onEdit}
+        currentMonth={currentMonth} onPrevMonth={onPrevMonth} onNextMonth={onNextMonth} />
       <div className="sp-grid">
-        <ExamHistoryList
-          allExams={exams}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          sectionMap={sectionMap}
-        />
+        <ExamHistoryList allExams={exams} onEdit={onEdit} onDelete={onDelete} sectionMap={sectionMap} />
         <ExamStudyWellness exams={exams} />
       </div>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────────
-   SHIFT MODAL
-───────────────────────────────────────────── */
-function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
-  const { user } = useAuth();
-  const [form, setForm] = useState({
-    section_name: editing?.section_name ?? sections[0]?.id ?? '',
-    shift_date:   editing?.shift_date   ?? defaultDate ?? toDateStr(new Date()),
-    start_time:   editing?.start_time   ?? '07:00',
-    end_time:     editing?.end_time     ?? '15:00',
-    shift_type:   editing?.shift_type   ?? 'morning',
-    notes:        editing?.notes        ?? '',
-  });
-  const [saving, setSaving] = useState(false);
-  const [error,  setError]  = useState('');
-
-  const duration  = calcDuration(form.start_time, form.end_time);
-  const ShiftIcon = SHIFT_TYPES[form.shift_type]?.icon ?? HelpCircle;
-  const typeColor = SHIFT_TYPES[form.shift_type]?.color ?? '#888';
-
-  const handleSubmit = async (e) => {
-    e.preventDefault(); setSaving(true); setError('');
-    let result;
-    if (editing) {
-      result = await supabase.from('shifts').update({ ...form, updated_at: new Date().toISOString() }).eq('id', editing.id).select().single();
-    } else {
-      result = await supabase.from('shifts').insert([{ ...form, user_id: user.id }]).select().single();
-    }
-    setSaving(false);
-    if (result.error) { setError(result.error.message); return; }
-    onSaved(result.data, Boolean(editing)); onClose();
-  };
-
-  return (
-    <div className="sp-overlay" onClick={onClose}>
-      <div className="sp-modal" onClick={e => e.stopPropagation()}>
-        <div className="sp-modal-header">
-          <div className="sp-modal-title-row">
-            <div className="sp-modal-dot" style={{ background: typeColor }} />
-            <h3>{editing ? 'Edit Shift' : 'Add Shift'}</h3>
-          </div>
-          <button className="sp-icon-btn" onClick={onClose}><X size={16} /></button>
-        </div>
-        <form onSubmit={handleSubmit} className="sp-modal-form">
-          <div>
-            <p className="sp-field-label">Shift Type</p>
-            <div className="sp-type-pills">
-              {Object.entries(SHIFT_TYPES).map(([key, val]) => {
-                const TIcon = val.icon;
-                return (
-                  <button key={key} type="button"
-                    className={`sp-type-pill ${form.shift_type === key ? 'active' : ''}`}
-                    style={form.shift_type === key
-                      ? { background: val.color, borderColor: val.color, color: '#fff' }
-                      : { borderColor: val.color + '66', color: val.color }}
-                    onClick={() => setForm({ ...form, shift_type: key })}>
-                    <TIcon size={13} />{val.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <label className="sp-field-label">
-            Section
-            <select className="sp-select" value={form.section_name} onChange={e => setForm({ ...form, section_name: e.target.value })}>
-              {sections.map(s => <option key={s.id} value={s.id}>{s.id}</option>)}
-            </select>
-          </label>
-          <label className="sp-field-label">
-            Date
-            <input type="date" className="sp-input" value={form.shift_date}
-              onChange={e => setForm({ ...form, shift_date: e.target.value })} required />
-          </label>
-          <div className="sp-time-row">
-            <label className="sp-field-label" style={{ flex: 1 }}>
-              Start Time
-              <input type="time" className="sp-input" value={form.start_time}
-                onChange={e => setForm({ ...form, start_time: e.target.value })} required />
-            </label>
-            <label className="sp-field-label" style={{ flex: 1 }}>
-              End Time
-              <input type="time" className="sp-input" value={form.end_time}
-                onChange={e => setForm({ ...form, end_time: e.target.value })} required />
-            </label>
-          </div>
-          {duration && (
-            <div className="sp-duration-preview" style={{ borderColor: typeColor + '55', color: typeColor }}>
-              <Timer size={13} />Duration: <strong>{duration}</strong>
-            </div>
-          )}
-          <label className="sp-field-label">
-            Notes (optional)
-            <textarea className="sp-textarea" rows={2} placeholder="Any reminders or details…"
-              value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
-          </label>
-          {error && <p className="sp-error">{error}</p>}
-          <div className="sp-modal-actions">
-            <button type="submit" className="sp-primary-btn" disabled={saving}>
-              <Check size={15} />{saving ? 'Saving…' : editing ? 'Update Shift' : 'Add Shift'}
-            </button>
-            <button type="button" className="sp-secondary-btn" onClick={onClose}>Cancel</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   WEEKLY STATS
-───────────────────────────────────────────── */
 function WeeklyStats({ shifts }) {
   const totalHours = useMemo(() => shifts.reduce((sum, s) => sum + calcDurationHrs(s.start_time, s.end_time), 0), [shifts]);
-  const typeCounts = useMemo(() => {
-    const c = {};
-    shifts.forEach(s => { c[s.shift_type] = (c[s.shift_type] ?? 0) + 1; });
-    return c;
-  }, [shifts]);
+  const typeCounts = useMemo(() => { const c = {}; shifts.forEach(s => { c[s.shift_type] = (c[s.shift_type] ?? 0) + 1; }); return c; }, [shifts]);
   const nightCount = typeCounts['night'] ?? 0;
-
   return (
     <div className="sp-stats-bar">
       <div className="sp-stat"><CalendarDays size={15} /><span><strong>{shifts.length}</strong> shifts</span></div>
       <div className="sp-stat-divider" />
       <div className="sp-stat"><Clock size={15} /><span><strong>{totalHours.toFixed(1)}h</strong> total</span></div>
       <div className="sp-stat-divider" />
-      {nightCount >= 3 && (
-        <div className="sp-stat warn"><AlertCircle size={14} /><span>{nightCount} night shifts — rest well!</span></div>
-      )}
+      {nightCount >= 3 && <div className="sp-stat warn"><AlertCircle size={14} /><span>{nightCount} night shifts — rest well!</span></div>}
       {Object.entries(typeCounts).map(([type, count]) => {
         const meta = SHIFT_TYPES[type];
         return (
-          <div key={type} className="sp-type-chip"
-            style={{ background: meta?.bg, color: meta?.color, border: `1px solid ${meta?.color}44` }}>
+          <div key={type} className="sp-type-chip" style={{ background: meta?.bg, color: meta?.color, border: `1px solid ${meta?.color}44` }}>
             {meta?.label} ×{count}
           </div>
         );
@@ -977,16 +1318,12 @@ function WeeklyStats({ shifts }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   SHIFT CALENDAR
-───────────────────────────────────────────── */
 function ShiftCalendar({ shifts, exams, onAdd, onEdit, onDelete, currentWeek, onPrevWeek, onNextWeek }) {
   const weekStart = getWeekStart(currentWeek);
   const weekDates = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date(weekStart); d.setDate(weekStart.getDate() + i); return d;
   });
   const todayStr = toDateStr(new Date());
-
   return (
     <div className="sp-card sp-calendar-card">
       <div className="sp-card-header">
@@ -1034,10 +1371,10 @@ function ShiftCalendar({ shifts, exams, onAdd, onEdit, onDelete, currentWeek, on
                   );
                 })}
                 {dayExams.map(exam => {
-                  const urgency = getUrgency(daysUntil(exam.exam_date));
+                  const u = getUrgency(daysUntil(exam.exam_date));
                   return (
                     <div key={exam.id} className="sp-exam-marker"
-                      style={{ background: urgency.badgeBg, borderColor: urgency.borderColor + '88', color: urgency.badgeColor }}
+                      style={{ background: u.badgeBg, borderColor: u.borderColor + '88', color: u.badgeColor }}
                       title={`📚 ${exam.exam_name}`} onClick={e => e.stopPropagation()}>
                       <GraduationCap size={9} />
                       <span>{exam.exam_name.length > 8 ? exam.exam_name.slice(0, 8) + '…' : exam.exam_name}</span>
@@ -1053,9 +1390,6 @@ function ShiftCalendar({ shifts, exams, onAdd, onEdit, onDelete, currentWeek, on
   );
 }
 
-/* ─────────────────────────────────────────────
-   ALL SHIFTS LIST
-───────────────────────────────────────────── */
 function AllShiftsList({ allShifts, onEdit, onDelete }) {
   const [filterType, setFilterType] = useState('');
   const [showFilter, setShowFilter] = useState(false);
@@ -1068,21 +1402,13 @@ function AllShiftsList({ allShifts, onEdit, onDelete }) {
 
   const grouped = useMemo(() => {
     const groups = {};
-    filtered.forEach(s => {
-      const key = s.shift_date.slice(0, 7);
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(s);
-    });
+    filtered.forEach(s => { const key = s.shift_date.slice(0, 7); if (!groups[key]) groups[key] = []; groups[key].push(s); });
     return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
   }, [filtered]);
 
   const totalHours = useMemo(() => allShifts.reduce((sum, s) => sum + calcDurationHrs(s.start_time, s.end_time), 0), [allShifts]);
 
   return (
-    // ✅ FIX 2: Elevate this card's stacking context when the filter dropdown is open.
-    // .sp-card uses backdrop-filter which creates an isolated stacking context, so the
-    // dropdown's z-index is scoped inside it. By giving the card itself a higher z-index
-    // (via position + z-index) when open, it paints above sibling cards entirely.
     <div className="sp-card" style={showFilter ? { position: 'relative', zIndex: 10 } : {}}>
       <div className="sp-card-header">
         <div className="sp-icon-wrap blue"><BarChart2 size={20} /></div>
@@ -1105,9 +1431,7 @@ function AllShiftsList({ allShifts, onEdit, onDelete }) {
             </div>
           )}
         </div>
-        {filterType && (
-          <button className="sp-clear-filter" onClick={() => setFilterType('')}><X size={12} /> Clear</button>
-        )}
+        {filterType && <button className="sp-clear-filter" onClick={() => setFilterType('')}><X size={12} /> Clear</button>}
       </div>
       {grouped.length === 0 ? (
         <div className="sp-empty"><p>No shifts logged yet ✨</p></div>
@@ -1143,8 +1467,8 @@ function AllShiftsList({ allShifts, onEdit, onDelete }) {
                       </div>
                     </div>
                     <div className="sp-shift-row-actions">
-                      <button className="sp-icon-btn" onClick={() => onEdit(shift)} title="Edit"><Edit3 size={13} /></button>
-                      <button className="sp-icon-btn danger" onClick={() => onDelete(shift.id)} title="Delete"><Trash2 size={13} /></button>
+                      <button className="sp-icon-btn" onClick={() => onEdit(shift)}><Edit3 size={13} /></button>
+                      <button className="sp-icon-btn danger" onClick={() => onDelete(shift.id)}><Trash2 size={13} /></button>
                     </div>
                   </div>
                 );
@@ -1157,9 +1481,6 @@ function AllShiftsList({ allShifts, onEdit, onDelete }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   WELLNESS PANEL
-───────────────────────────────────────────── */
 function WellnessPanel({ weekShifts }) {
   const [tipIndex,  setTipIndex]  = useState(() => Math.floor(Math.random() * WELLNESS_TIPS.length));
   const [hydration, setHydration] = useState(0);
@@ -1168,15 +1489,12 @@ function WellnessPanel({ weekShifts }) {
   const nightCount = weekShifts.filter(s => s.shift_type === 'night').length;
   const totalHours = weekShifts.reduce((sum, s) => sum + calcDurationHrs(s.start_time, s.end_time), 0);
   const fatigue    = totalHours >= 40 ? 'high' : totalHours >= 24 ? 'moderate' : 'low';
-
   const fatigueInfo = {
     high:     { color: '#e05555', bg: '#fff0f0', text: 'High workload this week. Prioritize rest and recovery.' },
     moderate: { color: '#ff8c5a', bg: '#fff5ee', text: 'Moderate workload. Stay hydrated and take breaks.' },
     low:      { color: '#4abf95', bg: '#edfaf4', text: 'Manageable schedule. Keep the great momentum! ✨' },
   };
-
   const tip = WELLNESS_TIPS[tipIndex];
-
   return (
     <div className="sp-card sp-wellness-card">
       <div className="sp-card-header">
@@ -1193,9 +1511,7 @@ function WellnessPanel({ weekShifts }) {
         </div>
       </div>
       {nightCount >= 2 && (
-        <div className="sp-night-warning">
-          <Moon size={13} /> {nightCount} night shifts this week — extra sleep is essential.
-        </div>
+        <div className="sp-night-warning"><Moon size={13} /> {nightCount} night shifts this week — extra sleep is essential.</div>
       )}
       <div className="sp-hydration">
         <div className="sp-hydration-header">
@@ -1212,133 +1528,11 @@ function WellnessPanel({ weekShifts }) {
       </div>
       <div className="sp-tip-card">
         <div className="sp-tip-emoji">{tip.emoji}</div>
-        <div>
-          <p className="sp-tip-label">Wellness Tip</p>
-          <p className="sp-tip-text">{tip.tip}</p>
-        </div>
+        <div><p className="sp-tip-label">Wellness Tip</p><p className="sp-tip-text">{tip.tip}</p></div>
       </div>
       <button className="sp-next-tip-btn" onClick={() => setTipIndex(i => (i + 1) % WELLNESS_TIPS.length)}>
         Next tip →
       </button>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   MANAGE SECTIONS MODAL  (restyled to match NotesSection)
-───────────────────────────────────────────── */
-function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose }) {
-  const [name,     setName]     = useState('');
-  const [error,    setError]    = useState('');
-  const [removing, setRemoving] = useState(null);
-
-  const handleAdd = () => {
-    const label = name.trim();
-    if (!label) { setError('Please enter a section name.'); return; }
-    if (sections.some(s => s.id.toLowerCase() === label.toLowerCase())) {
-      setError('That section already exists.'); return;
-    }
-    onAdd(label); setName(''); setError('');
-  };
-
-  return (
-    <div className="msm-overlay" onClick={onClose}>
-      <div className="msm-modal" onClick={e => e.stopPropagation()}>
-
-        {/* Header */}
-        <div className="msm-head">
-          <div className="msm-head-left">
-            <div className="msm-head-icon"><Settings2 size={18} /></div>
-            <div>
-              <h3 className="msm-title">Manage Sections</h3>
-              <p className="msm-sub">Add, remove, and color sections for shifts and exams</p>
-            </div>
-          </div>
-          <button className="msm-close" onClick={onClose}><X size={16} /></button>
-        </div>
-
-        {/* Add new section */}
-        <div className="msm-add-box">
-          <p className="msm-box-label">New Section</p>
-          <div className="msm-add-row">
-            <input
-              className="msm-input"
-              placeholder="e.g. Immunology, Parasitology…"
-              value={name}
-              onChange={e => { setName(e.target.value); setError(''); }}
-              onKeyDown={e => e.key === 'Enter' && handleAdd()}
-              maxLength={40}
-              autoFocus
-            />
-            <button className="msm-add-btn" onClick={handleAdd}>
-              <Plus size={14} /> Add
-            </button>
-          </div>
-          {error && <p className="msm-error">{error}</p>}
-        </div>
-
-        {/* Sections list */}
-        <div>
-          <p className="msm-box-label">
-            Sections
-            {sections.length > 0 && (
-              <span className="msm-count">{sections.length}</span>
-            )}
-          </p>
-
-          {sections.length === 0 ? (
-            <div className="msm-empty">
-              <span style={{ fontSize: 28 }}>🗂️</span>
-              <p>No sections yet.</p>
-            </div>
-          ) : (
-            <div className="msm-list">
-              {sections.map(sec => {
-                const isRem = removing === sec.id;
-                return (
-                  <div key={sec.id} className={`msm-row ${isRem ? 'msm-row-rem' : ''}`}>
-                    <div className="msm-row-main">
-                      {/* Section pill */}
-                      <div className="msm-sec-pill"
-                        style={{ background: sec.bg, color: sec.color, borderColor: sec.color + '55' }}>
-                        <span className="msm-dot" style={{ background: sec.color }} />
-                        {sec.id}
-                      </div>
-                      {/* Color picker */}
-                      <label className="msm-color-ctrl" title={`Change ${sec.id} color`}>
-                        <span className="msm-color-swatch" style={{ background: sec.color }} />
-                        <input
-                          type="color"
-                          value={sec.color}
-                          onChange={e => onColorChange(sec.id, e.target.value)}
-                        />
-                      </label>
-                    </div>
-
-                    {/* Delete / confirm */}
-                    {isRem ? (
-                      <div className="msm-confirm">
-                        <span>Remove?</span>
-                        <button className="msm-yes" onClick={() => { onRemove(sec.id); setRemoving(null); }}>Yes</button>
-                        <button className="msm-no"  onClick={() => setRemoving(null)}>No</button>
-                      </div>
-                    ) : (
-                      <button className="msm-rm-btn" onClick={() => setRemoving(sec.id)}>
-                        <Trash2 size={12} /> Remove
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="msm-note">
-          <Sparkles size={12} style={{ color: '#ff8fb1', flexShrink: 0 }} />
-          Removing a section hides it from new shifts, exams, and filters. Existing records keep their saved label.
-        </div>
-      </div>
     </div>
   );
 }
@@ -1358,13 +1552,13 @@ export default function ShiftPlanner() {
   const [editingShift,   setEditingShift]   = useState(null);
   const [modalDate,      setModalDate]      = useState('');
 
-  const [allExams,       setAllExams]       = useState([]);
-  const [loadingExams,   setLoadingExams]   = useState(true);
-  const [examError,      setExamError]      = useState(null);
-  const [showExamModal,  setShowExamModal]  = useState(false);
-  const [editingExam,    setEditingExam]    = useState(null);
-  const [examDefaultDate,setExamDefaultDate]= useState('');
-  const [currentExamMonth, setCurrentExamMonth] = useState(new Date());
+  const [allExams,        setAllExams]        = useState([]);
+  const [loadingExams,    setLoadingExams]    = useState(true);
+  const [examError,       setExamError]       = useState(null);
+  const [showExamModal,   setShowExamModal]   = useState(false);
+  const [editingExam,     setEditingExam]     = useState(null);
+  const [examDefaultDate, setExamDefaultDate] = useState('');
+  const [currentExamMonth,setCurrentExamMonth]= useState(new Date());
 
   const [sections,          setSections]          = useState(DEFAULT_SECTION_LIST);
   const [sectionsLoaded,    setSectionsLoaded]    = useState(false);
@@ -1377,12 +1571,8 @@ export default function ShiftPlanner() {
 
   useEffect(() => {
     const loadSections = async () => {
-      const { data } = await supabase
-        .from('user_settings')
-        .select('value')
-        .eq('user_id', user.id)
-        .eq('key', SECTION_STORAGE_KEY)
-        .maybeSingle();
+      const { data } = await supabase.from('user_settings').select('value')
+        .eq('user_id', user.id).eq('key', SECTION_STORAGE_KEY).maybeSingle();
       setSections(data?.value ? normalizeSections(data.value) : DEFAULT_SECTION_LIST);
       setSectionsLoaded(true);
     };
@@ -1391,11 +1581,7 @@ export default function ShiftPlanner() {
 
   useEffect(() => {
     if (!sectionsLoaded) return;
-    supabase.from('user_settings').upsert([{
-      user_id: user.id,
-      key: SECTION_STORAGE_KEY,
-      value: sections,
-    }], { onConflict: 'user_id,key' });
+    supabase.from('user_settings').upsert([{ user_id: user.id, key: SECTION_STORAGE_KEY, value: sections }], { onConflict: 'user_id,key' });
   }, [sections, sectionsLoaded, user.id]);
 
   useEffect(() => {
@@ -1429,19 +1615,19 @@ export default function ShiftPlanner() {
     fetchExams();
   }, [user.id]);
 
-  const handleShiftSaved  = (saved, isEdit) => {
-    if (isEdit) setAllShifts(prev => prev.map(s => s.id === saved.id ? saved : s));
-    else        setAllShifts(prev => [saved, ...prev]);
-  };
+  const handleShiftSaved  = (saved, isEdit) => isEdit
+    ? setAllShifts(prev => prev.map(s => s.id === saved.id ? saved : s))
+    : setAllShifts(prev => [saved, ...prev]);
+
   const handleShiftDelete = useCallback(async (id) => {
     await supabase.from('shifts').delete().eq('id', id);
     setAllShifts(prev => prev.filter(s => s.id !== id));
   }, []);
 
-  const handleExamSaved = (saved, isEdit) => {
-    if (isEdit) setAllExams(prev => prev.map(e => e.id === saved.id ? saved : e));
-    else        setAllExams(prev => [...prev, saved].sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date)));
-  };
+  const handleExamSaved = (saved, isEdit) => isEdit
+    ? setAllExams(prev => prev.map(e => e.id === saved.id ? saved : e))
+    : setAllExams(prev => [...prev, saved].sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date)));
+
   const handleExamDelete = useCallback(async (id) => {
     await supabase.from('exams').delete().eq('id', id);
     setAllExams(prev => prev.filter(e => e.id !== id));
@@ -1449,12 +1635,7 @@ export default function ShiftPlanner() {
 
   const openAddShift  = (dateStr) => { setEditingShift(null); setModalDate(dateStr); setShowShiftModal(true); };
   const openEditShift = (shift)   => { setEditingShift(shift); setModalDate(''); setShowShiftModal(true); };
-
-  const openAddExam   = (dateStr) => {
-    setEditingExam(null);
-    setExamDefaultDate(dateStr ?? '');
-    setShowExamModal(true);
-  };
+  const openAddExam   = (dateStr) => { setEditingExam(null); setExamDefaultDate(dateStr ?? ''); setShowExamModal(true); };
   const openEditExam  = (exam)    => { setEditingExam(exam); setExamDefaultDate(''); setShowExamModal(true); };
 
   const handleAddSection         = (label) => { const meta = generateSectionMeta(label); setSections(prev => [...prev, { id: label, ...meta }]); };
@@ -1466,7 +1647,6 @@ export default function ShiftPlanner() {
     if (cmd === 'today') { setCurrentWeek(new Date()); return; }
     setCurrentWeek(d => { const n = new Date(d); n.setDate(d.getDate() + 7); return n; });
   };
-
   const prevExamMonth = () => setCurrentExamMonth(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
   const nextExamMonth = (cmd) => {
     if (cmd === 'today') { setCurrentExamMonth(new Date()); return; }
@@ -1481,9 +1661,7 @@ export default function ShiftPlanner() {
         /* ── Page ── */
         .sp-page {
           width: 100%;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
+          display: flex; flex-direction: column; gap: 24px;
           font-family: 'DM Sans', sans-serif;
           background: rgba(255,255,255,0.9);
           border: 1px solid rgba(255,220,232,0.55);
@@ -1495,22 +1673,20 @@ export default function ShiftPlanner() {
         .sp-page-title {
           font-family: 'Fraunces', serif;
           font-size: clamp(2rem, 5vw, 2.55rem);
-          font-weight: 700;
-          color: #1c1012;
-          margin: 0 0 6px;
-          line-height: 1.08;
-          letter-spacing: 0;
+          font-weight: 700; color: #1c1012;
+          margin: 0 0 6px; line-height: 1.08;
         }
         .sp-title-accent { color: #ff5d8f; font-style: italic; }
 
         /* ── Page tabs ── */
-        .sp-page-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+        .sp-page-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 4px; }
         .sp-page-tab {
           display: flex; align-items: center; gap: 12px; padding: 16px 18px;
           border-radius: 22px; border: 1.5px solid rgba(255,224,234,0.9);
-          background: rgba(255,255,255,0.9); color: #aaa; font-size: 14px; font-weight: 700;
-          cursor: pointer; transition: all 0.2s; position: relative;
-          text-align: left; min-width: 0; box-shadow: 0 8px 24px rgba(255,111,145,0.08);
+          background: rgba(255,255,255,0.9); color: #aaa;
+          font-size: 14px; font-weight: 700; cursor: pointer;
+          transition: all 0.2s; text-align: left; min-width: 0;
+          box-shadow: 0 8px 24px rgba(255,111,145,0.08);
         }
         .sp-page-tab svg { width: 42px; height: 42px; padding: 11px; border-radius: 15px; color: white; flex-shrink: 0; background: linear-gradient(135deg,#ff8fb1,#ff6f91); box-shadow: 0 7px 18px rgba(255,111,145,0.24); }
         .sp-page-tab:nth-child(2) svg { background: linear-gradient(135deg,#7ab6ff,#5f8dff); box-shadow: 0 7px 18px rgba(95,141,255,0.24); }
@@ -1522,18 +1698,14 @@ export default function ShiftPlanner() {
         .sp-page-tab.active .sp-page-tab-title { color: #ff5d8f; }
         .sp-tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 26px; background: #eff4ff; color: #5f8dff; border-radius: 999px; font-size: 12px; font-weight: 800; padding: 0 8px; margin-left: auto; flex-shrink: 0; }
 
-        /* ── Manage sections toolbar (shown below tabs) ── */
-        .sp-sections-toolbar {
-          display: flex; align-items: center; justify-content: flex-end;
-          margin-bottom: 20px;
-        }
+        /* ── Manage sections toolbar ── */
+        .sp-sections-toolbar { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 8px; }
         .sp-manage-sec-btn {
           display: inline-flex; align-items: center; gap: 7px;
           border: 1.5px solid rgba(255,200,220,0.6);
-          background: rgba(255,255,255,0.9);
-          border-radius: 999px; padding: 8px 16px;
-          font-size: 12px; font-weight: 700; color: #999; cursor: pointer;
-          transition: all 0.2s; font-family: inherit;
+          background: rgba(255,255,255,0.9); border-radius: 999px;
+          padding: 8px 16px; font-size: 12px; font-weight: 700;
+          color: #999; cursor: pointer; transition: all 0.2s; font-family: inherit;
         }
         .sp-manage-sec-btn:hover { border-color: #ff8fb1; color: #ff5d8f; background: #fff0f4; box-shadow: 0 4px 14px rgba(255,111,145,0.12); }
 
@@ -1578,7 +1750,7 @@ export default function ShiftPlanner() {
         .sp-cal-day-shifts { display: flex; flex-direction: column; gap: 4px; flex: 1; }
         .sp-cal-empty-day { display: flex; align-items: center; justify-content: center; color: #e0c0cc; margin-top: auto; opacity: 0; transition: opacity 0.2s; }
         .sp-cal-day:hover .sp-cal-empty-day { opacity: 1; }
-        .sp-shift-pill { display: flex; align-items: center; gap: 4px; border-radius: 8px; border: 1px solid; padding: 3px 6px; font-size: 9px; font-weight: 600; cursor: pointer; transition: filter 0.15s; position: relative; }
+        .sp-shift-pill { display: flex; align-items: center; gap: 4px; border-radius: 8px; border: 1px solid; padding: 3px 6px; font-size: 9px; font-weight: 600; cursor: pointer; transition: filter 0.15s; }
         .sp-shift-pill:hover { filter: brightness(0.95); }
         .sp-shift-pill span { flex: 1; }
         .sp-pill-delete { background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; opacity: 0.5; transition: opacity 0.15s; color: inherit; }
@@ -1586,7 +1758,7 @@ export default function ShiftPlanner() {
         .sp-exam-marker { display: flex; align-items: center; gap: 3px; border-radius: 6px; border: 1px solid; padding: 2px 5px; font-size: 9px; font-weight: 700; cursor: default; }
         .sp-exam-marker span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        /* ═══ EXAM CALENDAR (monthly) ═══ */
+        /* ═══ EXAM CALENDAR ═══ */
         .ec-add-month-btn { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; border: none; background: linear-gradient(135deg,#7ab6ff,#5f8dff); color: white; border-radius: 999px; padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; }
         .ec-add-month-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(95,141,255,0.3); }
         .ec-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
@@ -1620,8 +1792,6 @@ export default function ShiftPlanner() {
         .ehl-search:focus { border-color: #ff8fb1; background: white; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
         .ehl-search-clear { position: absolute; right: 11px; background: none; border: none; color: #bbb; cursor: pointer; display: flex; padding: 0; }
         .ehl-list > div { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-        .ehl-list::-webkit-scrollbar-track { background: transparent; }
-        .ehl-list::-webkit-scrollbar-thumb { background: #ffd6e1; border-radius: 4px; }
         .ehl-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; background: #fff8fa; border: 1.5px solid #ffe0ea; border-left: 3px solid; border-radius: 14px; padding: 12px 12px 12px 10px; transition: 0.2s; }
         .ehl-row:hover { border-color: #ffb8ce; border-left-color: inherit; background: white; }
         .ehl-row.ehl-row-today { background: linear-gradient(135deg,#fff0f4,#fff8fa); }
@@ -1655,52 +1825,25 @@ export default function ShiftPlanner() {
         .esw-stat-val { font-size: 22px; font-weight: 700; line-height: 1; }
         .esw-stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #bbb; }
         .esw-stat-div { width: 1px; height: 36px; background: #ffd6e1; }
-
-        /* Study timer */
         .esw-timer { background: #fff8fa; border: 1px solid #ffe0ea; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
         .esw-timer-header { display: flex; align-items: center; justify-content: space-between; }
-        /* Goal display button */
-        .esw-goal-display {
-          display: inline-flex; align-items: center; gap: 4px;
-          background: none; border: 1px dashed #ffd6e1; border-radius: 8px;
-          padding: 3px 8px; cursor: pointer; transition: 0.2s;
-        }
+        .esw-goal-display { display: inline-flex; align-items: center; gap: 4px; background: none; border: 1px dashed #ffd6e1; border-radius: 8px; padding: 3px 8px; cursor: pointer; transition: 0.2s; }
         .esw-goal-display:hover { border-color: #ff8fb1; background: #fff0f4; }
-        /* Inline goal edit */
         .esw-goal-edit { display: flex; align-items: center; gap: 5px; }
-        .esw-goal-input {
-          width: 56px; border: 1.5px solid #ff8fb1; border-radius: 8px;
-          padding: 3px 8px; font-size: 12px; font-weight: 700; color: #ff5d8f;
-          outline: none; background: white; font-family: inherit; text-align: center;
-        }
+        .esw-goal-input { width: 56px; border: 1.5px solid #ff8fb1; border-radius: 8px; padding: 3px 8px; font-size: 12px; font-weight: 700; color: #ff5d8f; outline: none; background: white; font-family: inherit; text-align: center; }
         .esw-goal-unit { font-size: 11px; color: #aaa; font-weight: 600; }
-        .esw-goal-apply {
-          border: none; background: #4abf95; color: white; border-radius: 6px;
-          width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
-          cursor: pointer; transition: 0.15s;
-        }
+        .esw-goal-apply { border: none; background: #4abf95; color: white; border-radius: 6px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.15s; }
         .esw-goal-apply:hover { background: #39a87f; }
-        .esw-goal-cancel {
-          border: none; background: #f0f0f0; color: #888; border-radius: 6px;
-          width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
-          cursor: pointer; transition: 0.15s;
-        }
+        .esw-goal-cancel { border: none; background: #f0f0f0; color: #888; border-radius: 6px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.15s; }
         .esw-goal-cancel:hover { background: #fde8e8; color: #e05555; }
-        /* Goal preset chips */
         .esw-goal-presets { display: flex; flex-wrap: wrap; gap: 5px; }
-        .esw-preset-chip {
-          border: 1.5px solid #ffd6e1; background: white; color: #aaa;
-          border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 700;
-          cursor: pointer; transition: all 0.15s; font-family: inherit;
-        }
+        .esw-preset-chip { border: 1.5px solid #ffd6e1; background: white; color: #aaa; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.15s; font-family: inherit; }
         .esw-preset-chip:hover { border-color: #ff8fb1; color: #ff5d8f; }
         .esw-preset-chip.active { border-color: #ff6f91; background: #ff6f91; color: white; }
-        /* Progress bar */
         .esw-timer-bar-wrap { display: flex; align-items: center; gap: 10px; }
         .esw-timer-bar { flex: 1; height: 10px; background: #f3dbe3; border-radius: 999px; overflow: hidden; }
         .esw-timer-fill { height: 100%; border-radius: 999px; }
         .esw-timer-pct { font-size: 11px; font-weight: 700; min-width: 34px; text-align: right; }
-        /* Controls */
         .esw-timer-btns { display: flex; gap: 8px; }
         .esw-timer-toggle { flex: 1; border: none; background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white; border-radius: 10px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: inherit; }
         .esw-timer-toggle.on { background: linear-gradient(135deg,#ffb8ce,#ff8fb1); }
@@ -1713,7 +1856,6 @@ export default function ShiftPlanner() {
         .sp-list-toolbar { display: flex; align-items: center; gap: 10px; position: relative; }
         .sp-filter-btn { display: flex; align-items: center; gap: 7px; border: 1.5px solid #ffd6e1; background: rgba(255,255,255,0.9); border-radius: 999px; padding: 8px 14px; font-size: 12px; font-weight: 600; color: #888; cursor: pointer; transition: 0.2s; }
         .sp-filter-btn.active { border-color: #ff8fb1; color: #ff5d8f; }
-        .sp-filter-btn:hover  { border-color: #ff8fb1; }
         .sp-filter-wrap { position: relative; }
         .sp-filter-dropdown { position: absolute; top: calc(100% + 8px); left: 0; background: white; border-radius: 18px; border: 1px solid #ffe0ea; box-shadow: 0 12px 32px rgba(255,111,145,0.16); overflow: hidden; z-index: 200; min-width: 140px; }
         .sp-filter-opt { display: block; width: 100%; text-align: left; border: none; background: transparent; padding: 11px 16px; font-size: 13px; color: #555; cursor: pointer; transition: 0.15s; }
@@ -1723,7 +1865,6 @@ export default function ShiftPlanner() {
         .sp-clear-filter:hover { color: #ff5d8f; }
         .sp-shift-list { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 4px; }
         .sp-shift-list::-webkit-scrollbar { width: 4px; }
-        .sp-shift-list::-webkit-scrollbar-track { background: transparent; }
         .sp-shift-list::-webkit-scrollbar-thumb { background: #ffd6e1; border-radius: 4px; }
         .sp-month-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #ccc; margin: 12px 0 6px; display: flex; justify-content: space-between; align-items: center; }
         .sp-month-label span { font-weight: 500; letter-spacing: 0; }
@@ -1773,102 +1914,11 @@ export default function ShiftPlanner() {
         .ex-error-box { display: flex; align-items: center; gap: 10px; background: #fff0f0; color: #c0392b; border: 1px solid #ffd0d0; border-radius: 16px; padding: 14px 18px; font-size: 13px; }
         .ex-urgent-banner { display: flex; align-items: center; gap: 10px; background: linear-gradient(135deg,#fff0f0,#fff5ee); border: 1.5px solid #ffb8b8; border-radius: 18px; padding: 14px 18px; font-size: 13px; color: #e05555; font-weight: 500; }
         .ex-urgent-banner strong { font-weight: 700; }
-        /* Manage sections row inside ExamsPanel */
-        .ex-manage-row { display: flex; align-items: center; justify-content: flex-end; }
-        .ex-manage-sec-btn { display: inline-flex; align-items: center; gap: 7px; border: 1.5px solid rgba(255,200,220,0.6); background: rgba(255,255,255,0.9); border-radius: 999px; padding: 8px 16px; font-size: 12px; font-weight: 700; color: #999; cursor: pointer; transition: all 0.2s; font-family: inherit; }
-        .ex-manage-sec-btn:hover { border-color: #7ab6ff; color: #5f8dff; background: #eff4ff; box-shadow: 0 4px 14px rgba(95,141,255,0.12); }
-
-        /* ── Shift modal ── */
-        .sp-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.22); backdrop-filter: blur(5px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .sp-modal { background: white; border-radius: 28px; padding: 28px; width: 100%; max-width: 500px; box-shadow: 0 24px 60px rgba(255,111,145,0.2); border: 1px solid #ffe0ea; max-height: 90vh; overflow-y: auto; }
-        .sp-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
-        .sp-modal-title-row { display: flex; align-items: center; gap: 10px; }
-        .sp-modal-dot { width: 10px; height: 10px; border-radius: 50%; }
-        .sp-modal-header h3 { margin: 0; font-size: 1.1rem; color: #333; }
-        .sp-modal-form { display: flex; flex-direction: column; gap: 16px; }
-        .sp-field-label { display: flex; flex-direction: column; gap: 7px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #aaa; margin: 0; }
-        .sp-input, .sp-select, .sp-textarea { border: 1.5px solid #ffd6e1; background: #fff8fa; border-radius: 14px; padding: 11px 14px; font-size: 16px; outline: none; transition: 0.2s; color: #444; font-family: inherit; width: 100%; }
-        .sp-input:focus, .sp-select:focus, .sp-textarea:focus { border-color: #ff8fb1; background: white; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
-        .sp-textarea { resize: vertical; min-height: 70px; }
-        .sp-time-row { display: flex; gap: 12px; }
-        .sp-type-pills { display: flex; flex-wrap: wrap; gap: 7px; }
-        .sp-type-pill { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1.5px solid; background: transparent; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.15s; }
-        .sp-duration-preview { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 12px; border: 1px solid; font-size: 13px; color: #888; }
-        .sp-error { background: #fde8e8; color: #c0392b; border-radius: 12px; padding: 10px 14px; font-size: 13px; margin: 0; }
-        .sp-modal-actions { display: flex; gap: 10px; padding-top: 4px; }
-        .sp-primary-btn { display: inline-flex; align-items: center; gap: 7px; border: none; background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white; border-radius: 999px; padding: 11px 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .sp-primary-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,111,145,0.28); }
-        .sp-primary-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
-        .sp-secondary-btn { border: none; background: #f4f4f4; color: #666; border-radius: 999px; padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; }
-
-        /* ── Exam Modal ── */
-        .em-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.22); backdrop-filter: blur(5px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .em-modal { background: white; border-radius: 28px; padding: 28px; width: 100%; max-width: 520px; box-shadow: 0 24px 60px rgba(255,111,145,0.2); border: 1px solid #ffe0ea; max-height: 92vh; overflow-y: auto; }
-        .em-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-        .em-header-left { display: flex; align-items: center; gap: 12px; }
-        .em-header-icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .em-header-title { margin: 0; font-size: 1.1rem; color: #333; font-weight: 700; }
-        .em-header-sub { margin: 3px 0 0; font-size: 12px; color: #bbb; }
-        .em-close-btn { border: none; background: #f4f4f4; border-radius: 10px; padding: 7px; cursor: pointer; display: flex; color: #888; transition: 0.2s; }
-        .em-close-btn:hover { background: #ffe4ec; color: #ff5d8f; }
-        .em-countdown-preview { display: flex; align-items: center; gap: 10px; border-radius: 16px; border: 1px solid; padding: 12px 16px; margin-bottom: 16px; flex-wrap: wrap; }
-        .em-countdown-icon { font-size: 18px; line-height: 1; }
-        .em-form { display: flex; flex-direction: column; gap: 16px; }
-        .em-label { display: flex; flex-direction: column; gap: 7px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #aaa; margin: 0; }
-        .em-input { border: 1.5px solid #ffd6e1; background: #fff8fa; border-radius: 14px; padding: 12px 14px; font-size: 16px; outline: none; transition: 0.2s; color: #444; font-family: inherit; width: 100%; }
-        .em-input:focus { border-color: #ff8fb1; background: white; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
-        .em-textarea { border: 1.5px solid #ffd6e1; background: #fff8fa; border-radius: 14px; padding: 12px 14px; font-size: 16px; outline: none; transition: 0.2s; color: #444; resize: vertical; min-height: 100px; font-family: inherit; line-height: 1.6; width: 100%; }
-        .em-textarea:focus { border-color: #ff8fb1; background: white; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
-        .em-section-pills { display: flex; flex-wrap: wrap; gap: 7px; }
-        .em-section-pill { padding: 6px 12px; border-radius: 999px; border: 1.5px solid; background: transparent; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.15s; font-family: inherit; }
-        .em-error { background: #fde8e8; color: #c0392b; border-radius: 12px; padding: 10px 14px; font-size: 13px; margin: 0; }
-        .em-actions { display: flex; gap: 10px; padding-top: 4px; }
-        .em-primary-btn { display: inline-flex; align-items: center; gap: 7px; border: none; background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white; border-radius: 999px; padding: 11px 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .em-primary-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,111,145,0.28); }
-        .em-primary-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
-        .em-secondary-btn { border: none; background: #f4f4f4; color: #666; border-radius: 999px; padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; }
-
-        /* ═══ MANAGE SECTIONS MODAL (restyled) ═══ */
-        .msm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.28); backdrop-filter: blur(6px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .msm-modal { background: white; border-radius: 28px; padding: 26px; width: 100%; max-width: 460px; box-shadow: 0 24px 60px rgba(0,0,0,0.14); border: 1px solid rgba(255,200,220,0.4); max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 22px; }
-        .msm-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-        .msm-head-left { display: flex; align-items: center; gap: 12px; }
-        .msm-head-icon { width: 40px; height: 40px; border-radius: 14px; background: linear-gradient(135deg,#ff8fb1,#ff6f91); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
-        .msm-title { margin: 0 0 3px; font-size: 1.1rem; font-weight: 700; color: #1c1412; }
-        .msm-sub { margin: 0; font-size: 12px; color: #bbb; }
-        .msm-close { border: none; background: #f4f0f2; border-radius: 10px; padding: 7px; cursor: pointer; display: flex; color: #888; transition: 0.2s; flex-shrink: 0; }
-        .msm-close:hover { background: #ffe4ec; color: #ff5d8f; }
-        .msm-box-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #c8b0a8; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-        .msm-count { display: inline-flex; align-items: center; justify-content: center; background: #fff0f4; color: #ff6f91; border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 700; }
-        .msm-add-box { background: #fff8fa; border: 1px solid rgba(255,200,220,0.4); border-radius: 18px; padding: 18px; }
-        .msm-add-row { display: flex; gap: 10px; align-items: center; }
-        .msm-input { flex: 1 1 auto; min-width: 0; width: 100%; border: 1.5px solid rgba(255,200,220,0.6); background: white; border-radius: 12px; padding: 11px 14px; font-size: 14px; outline: none; transition: 0.2s; color: #444; font-family: inherit; }
-        .msm-input:focus { border-color: #ff8fb1; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
-        .msm-add-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; border: none; background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white; border-radius: 12px; padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; font-family: inherit; }
-        .msm-add-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(255,111,145,0.25); }
-        .msm-error { background: #fde8e8; color: #c0392b; border-radius: 10px; padding: 8px 12px; font-size: 12px; margin-top: 10px; }
-        .msm-empty { text-align: center; padding: 24px 16px; background: #fff8fa; border-radius: 16px; border: 1px dashed rgba(255,200,220,0.5); display: flex; flex-direction: column; align-items: center; gap: 6px; color: #bbb; font-size: 13px; }
-        .msm-list { display: flex; flex-direction: column; gap: 8px; }
-        .msm-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 16px; border: 1.5px solid rgba(255,200,220,0.4); background: #fff8fa; transition: 0.2s; }
-        .msm-row:hover { border-color: #ffb8ce; background: white; }
-        .msm-row-rem { border-color: #ffd0d0; background: #fff5f5; }
-        .msm-row-main { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
-        .msm-sec-pill { display: inline-flex; align-items: center; gap: 7px; min-width: 0; max-width: 100%; border: 1.5px solid; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .msm-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-        .msm-color-ctrl { width: 30px; height: 30px; border: 1.5px solid rgba(255,200,220,0.5); background: white; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; position: relative; overflow: hidden; }
-        .msm-color-ctrl input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-        .msm-color-swatch { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
-        .msm-rm-btn { display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid rgba(255,200,220,0.5); background: white; color: #aaa; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit; flex-shrink: 0; white-space: nowrap; }
-        .msm-rm-btn:hover { border-color: #ffd0d0; background: #fde8e8; color: #e05555; }
-        .msm-confirm { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #888; flex-shrink: 0; font-weight: 600; white-space: nowrap; }
-        .msm-yes { border: none; background: linear-gradient(135deg,#ff8f8f,#e05555); color: white; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
-        .msm-no  { border: none; background: #f0f0f0; color: #888; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
-        .msm-note { display: flex; align-items: flex-start; gap: 8px; background: #fff8fa; border: 1px solid rgba(255,200,220,0.4); border-radius: 14px; padding: 12px 14px; font-size: 12px; color: #bbb; line-height: 1.6; }
 
         /* ── Responsive ── */
         @media (max-width: 767px) {
           .sp-page { border-radius: 22px; padding: 20px 20px 56px; }
-          .sp-page-title { font-size: 1.7rem; margin-bottom: 16px; }
+          .sp-page-title { font-size: 1.7rem; }
           .sp-page-tabs  { grid-template-columns: 1fr; gap: 8px; }
           .sp-page-tab   { padding: 12px 14px; border-radius: 18px; }
           .sp-page-tab svg { width: 38px; height: 38px; padding: 10px; border-radius: 13px; }
@@ -1877,24 +1927,17 @@ export default function ShiftPlanner() {
           .sp-cal-day    { min-height: 70px; padding: 8px 6px; }
           .sp-day-num    { font-size: 14px; }
           .sp-shift-pill, .sp-exam-marker { font-size: 8px; padding: 2px 4px; }
-          .sp-modal      { padding: 20px; border-radius: 24px; }
-          .sp-time-row   { flex-direction: column; }
           .sp-shift-list, .ehl-list { max-height: 280px; }
           .sp-card       { padding: 18px; }
           .ec-month-grid { gap: 4px; }
           .ec-cell       { min-height: 56px; padding: 5px 4px; }
           .ec-day-num    { font-size: 11px; }
           .ec-exam-pill  { font-size: 7.5px; padding: 1px 3px; }
-          .em-modal      { padding: 20px; border-radius: 24px; }
-          .em-section-pills { gap: 5px; }
-          .em-section-pill { font-size: 11px; padding: 5px 10px; }
           .ehl-row-name  { font-size: 12px; }
           .esw-stats     { padding: 10px; gap: 8px; }
           .esw-stat-val  { font-size: 18px; }
           .esw-goal-presets { gap: 4px; }
           .esw-preset-chip { padding: 3px 8px; font-size: 10px; }
-          .msm-add-row { gap: 8px; }
-          .msm-add-btn { padding-inline: 16px; }
         }
 
         @media (min-width: 768px) and (max-width: 1023px) {
@@ -1904,7 +1947,6 @@ export default function ShiftPlanner() {
           .sp-cal-grid   { grid-template-columns: repeat(7,1fr); gap: 6px; }
           .sp-cal-day    { min-height: 80px; }
           .ec-cell       { min-height: 70px; }
-          .sp-modal, .em-modal { max-width: 480px; }
         }
 
         @media (min-width: 1024px) {
@@ -1934,7 +1976,7 @@ export default function ShiftPlanner() {
           </button>
         </div>
 
-        {/* Manage sections button — always visible below tabs */}
+        {/* Manage sections */}
         <div className="sp-sections-toolbar">
           <button className="sp-manage-sec-btn" onClick={() => setShowSectionManage(true)}>
             <Settings2 size={13} /> Manage Sections
@@ -1970,17 +2012,26 @@ export default function ShiftPlanner() {
         )}
       </div>
 
-      {/* Modals */}
+      {/* ── Modals — rendered outside .sp-page ── */}
       {showShiftModal && (
-        <ShiftModal editing={editingShift} defaultDate={modalDate}
+        <ShiftModal
+          editing={editingShift}
+          defaultDate={modalDate}
           onClose={() => { setShowShiftModal(false); setEditingShift(null); setModalDate(''); }}
-          onSaved={handleShiftSaved} sections={sections} />
+          onSaved={handleShiftSaved}
+          sections={sections}
+        />
       )}
 
       {showExamModal && (
-        <ExamModal editing={editingExam} defaultDate={examDefaultDate}
+        <ExamModal
+          editing={editingExam}
+          defaultDate={examDefaultDate}
           onClose={() => { setShowExamModal(false); setEditingExam(null); setExamDefaultDate(''); }}
-          onSaved={handleExamSaved} sections={sections} sectionMap={sectionMap} />
+          onSaved={handleExamSaved}
+          sections={sections}
+          sectionMap={sectionMap}
+        />
       )}
 
       {showSectionManage && (
