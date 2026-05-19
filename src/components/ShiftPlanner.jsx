@@ -81,7 +81,16 @@ const GOAL_PRESETS = [30, 60, 90, 120, 180, 240];
 /* ─────────────────────────────────────────────
    HELPERS
 ───────────────────────────────────────────── */
-function toDateStr(d) { return d.toISOString().split('T')[0]; }
+
+// ✅ FIX 1: Use local date parts instead of toISOString() (which is UTC-based).
+// For users in UTC+ timezones (e.g. Philippines UTC+8), midnight local time would
+// be the *previous* day in UTC, causing dates to appear one day behind.
+function toDateStr(d) {
+  const year  = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day   = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 function colorToSoftBg(hex) {
   const clean = hex.replace('#', '');
@@ -804,8 +813,6 @@ function ExamsPanel({ exams, loading, error, onAdd, onEdit, onDelete, sections, 
         </div>
       )}
 
-     
-
       <ExamCalendar
         exams={exams}
         onAdd={onAdd}
@@ -1072,7 +1079,11 @@ function AllShiftsList({ allShifts, onEdit, onDelete }) {
   const totalHours = useMemo(() => allShifts.reduce((sum, s) => sum + calcDurationHrs(s.start_time, s.end_time), 0), [allShifts]);
 
   return (
-    <div className="sp-card">
+    // ✅ FIX 2: Elevate this card's stacking context when the filter dropdown is open.
+    // .sp-card uses backdrop-filter which creates an isolated stacking context, so the
+    // dropdown's z-index is scoped inside it. By giving the card itself a higher z-index
+    // (via position + z-index) when open, it paints above sibling cards entirely.
+    <div className="sp-card" style={showFilter ? { position: 'relative', zIndex: 10 } : {}}>
       <div className="sp-card-header">
         <div className="sp-icon-wrap blue"><BarChart2 size={20} /></div>
         <div><h3>Shift History</h3><p>{allShifts.length} shifts · {totalHours.toFixed(1)}h total</p></div>

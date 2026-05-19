@@ -270,7 +270,7 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
 }
 
 /* ─────────────────────────────────────────────
-   ROTATION MODAL
+   ROTATION MODAL  — NoteSection bottom-sheet style
 ───────────────────────────────────────────── */
 function RotationModal({ editing, existingRotations, sections, onClose, onSaved }) {
   const { user } = useAuth();
@@ -282,15 +282,34 @@ function RotationModal({ editing, existingRotations, sections, onClose, onSaved 
     supervisor_name: editing?.supervisor_name ?? '',
     notes:           editing?.notes           ?? '',
   });
-  const [saving, setSaving] = useState(false);
-  const [error,  setError]  = useState('');
-  const [selectedSection, setSelectedSection] = useState(
-    editing ? (sections.some(s => s.id === editing.section_name) ? editing.section_name : '__custom__') : ''
+  const [saving,  setSaving]  = useState(false);
+  const [error,   setError]   = useState('');
+  const [customName, setCustomName] = useState(
+    editing && !sections.some(s => s.id === editing.section_name) ? editing.section_name : ''
   );
+  const [showCustom, setShowCustom] = useState(
+    editing && !sections.some(s => s.id === editing.section_name)
+  );
+
+  /* Derive accent color from selected section */
+  const secMeta     = sections.find(s => s.id === form.section_name);
+  const accentColor = secMeta?.color ?? '#ff6f91';
+  const accentGrad  = secMeta?.bg   ?? 'linear-gradient(135deg,#ff8fb1,#ff6f91)';
+
+  const handleSectionPill = (id) => {
+    if (id === '__custom__') {
+      setShowCustom(true);
+      setForm({ ...form, section_name: customName });
+    } else {
+      setShowCustom(false);
+      setForm({ ...form, section_name: id });
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setError('');
-    if (!form.section_name.trim()) { setError('Please select or enter a section.'); return; }
+    const sectionName = showCustom ? customName.trim() : form.section_name;
+    if (!sectionName) { setError('Please select or enter a section.'); return; }
     if (new Date(form.start_date) >= new Date(form.end_date)) { setError('End date must be after start date.'); return; }
     const newStart = new Date(form.start_date+'T00:00:00'), newEnd = new Date(form.end_date+'T00:00:00');
     const overlaps = existingRotations.filter(r => {
@@ -300,13 +319,14 @@ function RotationModal({ editing, existingRotations, sections, onClose, onSaved 
     });
     if (overlaps.length > 0) {
       const o = overlaps[0];
-      setError(`Overlaps with "${o.section_name}" rotation (${formatDate(o.start_date)} – ${formatDate(o.end_date)}).`);
+      setError(`Overlaps with "${o.section_name}" (${formatDate(o.start_date)} – ${formatDate(o.end_date)}).`);
       return;
     }
     setSaving(true);
+    const payload = { ...form, section_name: sectionName };
     const result = editing
-      ? await supabase.from('rotations').update({...form}).eq('id',editing.id).select().single()
-      : await supabase.from('rotations').insert([{...form, user_id:user.id}]).select().single();
+      ? await supabase.from('rotations').update(payload).eq('id',editing.id).select().single()
+      : await supabase.from('rotations').insert([{ ...payload, user_id: user.id }]).select().single();
     setSaving(false);
     if (result.error) { setError(result.error.message); return; }
     onSaved(result.data, Boolean(editing)); onClose();
@@ -314,75 +334,102 @@ function RotationModal({ editing, existingRotations, sections, onClose, onSaved 
 
   return (
     <div className="rm-overlay" onClick={onClose}>
-      <div className="rm-modal" onClick={e => e.stopPropagation()}>
-        <div className="rm-header">
+      <div className="rm-sheet" onClick={e => e.stopPropagation()}>
+
+        {/* Colored header — matches NoteModal */}
+        <div className="rm-header" style={{ background: accentGrad }}>
           <div className="rm-header-left">
-            <div className="rm-header-icon" style={{ background: 'linear-gradient(135deg,#ff8fb1,#ff6f91)' }}>
-              <RotateCcw size={18} />
+            <div className="rm-header-icon">
+              {editing ? <Edit3 size={16} color="white" /> : <Plus size={16} color="white" />}
             </div>
-            <div>
-              <h3 className="rm-title">{editing ? 'Edit Rotation' : 'Add Rotation'}</h3>
-              <p className="rm-sub">Track your clinical assignment</p>
-            </div>
+            <span className="rm-header-title">
+              {editing ? 'Edit Rotation' : 'New Rotation'}
+            </span>
           </div>
-          <button className="rm-close" onClick={onClose}><X size={18} /></button>
+          <button className="rm-header-close" onClick={onClose}><X size={17} /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="rm-form">
-          <label className="rm-label">
-            Section *
-            <select className="rm-input rm-select" value={selectedSection}
-              onChange={e => {
-                setSelectedSection(e.target.value);
-                if (e.target.value !== '__custom__') setForm({...form, section_name: e.target.value});
-                else setForm({...form, section_name: ''});
-              }} required>
-              <option value="">Select a section…</option>
-              {sections.map(s => <option key={s.id} value={s.id}>{s.id}</option>)}
-              <option value="__custom__">Other / Custom</option>
-            </select>
-            {selectedSection === '__custom__' && (
-              <input className="rm-input" style={{marginTop:8}} placeholder="Type section name…"
-                value={form.section_name} onChange={e => setForm({...form, section_name: e.target.value})} />
-            )}
-          </label>
+        <form onSubmit={handleSubmit} className="rm-body">
 
-          <label className="rm-label">
+          {/* Section pills — matches NoteModal nm-sec-pills */}
+          <div>
+            <p className="rm-label-text">Section</p>
+            <div className="rm-sec-pills">
+              {sections.map(s => {
+                const on = !showCustom && form.section_name === s.id;
+                return (
+                  <button key={s.id} type="button" className="rm-sec-pill"
+                    style={on
+                      ? { background: s.color, borderColor: s.color, color: '#fff', boxShadow: `0 4px 12px ${s.color}44` }
+                      : { borderColor: s.color + '55', color: s.color }}
+                    onClick={() => handleSectionPill(s.id)}>
+                    {s.label ?? s.id}
+                  </button>
+                );
+              })}
+              <button type="button" className="rm-sec-pill"
+                style={showCustom
+                  ? { background: '#888', borderColor: '#888', color: '#fff' }
+                  : { borderColor: '#ccc', color: '#999' }}
+                onClick={() => handleSectionPill('__custom__')}>
+                Other…
+              </button>
+            </div>
+            {showCustom && (
+              <input className="rm-input" style={{ marginTop: 10 }}
+                placeholder="Type section name…" value={customName}
+                onChange={e => { setCustomName(e.target.value); setForm({ ...form, section_name: e.target.value }); }}
+                autoFocus />
+            )}
+          </div>
+
+          {/* Hospital / Site */}
+          <label className="rm-field-label">
             Hospital / Site
             <input className="rm-input" value={form.hospital_site}
+              style={{ '--a': accentColor }}
               onChange={e => setForm({...form, hospital_site: e.target.value})}
               placeholder="e.g. Perpetual Help Medical Center" />
           </label>
 
-          <div className="rm-row2">
-            <label className="rm-label">
+          {/* Date row */}
+          <div className="rm-date-row">
+            <label className="rm-field-label">
               Start Date *
               <input type="date" className="rm-input" value={form.start_date}
+                style={{ '--a': accentColor }}
                 onChange={e => setForm({...form, start_date: e.target.value})} required />
             </label>
-            <label className="rm-label">
+            <label className="rm-field-label">
               End Date *
               <input type="date" className="rm-input" value={form.end_date}
+                style={{ '--a': accentColor }}
                 onChange={e => setForm({...form, end_date: e.target.value})} required />
             </label>
           </div>
 
+          {/* Duration preview */}
           {form.start_date && form.end_date && new Date(form.start_date) < new Date(form.end_date) && (
-            <div className="rm-duration-preview">
-              <Clock size={13} /> Duration: <strong>{getDuration(form.start_date, form.end_date)}</strong>
+            <div className="rm-duration-chip" style={{ background: colorToSoftBg(accentColor), color: accentColor, borderColor: accentColor + '33' }}>
+              <Clock size={13} />
+              Duration: <strong>{getDuration(form.start_date, form.end_date)}</strong>
             </div>
           )}
 
-          <label className="rm-label">
+          {/* Supervisor */}
+          <label className="rm-field-label">
             Supervisor
             <input className="rm-input" value={form.supervisor_name}
+              style={{ '--a': accentColor }}
               onChange={e => setForm({...form, supervisor_name: e.target.value})}
               placeholder="e.g. Dr. Santos, RMT" />
           </label>
 
-          <label className="rm-label">
+          {/* Notes */}
+          <label className="rm-field-label">
             Notes
-            <textarea className="rm-textarea" rows={2} value={form.notes}
+            <textarea className="rm-textarea" rows={3} value={form.notes}
+              style={{ '--a': accentColor }}
               onChange={e => setForm({...form, notes: e.target.value})}
               placeholder="Any reminders or details…" />
           </label>
@@ -392,10 +439,13 @@ function RotationModal({ editing, existingRotations, sections, onClose, onSaved 
           )}
 
           <div className="rm-actions">
-            <button type="submit" className="rm-primary" disabled={saving}>
-              <CheckCircle2 size={15} />{saving ? 'Saving…' : editing ? 'Update Rotation' : 'Add Rotation'}
+            <button type="submit" className="rm-submit"
+              style={{ background: accentGrad }}
+              disabled={saving}>
+              <Check size={15} />
+              {saving ? 'Saving…' : editing ? 'Update Rotation' : 'Add Rotation'}
             </button>
-            <button type="button" className="rm-secondary" onClick={onClose}>Cancel</button>
+            <button type="button" className="rm-cancel" onClick={onClose}>Cancel</button>
           </div>
         </form>
       </div>
@@ -517,7 +567,7 @@ function RotationCard({ rotation, sections, onEdit, onDelete }) {
 }
 
 /* ─────────────────────────────────────────────
-   ROTATIONS STATS BAR
+   ROTATIONS STATS — NoteSection grid style
 ───────────────────────────────────────────── */
 function RotationsStats({ rotations }) {
   const active    = rotations.filter(r => getRotationStatus(r) === 'active').length;
@@ -525,25 +575,22 @@ function RotationsStats({ rotations }) {
   const completed = rotations.filter(r => getRotationStatus(r) === 'completed').length;
 
   return (
-    <div className="rs-stats-bar">
+    <div className="rs-stats">
       <div className="rs-stat">
-        <span className="rs-stat-num" style={{color:'#4abf95'}}>{active}</span>
-        <span className="rs-stat-label">Active</span>
+        <span className="rs-stat-n" style={{ color: '#4abf95' }}>{active}</span>
+        <span className="rs-stat-l">Active</span>
       </div>
-      <div className="rs-stat-divider" />
       <div className="rs-stat">
-        <span className="rs-stat-num" style={{color:'#5f8dff'}}>{upcoming}</span>
-        <span className="rs-stat-label">Upcoming</span>
+        <span className="rs-stat-n" style={{ color: '#5f8dff' }}>{upcoming}</span>
+        <span className="rs-stat-l">Upcoming</span>
       </div>
-      <div className="rs-stat-divider" />
       <div className="rs-stat">
-        <span className="rs-stat-num" style={{color:'#aaa'}}>{completed}</span>
-        <span className="rs-stat-label">Completed</span>
+        <span className="rs-stat-n" style={{ color: '#aaa' }}>{completed}</span>
+        <span className="rs-stat-l">Completed</span>
       </div>
-      <div className="rs-stat-divider" />
       <div className="rs-stat">
-        <span className="rs-stat-num" style={{color:'#ff5d8f'}}>{rotations.length}</span>
-        <span className="rs-stat-label">Total</span>
+        <span className="rs-stat-n" style={{ color: '#ff5d8f' }}>{rotations.length}</span>
+        <span className="rs-stat-l">Total</span>
       </div>
     </div>
   );
@@ -588,7 +635,6 @@ function RotationsTab({ sections, onManageSections }) {
     <div className="rt-wrap">
       {/* Toolbar */}
       <div className="rt-toolbar">
-       
         <div className="rt-toolbar-actions">
           <button className="rg-manage-btn" onClick={onManageSections}>
             <Settings2 size={14} /> Manage Sections
@@ -698,43 +744,43 @@ function ProcedureModal({ section, editing, onClose, onSaved }) {
   return (
     <div className="rm-overlay" onClick={onClose}>
       <div className="rm-modal" onClick={e => e.stopPropagation()}>
-        <div className="rm-header">
-          <div className="rm-header-left">
-            <div className="rm-header-icon" style={{ background:'linear-gradient(135deg,#ff8fb1,#ff6f91)' }}>
+        <div className="rm-header-old">
+          <div className="rm-header-left-old">
+            <div className="rm-header-icon-old" style={{ background:'linear-gradient(135deg,#ff8fb1,#ff6f91)' }}>
               <Layers size={18} />
             </div>
             <div>
-              <h3 className="rm-title">{editing ? 'Edit Procedure' : 'Add Procedure'}</h3>
-              <p className="rm-sub">Document clinical technique</p>
+              <h3 className="rm-title-old">{editing ? 'Edit Procedure' : 'Add Procedure'}</h3>
+              <p className="rm-sub-old">Document clinical technique</p>
             </div>
           </div>
-          <button className="rm-close" onClick={onClose}><X size={18} /></button>
+          <button className="rm-close-old" onClick={onClose}><X size={18} /></button>
         </div>
-        <form onSubmit={handleSubmit} className="rm-form">
-          <label className="rm-label">
+        <form onSubmit={handleSubmit} className="rm-form-old">
+          <label className="rm-label-old">
             Procedure Name *
-            <input className="rm-input" value={form.procedure_name}
+            <input className="rm-input-old" value={form.procedure_name}
               onChange={e => setForm({...form, procedure_name: e.target.value})}
               placeholder="e.g. Complete Blood Count" required />
           </label>
-          <label className="rm-label">
+          <label className="rm-label-old">
             Description
-            <textarea className="rm-textarea" rows={3} value={form.description}
+            <textarea className="rm-textarea-old" rows={3} value={form.description}
               onChange={e => setForm({...form, description: e.target.value})}
               placeholder="Steps, purpose, expected values…" />
           </label>
-          <label className="rm-label">
+          <label className="rm-label-old">
             Safety Notes
-            <textarea className="rm-textarea" rows={2} value={form.safety_notes}
+            <textarea className="rm-textarea-old" rows={2} value={form.safety_notes}
               onChange={e => setForm({...form, safety_notes: e.target.value})}
               placeholder="PPE required, hazards, special handling…" />
           </label>
-          {error && <div className="rm-error"><AlertTriangle size={14} /><span>{error}</span></div>}
-          <div className="rm-actions">
-            <button type="submit" className="rm-primary" disabled={saving}>
+          {error && <div className="rm-error-old"><AlertTriangle size={14} /><span>{error}</span></div>}
+          <div className="rm-actions-old">
+            <button type="submit" className="rm-primary-old" disabled={saving}>
               <CheckCircle2 size={15} />{saving ? 'Saving…' : editing ? 'Update' : 'Add Procedure'}
             </button>
-            <button type="button" className="rm-secondary" onClick={onClose}>Cancel</button>
+            <button type="button" className="rm-secondary-old" onClick={onClose}>Cancel</button>
           </div>
         </form>
       </div>
@@ -1046,7 +1092,6 @@ function SectionPanel({ meta }) {
 
   return (
     <div className="section-panel">
-      {/* Panel header */}
       <div className="panel-header" style={{ background: meta.bg }}>
         <div className="panel-icon-wrap"><Icon size={22} color="white" /></div>
         <div>
@@ -1055,7 +1100,6 @@ function SectionPanel({ meta }) {
         </div>
       </div>
 
-      {/* Sub tabs */}
       <div className="sub-tabs">
         {[
           { id:'procedures', label:`Procedures (${procedures.length})`, Icon:Layers  },
@@ -1071,7 +1115,6 @@ function SectionPanel({ meta }) {
         ))}
       </div>
 
-      {/* Procedures tab */}
       {activeTab === 'procedures' && (
         <div className="tab-body">
           <div className="proc-toolbar">
@@ -1108,14 +1151,12 @@ function SectionPanel({ meta }) {
         </div>
       )}
 
-      {/* Safety tab — now editable */}
       {activeTab === 'safety' && (
         <div className="tab-body">
           <SafetyReminders sectionId={meta.id} defaultSafety={meta.safety} color={meta.color} />
         </div>
       )}
 
-      {/* Objectives tab — now editable */}
       {activeTab === 'overview' && (
         <div className="tab-body">
           <LearningObjectives
@@ -1311,38 +1352,41 @@ export default function RotationGuide() {
 
         .rt-toolbar {
           display: flex; align-items: flex-start;
-          justify-content: space-between; gap: 16px; flex-wrap: wrap;
+          justify-content: flex-end; gap: 16px; flex-wrap: wrap;
           margin-bottom: 4px;
         }
 
-
         .rt-toolbar-actions { display: flex; gap: 10px; align-items: center; flex-shrink:0; }
 
-        /* ── Stats bar ── */
-        .rs-stats-bar {
-          display: flex; align-items: center; gap: 0;
-          background: rgba(255,255,255,0.88);
-          border-radius: 20px; border: 1px solid rgba(255,220,234,0.6);
-          padding: 16px 24px;
-          box-shadow: 0 4px 16px rgba(255,111,145,0.06);
+        /* ─────────────────────────────────────────────
+           STATS — NoteSection grid style
+        ───────────────────────────────────────────── */
+        .rs-stats {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 1px;
+          background: rgba(255,200,220,0.25);
+          border-radius: 20px;
+          overflow: hidden;
+          border: 1px solid rgba(255,200,220,0.35);
         }
 
         .rs-stat {
-          display: flex; flex-direction: column; align-items: center; gap: 3px;
-          flex: 1;
+          background: rgba(255,255,255,0.9);
+          padding: 16px 18px;
+          display: flex; flex-direction: column; gap: 3px;
         }
 
-        .rs-stat-num {
-          font-size: 24px; font-weight: 800; line-height: 1;
-          font-family: 'Poppins', sans-serif;
+        .rs-stat-n {
+          font-size: 2rem; font-weight: 800;
+          line-height: 1; letter-spacing: 0;
+          font-family: inherit;
         }
 
-        .rs-stat-label {
-          font-size: 11px; font-weight: 700; color: #ccc;
-          text-transform: uppercase; letter-spacing: 0.07em;
+        .rs-stat-l {
+          font-size: 11px; font-weight: 700; color: #c8b0a8;
+          text-transform: uppercase; letter-spacing: 0.08em;
         }
-
-        .rs-stat-divider { width: 1px; height: 40px; background: #ffd6e1; flex-shrink: 0; }
 
         /* ── Rotation sections ── */
         .rt-sections { display: flex; flex-direction: column; gap: 28px; }
@@ -1439,7 +1483,7 @@ export default function RotationGuide() {
           font-size: 11px; color: #888; font-weight: 600;
         }
         .rc-confirm-yes { border:none; background:#fde8e8; color:#e05555; border-radius:7px; padding:4px 8px; font-size:11px; font-weight:700; cursor:pointer; }
-        .rc-confirm-no  { border:none; background:#f0f0f0;  color:#888;    border-radius:7px; padding:4px 8px; font-size:11px; font-weight:600; cursor:pointer; }
+        .rc-confirm-no  { border:none; background:#f0f0f0; color:#888;    border-radius:7px; padding:4px 8px; font-size:11px; font-weight:600; cursor:pointer; }
 
         .rc-section-name {
           margin: 0; font-size: 17px; font-weight: 800; line-height: 1.25;
@@ -1534,7 +1578,6 @@ export default function RotationGuide() {
         }
 
         .rg-empty-hero h3 { margin: 0; font-size: 1.3rem; color: #333; font-weight: 700; }
-
         .rg-empty-hero p  { margin: 0; color: #8d7580; font-size: 14px; max-width: 340px; line-height: 1.6; }
 
         /* ── Shared buttons ── */
@@ -1565,101 +1608,170 @@ export default function RotationGuide() {
           background: #fff0f4; box-shadow: 0 4px 14px rgba(255,111,145,0.12);
         }
 
-        /* ── Rotation Modal ── */
+        /* ─────────────────────────────────────────────
+           ROTATION MODAL — NoteSection bottom-sheet style
+        ───────────────────────────────────────────── */
         .rm-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.25);
+          position: fixed; inset: 0; background: rgba(0,0,0,0.28);
           backdrop-filter: blur(6px); z-index: 1000;
-          display: flex; align-items: center; justify-content: center; padding: 20px;
+          display: flex; align-items: flex-end; justify-content: center;
         }
 
-        .rm-modal {
-          background: white; border-radius: 28px; padding: 28px;
-          width: 100%; max-width: 500px;
-          box-shadow: 0 24px 60px rgba(255,111,145,0.2);
-          border: 1px solid #ffe0ea; max-height: 92vh; overflow-y: auto;
+        .rm-sheet {
+          background: white; width: 100%; max-width: 620px;
+          border-radius: 28px 28px 0 0;
+          box-shadow: 0 -8px 48px rgba(0,0,0,0.14);
+          max-height: 92vh; display: flex; flex-direction: column;
+          animation: rm-up 0.3s cubic-bezier(0.34,1.2,0.64,1) both;
+          overflow: hidden;
         }
 
+        @keyframes rm-up {
+          from { transform: translateY(60px); opacity: 0; }
+          to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        /* Colored header */
         .rm-header {
-          display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px;
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 18px 22px; gap: 12px; flex-shrink: 0;
+          transition: background 0.25s ease;
         }
 
-        .rm-header-left { display: flex; align-items: center; gap: 12px; }
-
-        .rm-header-icon {
-          width: 42px; height: 42px; border-radius: 14px;
+        .rm-header-left  { display: flex; align-items: center; gap: 11px; }
+        .rm-header-icon  {
+          width: 32px; height: 32px; border-radius: 10px;
+          background: rgba(255,255,255,0.22);
           display: flex; align-items: center; justify-content: center;
-          color: white; flex-shrink: 0;
+        }
+        .rm-header-title {
+          font-size: 1.05rem; font-weight: 700; color: white;
+          font-family: inherit;
+        }
+        .rm-header-close {
+          border: none; background: rgba(255,255,255,0.2); border-radius: 9px;
+          padding: 7px; cursor: pointer; display: flex; color: white; transition: 0.2s;
+        }
+        .rm-header-close:hover { background: rgba(255,255,255,0.32); }
+
+        /* Scrollable form body */
+        .rm-body {
+          flex: 1; overflow-y: auto; padding: 22px;
+          display: flex; flex-direction: column; gap: 16px;
         }
 
-        .rm-title { margin: 0; font-size: 1.1rem; color: #333; font-weight: 700; }
-        .rm-sub   { margin: 3px 0 0; font-size: 12px; color: #bbb; }
-
-        .rm-close {
-          border: none; background: #f4f4f4; border-radius: 10px;
-          padding: 7px; cursor: pointer; display: flex; color: #888; transition: 0.2s;
+        /* Section pills */
+        .rm-label-text {
+          font-size: 11px; font-weight: 700; text-transform: uppercase;
+          letter-spacing: 0.08em; color: #bbb; margin: 0 0 8px;
         }
 
-        .rm-close:hover { background: #ffe4ec; color: #ff5d8f; }
+        .rm-sec-pills { display: flex; flex-wrap: wrap; gap: 7px; }
 
-        .rm-form { display: flex; flex-direction: column; gap: 14px; }
-        .rm-row2 { display: flex; gap: 12px; }
-        .rm-row2 > * { flex: 1; }
+        .rm-sec-pill {
+          padding: 6px 13px; border-radius: 999px; border: 1.5px solid;
+          background: transparent; font-size: 12px; font-weight: 600;
+          cursor: pointer; transition: all 0.15s; font-family: inherit;
+          white-space: nowrap;
+        }
 
-        .rm-label {
+        /* Field labels */
+        .rm-field-label {
           display: flex; flex-direction: column; gap: 6px;
           font-size: 11px; font-weight: 700;
           text-transform: uppercase; letter-spacing: 0.07em; color: #bbb;
         }
 
-        .rm-input, .rm-select {
-          border: 1.5px solid #ffd6e1; background: #fff8fa;
-          border-radius: 14px; padding: 11px 14px; font-size: 14px;
-          outline: none; transition: 0.2s; color: #444; font-family: inherit; width: 100%;
+        /* Inputs */
+        .rm-input {
+          border: 1.5px solid rgba(255,200,220,0.6); background: #fff8fa;
+          border-radius: 14px; padding: 13px 15px; font-size: 14px;
+          outline: none; transition: 0.2s; color: #1c1412; font-family: inherit; width: 100%;
         }
 
-        .rm-select { appearance: none; cursor: pointer; }
-
-        .rm-input:focus, .rm-select:focus {
-          border-color: #ff8fb1; background: white;
-          box-shadow: 0 0 0 3px rgba(255,143,177,0.15);
+        .rm-input:focus {
+          border-color: var(--a, #ff8fb1); background: white;
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--a, #ff8fb1) 18%, transparent);
         }
 
         .rm-textarea {
-          border: 1.5px solid #ffd6e1; background: #fff8fa; border-radius: 14px;
-          padding: 11px 14px; font-size: 14px; outline: none; transition: 0.2s;
-          color: #444; resize: vertical; font-family: inherit; line-height: 1.6; width: 100%;
+          border: 1.5px solid rgba(255,200,220,0.6); background: #fff8fa;
+          border-radius: 14px; padding: 13px 15px; font-size: 14px;
+          outline: none; transition: 0.2s; color: #444; resize: vertical;
+          font-family: inherit; line-height: 1.6; width: 100%; min-height: 80px;
         }
 
-        .rm-textarea:focus { border-color: #ff8fb1; background: white; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
-
-        .rm-duration-preview {
-          display: flex; align-items: center; gap: 8px; padding: 9px 14px;
-          border-radius: 12px; background: #fff0f4; color: #ff6f91;
-          font-size: 13px; border: 1px solid #ffd6e1;
+        .rm-textarea:focus {
+          border-color: var(--a, #ff8fb1); background: white;
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--a, #ff8fb1) 18%, transparent);
         }
 
+        /* Date row */
+        .rm-date-row { display: flex; gap: 12px; }
+        .rm-date-row > * { flex: 1; }
+
+        /* Duration chip */
+        .rm-duration-chip {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 9px 14px; border-radius: 12px; border: 1px solid;
+          font-size: 13px;
+        }
+
+        /* Error */
         .rm-error {
           display: flex; align-items: flex-start; gap: 8px;
           background: #fde8e8; color: #c0392b; border-radius: 12px;
           padding: 11px 14px; font-size: 13px; line-height: 1.5;
         }
 
+        /* Actions */
         .rm-actions { display: flex; gap: 10px; padding-top: 4px; }
 
-        .rm-primary {
+        .rm-submit {
           display: inline-flex; align-items: center; gap: 7px; border: none;
-          background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white;
-          border-radius: 999px; padding: 11px 20px; font-size: 13px; font-weight: 600;
-          cursor: pointer; transition: 0.2s; font-family: inherit;
+          color: white; border-radius: 999px; padding: 13px 24px;
+          font-size: 14px; font-weight: 700; cursor: pointer;
+          transition: 0.2s; font-family: inherit;
+        }
+        .rm-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,111,145,0.3); }
+        .rm-submit:disabled { opacity: 0.65; cursor: not-allowed; }
+
+        .rm-cancel {
+          border: none; background: #f0ecea; color: #888;
+          border-radius: 999px; padding: 13px 20px;
+          font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
         }
 
-        .rm-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,111,145,0.28); }
-        .rm-primary:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+        /* ── Procedure modal (old style, kept separate) ── */
+        .rm-modal {
+          background: white; border-radius: 28px; padding: 28px;
+          width: 100%; max-width: 500px;
+          box-shadow: 0 24px 60px rgba(255,111,145,0.2);
+          border: 1px solid #ffe0ea; max-height: 92vh; overflow-y: auto;
+        }
+        .rm-header-old { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+        .rm-header-left-old { display: flex; align-items: center; gap: 12px; }
+        .rm-header-icon-old { width: 42px; height: 42px; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+        .rm-title-old { margin: 0; font-size: 1.1rem; color: #333; font-weight: 700; }
+        .rm-sub-old   { margin: 3px 0 0; font-size: 12px; color: #bbb; }
+        .rm-close-old { border: none; background: #f4f4f4; border-radius: 10px; padding: 7px; cursor: pointer; display: flex; color: #888; transition: 0.2s; }
+        .rm-close-old:hover { background: #ffe4ec; color: #ff5d8f; }
+        .rm-form-old { display: flex; flex-direction: column; gap: 14px; }
+        .rm-label-old { display: flex; flex-direction: column; gap: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #bbb; }
+        .rm-input-old { border: 1.5px solid #ffd6e1; background: #fff8fa; border-radius: 14px; padding: 11px 14px; font-size: 14px; outline: none; transition: 0.2s; color: #444; font-family: inherit; width: 100%; }
+        .rm-input-old:focus { border-color: #ff8fb1; background: white; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
+        .rm-textarea-old { border: 1.5px solid #ffd6e1; background: #fff8fa; border-radius: 14px; padding: 11px 14px; font-size: 14px; outline: none; transition: 0.2s; color: #444; resize: vertical; font-family: inherit; line-height: 1.6; width: 100%; }
+        .rm-textarea-old:focus { border-color: #ff8fb1; background: white; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
+        .rm-error-old { display: flex; align-items: flex-start; gap: 8px; background: #fde8e8; color: #c0392b; border-radius: 12px; padding: 11px 14px; font-size: 13px; line-height: 1.5; }
+        .rm-actions-old { display: flex; gap: 10px; padding-top: 4px; }
+        .rm-primary-old { display: inline-flex; align-items: center; gap: 7px; border: none; background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white; border-radius: 999px; padding: 11px 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit; }
+        .rm-primary-old:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,111,145,0.28); }
+        .rm-primary-old:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+        .rm-secondary-old { border: none; background: #f4f4f4; color: #666; border-radius: 999px; padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
 
-        .rm-secondary {
-          border: none; background: #f4f4f4; color: #666;
-          border-radius: 999px; padding: 11px 18px; font-size: 13px;
-          font-weight: 600; cursor: pointer; font-family: inherit;
+        /* When procedure modal uses rm-overlay, center it */
+        .rm-overlay:has(.rm-modal) {
+          align-items: center;
         }
 
         /* ── Section Tabs (procedures) ── */
@@ -2031,10 +2143,10 @@ export default function RotationGuide() {
           .rg-main-tab     { padding: 12px 14px; border-radius: 16px; font-size: 13px; }
           .rg-main-tab svg { width: 34px; height: 34px; padding: 9px; border-radius: 11px; }
           .rt-toolbar      { flex-direction: column; }
-          .rt-toolbar-actions { width: 100%; }
+          .rt-toolbar-actions { width: 100%; justify-content: flex-end; }
           .rt-cards-grid   { grid-template-columns: 1fr; }
-          .rs-stats-bar    { padding: 12px 16px; }
-          .rs-stat-num     { font-size: 20px; }
+          .rs-stats        { grid-template-columns: repeat(2, 1fr); }
+          .rs-stat-n       { font-size: 1.6rem; }
           .safety-grid     { grid-template-columns: 1fr; }
           .section-tabs    { gap: 7px; }
           .section-tab     { padding: 8px 13px; font-size: 12px; }
@@ -2045,8 +2157,9 @@ export default function RotationGuide() {
           .sg-add-row      { gap: 6px; }
           .msm-add-row     { gap: 8px; }
           .msm-add-btn     { padding-inline: 16px; }
-          .rm-row2         { flex-direction: column; }
-          .rm-modal        { padding: 20px; }
+          .rm-date-row     { flex-direction: column; }
+          .rm-body         { padding: 18px; }
+          .rm-sheet        { border-radius: 24px 24px 0 0; }
         }
 
         @media (min-width: 769px) and (max-width: 1024px) {
@@ -2054,6 +2167,7 @@ export default function RotationGuide() {
           .rg-title     { font-size: 1.8rem; }
           .rt-cards-grid { grid-template-columns: repeat(2,1fr); }
           .safety-grid   { grid-template-columns: 1fr; }
+          .rs-stats      { grid-template-columns: repeat(4, 1fr); }
         }
       `}</style>
 
@@ -2101,4 +2215,3 @@ export default function RotationGuide() {
     </>
   );
 }
-

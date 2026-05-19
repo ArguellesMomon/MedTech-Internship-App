@@ -48,11 +48,7 @@ function generateSectionMeta(name) {
 }
 
 function normalizeStoredSections(saved) {
-  // No saved data yet → first visit, use defaults
   if (!Array.isArray(saved) || saved.length === 0) return BASE_SECTIONS;
-
-  // Saved array IS the source of truth — if a section was removed it stays gone.
-  // Reconstruct each entry, preserving base-section styling unless the user changed the color.
   const seen = new Set();
   return saved.reduce((list, s) => {
     const id = typeof s?.id === 'string' ? s.id.trim() : '';
@@ -70,13 +66,7 @@ function normalizeStoredSections(saved) {
 /* ─────────────────────────────────────────────
    CONSTANTS
 ───────────────────────────────────────────── */
-const COMPETENCY = [
-  { id: 'pass',       label: 'Pass',          emoji: '✅', color: '#4abf95', bg: '#edfaf4' },
-  { id: 'needs_work', label: 'Needs Work',    emoji: '⚠️', color: '#ff8c5a', bg: '#fff5ee' },
-  { id: 'fail',       label: 'Fail',          emoji: '❌', color: '#e05555', bg: '#fff0f0' },
-  { id: 'observed',   label: 'Observed Only', emoji: '👁️', color: '#5f8dff', bg: '#eff4ff' },
-];
-const COMP_MAP = Object.fromEntries(COMPETENCY.map(c => [c.id, c]));
+
 
 const DEFAULT_PROCEDURES = {
   'Hematology':         ['CBC (Complete Blood Count)', 'Peripheral Blood Smear', 'ESR', 'Platelet Count', 'PT/APTT', 'Reticulocyte Count'],
@@ -217,55 +207,48 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
             })}
           </div>
         </div>
-
-        
       </div>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────
-   HERO STATS BAR
+   HERO STATS BAR — clean 3-stat grid (no pass rate / quota)
 ───────────────────────────────────────────── */
-function HeroStats({ logs, quotasBySection }) {
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const todayCount = logs.filter(l => l.log_date === todayStr).reduce((s, l) => s + (l.count_done ?? 1), 0);
-  const weekStart  = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-  const weekCount  = logs.filter(l => new Date(l.log_date + 'T12:00:00') >= weekStart).reduce((s, l) => s + (l.count_done ?? 1), 0);
+function HeroStats({ logs }) {
+  const todayStr  = new Date().toISOString().slice(0, 10);
+  const todayCount = logs
+    .filter(l => l.log_date === todayStr)
+    .reduce((s, l) => s + (l.count_done ?? 1), 0);
+
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const weekCount = logs
+    .filter(l => new Date(l.log_date + 'T12:00:00') >= weekStart)
+    .reduce((s, l) => s + (l.count_done ?? 1), 0);
+
   const totalProcs = logs.reduce((s, l) => s + (l.count_done ?? 1), 0);
-  const passRate   = logs.length > 0 ? Math.round(logs.filter(l => l.competency === 'pass').length / logs.length * 100) : 0;
-
-  let totalDone = 0, totalRequired = 0;
-  Object.values(quotasBySection).forEach(quotas => {
-    quotas.forEach(q => {
-      totalDone     += q.completed_count ?? 0;
-      totalRequired += q.target_count    ?? 0;
-    });
-  });
-  const overallPct = totalRequired > 0 ? Math.min(100, Math.round(totalDone / totalRequired * 100)) : 0;
-
-  const stats = [
-    { label: 'Today',     value: todayCount,    color: '#ff6f91' },
-    { label: 'This Week', value: weekCount,      color: '#ff8c5a' },
-    { label: 'Total Done',value: totalProcs,     color: '#5f8dff' },
-    { label: 'Pass Rate', value: `${passRate}%`, color: '#4abf95' },
-    { label: 'Quota',     value: `${overallPct}%`, color: '#8b6fff' },
-  ];
 
   return (
-    <div className="hs-row">
-      {stats.map(s => (
-        <div key={s.label} className="hs-card">
-          <span className="hs-val" style={{ color: s.color }}>{s.value}</span>
-          <span className="hs-label">{s.label}</span>
-        </div>
-      ))}
+    <div className="hs-stats">
+      <div className="hs-stat">
+        <span className="hs-stat-n" style={{ color: '#ff6f91' }}>{todayCount}</span>
+        <span className="hs-stat-l">Today</span>
+      </div>
+      <div className="hs-stat">
+        <span className="hs-stat-n" style={{ color: '#ff8c5a' }}>{weekCount}</span>
+        <span className="hs-stat-l">This Week</span>
+      </div>
+      <div className="hs-stat">
+        <span className="hs-stat-n" style={{ color: '#5f8dff' }}>{totalProcs}</span>
+        <span className="hs-stat-l">Total Done</span>
+      </div>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────
-   LOG ENTRY MODAL
+   LOG ENTRY MODAL — sleek slide-up sheet with colored header
 ───────────────────────────────────────────── */
 function LogModal({ editing, defaultSection, quotasBySection, sections, sectionMap, onClose, onSaved }) {
   const { user } = useAuth();
@@ -273,7 +256,11 @@ function LogModal({ editing, defaultSection, quotasBySection, sections, sectionM
   const [sectionId, setSectionId] = useState(
     editing?.section_name ?? defaultSection ?? sections[0]?.id ?? ''
   );
-  const meta = sectionMap[sectionId] ?? generateSectionMeta(sectionId);
+
+  // Derive accent color from selected section
+  const meta         = sectionMap[sectionId] ?? generateSectionMeta(sectionId);
+  const accentColor  = meta?.color ?? '#ff6f91';
+  const accentGrad   = meta?.grad  ?? `linear-gradient(135deg,${accentColor}cc,${accentColor})`;
 
   const procedureOptions = useMemo(() => {
     const defaults   = DEFAULT_PROCEDURES[sectionId] ?? [];
@@ -287,7 +274,6 @@ function LogModal({ editing, defaultSection, quotasBySection, sections, sectionM
     log_date:       editing?.log_date       ?? new Date().toISOString().slice(0, 10),
     procedure_name: editing?.procedure_name ?? '',
     count_done:     editing?.count_done     ?? 1,
-    competency:     editing?.competency     ?? 'pass',
     supervisor:     editing?.supervisor     ?? '',
     notes:          editing?.notes          ?? '',
   });
@@ -310,7 +296,6 @@ function LogModal({ editing, defaultSection, quotasBySection, sections, sectionM
       log_date:       form.log_date,
       procedure_name: form.procedure_name,
       count_done:     Number(form.count_done),
-      competency:     form.competency,
       supervisor:     form.supervisor.trim(),
       notes:          form.notes.trim(),
       progress:       100,
@@ -333,26 +318,32 @@ function LogModal({ editing, defaultSection, quotasBySection, sections, sectionM
   return (
     <div className="lm-overlay" onClick={onClose}>
       <div className="lm-sheet" onClick={e => e.stopPropagation()}>
-        <div className="lm-header">
-          <div className="lm-hrow">
-            <div className="lm-hdot" style={{ background: meta?.color }} />
-            <h3 className="lm-htitle">{editing ? 'Edit Entry' : 'Log Procedure'}</h3>
+
+        {/* Colored gradient header */}
+        <div className="lm-header" style={{ background: accentGrad }}>
+          <div className="lm-header-left">
+            <div className="lm-header-icon">
+              {editing ? <Edit3 size={16} color="white" /> : <Plus size={16} color="white" />}
+            </div>
+            <span className="lm-header-title">{editing ? 'Edit Entry' : 'Log Procedure'}</span>
           </div>
-          <button className="lm-close" onClick={onClose}><X size={16} /></button>
+          <button className="lm-header-close" onClick={onClose}><X size={17} /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="lm-form">
+        <form onSubmit={handleSubmit} className="lm-body">
+
           {/* Section pills */}
           <div>
-            <p className="lm-flabel">Section *</p>
+            <p className="lm-flabel">Section</p>
             <div className="lm-sec-pills">
               {sections.map(s => {
                 const sm = sectionMap[s.id] ?? generateSectionMeta(s.id);
+                const on = sectionId === s.id;
                 return (
                   <button key={s.id} type="button"
                     className="lm-sec-pill"
-                    style={sectionId === s.id
-                      ? { background: sm.color, borderColor: sm.color, color: '#fff' }
+                    style={on
+                      ? { background: sm.color, borderColor: sm.color, color: '#fff', boxShadow: `0 4px 12px ${sm.color}44` }
                       : { borderColor: sm.color + '55', color: sm.color }}
                     onClick={() => handleSectionChange(s.id)}>
                     {s.id}
@@ -366,72 +357,86 @@ function LogModal({ editing, defaultSection, quotasBySection, sections, sectionM
           <div className="lm-row2">
             <label className="lm-flabel">
               Date *
-              <input type="date" className="lm-input" value={form.log_date}
-                onChange={e => setForm({ ...form, log_date: e.target.value })} required />
+              <input
+                type="date"
+                className="lm-input"
+                style={{ '--a': accentColor }}
+                value={form.log_date}
+                onChange={e => setForm({ ...form, log_date: e.target.value })}
+                required
+              />
             </label>
             <label className="lm-flabel">
               Count *
-              <input type="number" className="lm-input" min="1" max="999"
+              <input
+                type="number"
+                className="lm-input"
+                style={{ '--a': accentColor }}
+                min="1" max="999"
                 value={form.count_done}
-                onChange={e => setForm({ ...form, count_done: e.target.value })} required />
+                onChange={e => setForm({ ...form, count_done: e.target.value })}
+                required
+              />
             </label>
           </div>
 
           {/* Procedure */}
           <div>
             <p className="lm-flabel">Procedure *</p>
-            <select className="lm-input lm-sel"
+            <select
+              className="lm-input lm-sel"
+              style={{ '--a': accentColor }}
               value={form.procedure_name}
-              onChange={e => setForm({ ...form, procedure_name: e.target.value })} required>
+              onChange={e => setForm({ ...form, procedure_name: e.target.value })}
+              required
+            >
               <option value="">— Select procedure —</option>
               {procedureOptions.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
 
-          {/* Competency */}
-          <div>
-            <p className="lm-flabel">Competency Rating *</p>
-            <div className="lm-comp-grid">
-              {COMPETENCY.map(c => (
-                <button key={c.id} type="button"
-                  className={`lm-comp-btn ${form.competency === c.id ? 'active' : ''}`}
-                  style={form.competency === c.id
-                    ? { background: c.color, borderColor: c.color, color: '#fff' }
-                    : { borderColor: c.color + '55', color: c.color }}
-                  onClick={() => setForm({ ...form, competency: c.id })}>
-                  <span className="lm-comp-emoji">{c.emoji}</span>
-                  <span>{c.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+
 
           {/* Supervisor */}
           <label className="lm-flabel">
             Supervisor
-            <input className="lm-input" placeholder="Supervising MLT / MLS name…"
+            <input
+              className="lm-input"
+              style={{ '--a': accentColor }}
+              placeholder="Supervising MLT / MLS name…"
               value={form.supervisor}
-              onChange={e => setForm({ ...form, supervisor: e.target.value })} />
+              onChange={e => setForm({ ...form, supervisor: e.target.value })}
+            />
           </label>
 
           {/* Notes */}
           <label className="lm-flabel">
             Reflection / Notes
-            <textarea className="lm-textarea" rows={3}
+            <textarea
+              className="lm-textarea"
+              style={{ '--a': accentColor }}
+              rows={3}
               placeholder="What did you learn? Any difficulties?"
               value={form.notes}
-              onChange={e => setForm({ ...form, notes: e.target.value })} />
+              onChange={e => setForm({ ...form, notes: e.target.value })}
+            />
           </label>
 
           {error && <p className="lm-error">{error}</p>}
 
           <div className="lm-actions">
-            <button type="submit" className="lm-primary" disabled={saving}>
+            <button
+              type="submit"
+              className="lm-primary"
+              style={{ background: accentGrad }}
+              disabled={saving}
+            >
               <Check size={15} />
               {saving ? 'Saving…' : editing ? 'Update Entry' : 'Save Entry'}
             </button>
             <button type="button" className="lm-secondary" onClick={onClose}>Cancel</button>
           </div>
+
         </form>
       </div>
     </div>
@@ -443,7 +448,6 @@ function LogModal({ editing, defaultSection, quotasBySection, sections, sectionM
 ───────────────────────────────────────────── */
 function DailyLogTab({ logs, quotasBySection, sections, sectionMap, onAdd, onEdit, onDelete, onManageSections }) {
   const [filterSection, setFilterSection] = useState('');
-  const [filterComp,    setFilterComp]    = useState('');
   const [search,        setSearch]        = useState('');
   const [showFilters,   setShowFilters]   = useState(false);
   const [confirmId,     setConfirmId]     = useState(null);
@@ -454,7 +458,6 @@ function DailyLogTab({ logs, quotasBySection, sections, sectionMap, onAdd, onEdi
       return dd !== 0 ? dd : new Date(b.created_at) - new Date(a.created_at);
     });
     if (filterSection) list = list.filter(l => l.section_name === filterSection);
-    if (filterComp)    list = list.filter(l => l.competency === filterComp);
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(l =>
@@ -464,7 +467,7 @@ function DailyLogTab({ logs, quotasBySection, sections, sectionMap, onAdd, onEdi
       );
     }
     return list;
-  }, [logs, filterSection, filterComp, search]);
+  }, [logs, filterSection, search]);
 
   const grouped = useMemo(() => {
     const map = {};
@@ -475,7 +478,7 @@ function DailyLogTab({ logs, quotasBySection, sections, sectionMap, onAdd, onEdi
     return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
   }, [filtered]);
 
-  const activeFilters = [filterSection, filterComp, search.trim()].filter(Boolean).length;
+  const activeFilters = [filterSection,  search.trim()].filter(Boolean).length;
 
   return (
     <div className="dl-wrap">
@@ -535,29 +538,11 @@ function DailyLogTab({ logs, quotasBySection, sections, sectionMap, onAdd, onEdi
               </div>
             </div>
 
-            {/* Competency filter */}
-            <div className="dl-filter-group">
-              <span className="dl-filter-group-label">Rating</span>
-              <div className="dl-filter-pills">
-                <button
-                  className={`dl-fpill ${!filterComp ? 'all-active' : ''}`}
-                  onClick={() => setFilterComp('')}>All</button>
-                {COMPETENCY.map(c => (
-                  <button key={c.id}
-                    className="dl-fpill"
-                    style={filterComp === c.id
-                      ? { background: c.color, borderColor: c.color, color: '#fff' }
-                      : { borderColor: c.color + '55', color: c.color }}
-                    onClick={() => setFilterComp(filterComp === c.id ? '' : c.id)}>
-                    {c.emoji} {c.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+           
 
             {activeFilters > 0 && (
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="dl-clear-all" onClick={() => { setFilterSection(''); setFilterComp(''); setSearch(''); }}>
+                <button className="dl-clear-all" onClick={() => { setFilterSection(''); setSearch(''); }}>
                   <X size={11} /> Clear all filters
                 </button>
               </div>
@@ -602,7 +587,6 @@ function DailyLogTab({ logs, quotasBySection, sections, sectionMap, onAdd, onEdi
             </div>
 
             {dayLogs.map(log => {
-              const comp    = COMP_MAP[log.competency] ?? COMP_MAP.observed;
               const secMeta = sectionMap[log.section_name] ?? generateSectionMeta(log.section_name);
               const isConf  = confirmId === log.id;
 
@@ -616,9 +600,7 @@ function DailyLogTab({ logs, quotasBySection, sections, sectionMap, onAdd, onEdi
                         <span className="dl-tag" style={{ background: secMeta?.bg, color: secMeta?.color }}>
                           {log.section_name}
                         </span>
-                        <span className="dl-tag" style={{ background: comp.bg, color: comp.color }}>
-                          {comp.emoji} {comp.label}
-                        </span>
+                        
                         <span className="dl-tag count" style={{ background: secMeta?.bg, color: secMeta?.color }}>
                           ×{log.count_done}
                         </span>
@@ -668,7 +650,6 @@ function QuotaBoardTab({ logs, quotasBySection, sections, sectionMap, onQuotasCh
   const [deleting,    setDeleting]    = useState(null);
   const [dismissedSuggestions, setDismissedSuggestions] = useState(new Set());
 
-  // Keep expandedSection valid if sections change
   useEffect(() => {
     if (expandedSection && !sections.find(s => s.id === expandedSection)) {
       setExpandedSection(sections[0]?.id ?? '');
@@ -894,7 +875,6 @@ function QuotaBoardTab({ logs, quotasBySection, sections, sectionMap, onQuotasCh
                     <div className="qb-qrow-right">
                       {logCount > 0 && logCount !== manCount && (
                         <span className="qb-log-hint" title="Counted from your daily logs">
-                          📋 {logCount} from logs
                         </span>
                       )}
                       <span className="qb-count" style={{ color: complete ? '#4abf95' : secMeta.color }}>
@@ -976,7 +956,6 @@ export default function DailyReportTracker() {
   const [editingLog,      setEditingLog]      = useState(null);
   const [defaultSection,  setDefaultSection]  = useState('');
 
-  // ── Dynamic sections state ──
   const [sections,       setSections]       = useState(BASE_SECTIONS);
   const [sectionsLoaded, setSectionsLoaded] = useState(false);
   const [showManage,     setShowManage]     = useState(false);
@@ -1010,7 +989,6 @@ export default function DailyReportTracker() {
     return map;
   }, [sections]);
 
-  // Section management handlers
   const handleAddSection = (label) => {
     const meta = generateSectionMeta(label);
     setSections(prev => [...prev, { id: label, color: meta.color, bg: meta.bg, grad: meta.grad }]);
@@ -1027,7 +1005,6 @@ export default function DailyReportTracker() {
     setSections(prev => prev.map(s => s.id === id ? { ...s, color, bg, grad } : s));
   };
 
-  // ── Data loading ──
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -1142,21 +1119,39 @@ export default function DailyReportTracker() {
           padding: 16px 20px; font-size: 13px; margin-bottom: 24px; line-height: 1.5;
         }
 
-        /* ─── Hero stats ─── */
-        .hs-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
-        .hs-card {
-          flex: 1; min-width: 90px;
-          background: rgba(255,255,255,0.88); border: 1.5px solid #ffe0ea;
-          border-radius: 20px; padding: 16px 14px;
-          display: flex; flex-direction: column; align-items: center; gap: 5px;
-          transition: box-shadow 0.2s, transform 0.2s;
+        /* ─── Hero Stats — clean grid matching NotesSection ─── */
+        .hs-stats {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1px;
+          background: rgba(255, 200, 220, 0.25);
+          border-radius: 20px;
+          overflow: hidden;
+          border: 1px solid rgba(255, 200, 220, 0.35);
         }
-        .hs-card:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,111,145,0.1); }
-        .hs-val   { font-size: 22px; font-weight: 700; line-height: 1; }
-        .hs-label { font-size: 10px; font-weight: 600; color: #bbb; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; }
+        .hs-stat {
+          background: rgba(255, 255, 255, 0.9);
+          padding: 16px 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+        }
+        .hs-stat-n {
+          font-size: 2rem;
+          font-weight: 800;
+          line-height: 1;
+          letter-spacing: 0;
+        }
+        .hs-stat-l {
+          font-size: 11px;
+          font-weight: 700;
+          color: #c8b0a8;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
 
         /* ─── Page tabs ─── */
-        .qtr-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 24px; }
+        .qtr-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
         .qtr-tab {
           display: flex; align-items: center; gap: 12px;
           padding: 14px 16px; border-radius: 20px;
@@ -1220,7 +1215,6 @@ export default function DailyReportTracker() {
         }
         .dl-add-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,111,145,0.28); }
 
-        /* ─── Collapsible filter panel (grid-rows trick) ─── */
         .dl-fp-outer {
           display: grid; grid-template-rows: 0fr;
           transition: grid-template-rows 0.32s cubic-bezier(0.4,0,0.2,1);
@@ -1237,7 +1231,6 @@ export default function DailyReportTracker() {
         .dl-filter-group-header { display: flex; align-items: center; justify-content: space-between; }
         .dl-filter-group-label  { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #ccc; }
 
-        /* "Edit Sections" link inside filter panel */
         .dl-manage-link {
           display: inline-flex; align-items: center; gap: 5px;
           background: none; border: none; color: #ff8fb1; font-size: 12px; font-weight: 600;
@@ -1261,7 +1254,6 @@ export default function DailyReportTracker() {
         .dl-clear-all:hover { border-color: #e05555; color: #e05555; background: #fde8e8; }
         .dl-results-count { font-size: 12px; color: #bbb; margin: 0; padding-left: 2px; }
 
-        /* ─── Empty ─── */
         .dl-empty-hero {
           text-align: center; padding: 56px 24px;
           display: flex; flex-direction: column; align-items: center; gap: 12px;
@@ -1277,7 +1269,6 @@ export default function DailyReportTracker() {
           border-radius: 999px; padding: 10px 22px; font-size: 13px; font-weight: 600; cursor: pointer;
         }
 
-        /* ─── Timeline ─── */
         .dl-timeline { display: flex; flex-direction: column; gap: 24px; }
         .dl-day-group { display: flex; flex-direction: column; gap: 10px; }
         .dl-day-header { display: flex; align-items: baseline; gap: 10px; padding-bottom: 8px; border-bottom: 1.5px solid #ffe0ea; }
@@ -1394,37 +1385,121 @@ export default function DailyReportTracker() {
         .qb-default-delete-btn { display: inline-flex; align-items: center; justify-content: center; border: 1.5px solid #e0e0e0; border-radius: 999px; padding: 6px 8px; background: #fff; color: #999; cursor: pointer; transition: 0.2s; }
         .qb-default-delete-btn:hover { border-color: #ff6f91; color: #ff6f91; background: #ffe0ea; transform: translateY(-1px); }
 
-        /* ─── Log Modal ─── */
-        .lm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.22); backdrop-filter: blur(5px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .lm-sheet { background: white; border-radius: 28px; padding: 28px; width: 100%; max-width: 520px; box-shadow: 0 24px 60px rgba(255,111,145,0.2); border: 1px solid #ffe0ea; max-height: 90vh; overflow-y: auto; }
-        .lm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
-        .lm-hrow { display: flex; align-items: center; gap: 10px; }
-        .lm-hdot { width: 10px; height: 10px; border-radius: 50%; }
-        .lm-htitle { margin: 0; font-size: 1.1rem; font-weight: 700; color: #333; }
-        .lm-close { border: none; background: #f4f4f4; border-radius: 10px; padding: 7px; cursor: pointer; display: flex; color: #888; transition: 0.2s; }
-        .lm-close:hover { background: #ffe4ec; color: #ff5d8f; }
-        .lm-form { display: flex; flex-direction: column; gap: 16px; }
+        /* ─── Log Modal — slide-up sheet with colored header ─── */
+        .lm-overlay {
+          position: fixed; inset: 0;
+          background: rgba(0,0,0,0.28);
+          backdrop-filter: blur(6px);
+          z-index: 1000;
+          display: flex;
+          align-items: flex-end;         /* sheet rises from bottom */
+          justify-content: center;
+        }
+        .lm-sheet {
+          background: white;
+          width: 100%; max-width: 580px;
+          border-radius: 28px 28px 0 0;
+          box-shadow: 0 -8px 48px rgba(0,0,0,0.14);
+          max-height: 92vh;
+          display: flex; flex-direction: column;
+          overflow: hidden;
+          animation: lm-slide-up 0.3s cubic-bezier(0.34,1.2,0.64,1) both;
+        }
+        @keyframes lm-slide-up {
+          from { transform: translateY(60px); opacity: 0; }
+          to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        /* Colored gradient header */
+        .lm-header {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 18px 22px; gap: 12px; flex-shrink: 0;
+        }
+        .lm-header-left { display: flex; align-items: center; gap: 11px; }
+        .lm-header-icon {
+          width: 32px; height: 32px; border-radius: 10px;
+          background: rgba(255,255,255,0.22);
+          display: flex; align-items: center; justify-content: center;
+        }
+        .lm-header-title {
+          font-family: inherit; font-size: 1.05rem; font-weight: 700; color: white; margin: 0;
+        }
+        .lm-header-close {
+          border: none; background: rgba(255,255,255,0.2); border-radius: 9px;
+          padding: 7px; cursor: pointer; display: flex; color: white; transition: 0.2s;
+        }
+        .lm-header-close:hover { background: rgba(255,255,255,0.32); }
+
+        /* Scrollable form body */
+        .lm-body {
+          flex: 1; overflow-y: auto;
+          padding: 22px;
+          display: flex; flex-direction: column; gap: 16px;
+        }
+
+        /* Section pills */
         .lm-sec-pills { display: flex; flex-wrap: wrap; gap: 7px; }
-        .lm-sec-pill { padding: 6px 12px; border-radius: 999px; border: 1.5px solid; background: transparent; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.15s; white-space: nowrap; font-family: inherit; }
+        .lm-sec-pill {
+          padding: 6px 12px; border-radius: 999px; border: 1.5px solid;
+          background: transparent; font-size: 12px; font-weight: 600;
+          cursor: pointer; transition: all 0.15s; white-space: nowrap; font-family: inherit;
+        }
+
+        /* Form fields */
         .lm-row2 { display: flex; gap: 14px; }
         .lm-row2 > * { flex: 1; }
-        .lm-flabel { display: flex; flex-direction: column; gap: 7px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #aaa; margin: 0; }
-        .lm-input, .lm-sel { border: 1.5px solid #ffd6e1; background: #fff8fa; border-radius: 14px; padding: 11px 14px; font-size: 14px; outline: none; transition: 0.2s; color: #444; font-family: inherit; width: 100%; appearance: none; }
-        .lm-input:focus, .lm-sel:focus { border-color: #ff8fb1; background: white; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
-        .lm-textarea { border: 1.5px solid #ffd6e1; background: #fff8fa; border-radius: 14px; padding: 11px 14px; font-size: 14px; outline: none; transition: 0.2s; color: #444; resize: vertical; min-height: 80px; font-family: inherit; line-height: 1.6; width: 100%; }
-        .lm-textarea:focus { border-color: #ff8fb1; background: white; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
-        .lm-comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .lm-comp-btn { display: flex; align-items: center; gap: 8px; padding: 11px 14px; border-radius: 14px; border: 1.5px solid; background: transparent; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.15s; font-family: inherit; }
-        .lm-comp-emoji { font-size: 16px; }
+        .lm-flabel {
+          display: flex; flex-direction: column; gap: 7px;
+          font-size: 11px; font-weight: 700; text-transform: uppercase;
+          letter-spacing: 0.06em; color: #aaa; margin: 0;
+        }
+        .lm-input, .lm-sel {
+          border: 1.5px solid rgba(255,200,220,0.6);
+          background: #fff8fa; border-radius: 14px;
+          padding: 11px 14px; font-size: 14px; outline: none;
+          transition: 0.2s; color: #444; font-family: inherit;
+          width: 100%; appearance: none;
+        }
+        .lm-input:focus, .lm-sel:focus {
+          border-color: var(--a, #ff8fb1);
+          background: white;
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--a, #ff8fb1) 18%, transparent);
+        }
+        .lm-textarea {
+          border: 1.5px solid rgba(255,200,220,0.6);
+          background: #fff8fa; border-radius: 14px;
+          padding: 11px 14px; font-size: 14px; outline: none;
+          transition: 0.2s; color: #444; resize: vertical; min-height: 80px;
+          font-family: inherit; line-height: 1.6; width: 100%;
+        }
+        .lm-textarea:focus {
+          border-color: var(--a, #ff8fb1);
+          background: white;
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--a, #ff8fb1) 18%, transparent);
+        }
+
+          
+
         .lm-error { background: #fde8e8; color: #c0392b; border-radius: 12px; padding: 10px 14px; font-size: 13px; margin: 0; }
+
+        /* Actions */
         .lm-actions { display: flex; gap: 10px; padding-top: 4px; }
-        .lm-primary { display: inline-flex; align-items: center; gap: 7px; border: none; background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white; border-radius: 999px; padding: 11px 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .lm-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(255,111,145,0.28); }
-        .lm-primary:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
-        .lm-secondary { border: none; background: #f4f4f4; color: #666; border-radius: 999px; padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .lm-primary {
+          display: inline-flex; align-items: center; gap: 7px;
+          border: none; color: white; border-radius: 999px;
+          padding: 13px 24px; font-size: 14px; font-weight: 700;
+          cursor: pointer; transition: 0.2s; font-family: inherit;
+        }
+        .lm-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,111,145,0.3); }
+        .lm-primary:disabled { opacity: 0.65; cursor: not-allowed; }
+        .lm-secondary {
+          border: none; background: #f0ecea; color: #888;
+          border-radius: 999px; padding: 13px 20px; font-size: 14px;
+          font-weight: 600; cursor: pointer; font-family: inherit;
+        }
 
         /* ─── Manage Sections Modal ─── */
-        .ms-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.25); backdrop-filter: blur(6px); z-index: 1100; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .ms-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.22); backdrop-filter: blur(5px); z-index: 1100; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .ms-modal { background: white; border-radius: 28px; padding: 26px; width: 100%; max-width: 480px; box-shadow: 0 24px 60px rgba(0,0,0,0.14); border: 1px solid rgba(255,200,220,0.4); max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 22px; animation: ms-up 0.28s ease both; }
         @keyframes ms-up { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: none; } }
         .ms-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -1458,22 +1533,26 @@ export default function DailyReportTracker() {
         .ms-confirm { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #888; flex-shrink: 0; font-weight: 600; white-space: nowrap; }
         .ms-yes { border: none; background: linear-gradient(135deg,#ff8f8f,#e05555); color: white; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
         .ms-no  { border: none; background: #f0f0f0; color: #888; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
-        .ms-note { display: flex; align-items: flex-start; gap: 8px; background: #fff8fa; border: 1px solid rgba(255,200,220,0.4); border-radius: 14px; padding: 12px 14px; font-size: 12px; color: #bbb; line-height: 1.6; }
 
         /* ─── Responsive ─── */
         @media (max-width: 767px) {
           .qtr-page { border-radius: 22px; padding: 20px 20px 56px; }
           .qtr-title { font-size: 1.7rem; }
-          .hs-row { gap: 8px; }
-          .hs-card { min-width: 60px; padding: 12px 8px; }
-          .hs-val  { font-size: 18px; }
+          .hs-stats { grid-template-columns: repeat(3, 1fr); }
+          .hs-stat-n { font-size: 1.6rem; }
           .qb-overview { grid-template-columns: repeat(2,1fr); gap: 8px; }
-          .lm-sheet { padding: 20px; border-radius: 24px; }
+          .lm-sheet { border-radius: 24px 24px 0 0; }
+          .lm-body { padding: 18px; }
           .lm-row2 { flex-direction: column; }
           .qb-edit-nums { flex-direction: column; }
           .dl-toolbar { gap: 8px; }
           .ms-add-row { gap: 8px; }
           .ms-add-btn { padding-inline: 16px; }
+        }
+        @media (min-width: 768px) {
+          /* On wider screens, center the sheet instead of anchoring to bottom */
+          .lm-overlay { align-items: center; padding: 24px; }
+          .lm-sheet   { border-radius: 28px; max-height: 88vh; }
         }
         @media (min-width: 768px) and (max-width: 1023px) {
           .qtr-page { padding: 24px; }
@@ -1497,7 +1576,8 @@ export default function DailyReportTracker() {
           </div>
         ) : (
           <>
-            <HeroStats logs={allLogs} quotasBySection={quotasBySection} />
+            {/* Clean 3-stat grid */}
+            <HeroStats logs={allLogs} />
 
             {/* Tabs */}
             <div className="qtr-tabs">
@@ -1505,7 +1585,7 @@ export default function DailyReportTracker() {
                 <span className="qtr-tab-icon"><ClipboardList size={18} /></span>
                 <span className="qtr-tab-copy">
                   <span className="qtr-tab-title">Daily Log</span>
-                  <span className="qtr-tab-sub">Record procedures and competency</span>
+                  <span className="qtr-tab-sub">Record procedures</span>
                 </span>
                 <span className="qtr-tab-badge">{tabStats.logCount}</span>
               </button>
