@@ -767,9 +767,10 @@ function SafetyReminders({ sectionId, defaultSafety, color }) {
   useEffect(() => {
     const load = async () => {
       if (!user?.id) return;
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('user_settings').select('value')
         .eq('user_id', user.id).eq('key', storageKey).maybeSingle();
+      if (error) console.error('Load safety error:', error);
       if (Array.isArray(data?.value)) setItems(data.value);
       setLoaded(true);
     };
@@ -778,9 +779,13 @@ function SafetyReminders({ sectionId, defaultSafety, color }) {
 
   useEffect(() => {
     if (!user?.id || !loaded) return;
-    supabase.from('user_settings').upsert([{
-      user_id: user.id, key: storageKey, value: items,
-    }], { onConflict: 'user_id,key' });
+    const save = async () => {
+      const { error } = await supabase.from('user_settings').upsert([{
+        user_id: user.id, key: storageKey, value: items,
+      }], { onConflict: 'user_id,key' });
+      if (error) console.error('Save safety error:', error);
+    };
+    save();
   }, [items, loaded, storageKey, user?.id]);
 
   const addItem = () => {
@@ -874,9 +879,10 @@ function LearningObjectives({ sectionId, defaultObjectives, color, grad }) {
   useEffect(() => {
     const load = async () => {
       if (!user?.id) return;
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('user_settings').select('value')
         .eq('user_id', user.id).eq('key', storageKey).maybeSingle();
+      if (error) console.error('Load objectives error:', error);
       if (Array.isArray(data?.value)) setItems(data.value);
       setLoaded(true);
     };
@@ -885,9 +891,13 @@ function LearningObjectives({ sectionId, defaultObjectives, color, grad }) {
 
   useEffect(() => {
     if (!user?.id || !loaded) return;
-    supabase.from('user_settings').upsert([{
-      user_id: user.id, key: storageKey, value: items,
-    }], { onConflict: 'user_id,key' });
+    const save = async () => {
+      const { error } = await supabase.from('user_settings').upsert([{
+        user_id: user.id, key: storageKey, value: items,
+      }], { onConflict: 'user_id,key' });
+      if (error) console.error('Save objectives error:', error);
+    };
+    save();
   }, [items, loaded, storageKey, user?.id]);
 
   const addItem = () => {
@@ -1099,7 +1109,7 @@ function ProceduresTab({ sections, onOpenProcedureModal }) {
 }
 
 /* ─────────────────────────────────────────────
-   MAIN ROTATION GUIDE (modals rendered outside)
+   MAIN ROTATION GUIDE
 ───────────────────────────────────────────── */
 export default function RotationGuide() {
   const { user } = useAuth();
@@ -1109,6 +1119,7 @@ export default function RotationGuide() {
   const [sections, setSections] = useState(DEFAULT_SECTIONS);
   const [rotations, setRotations] = useState([]);
   const [rotationsLoading, setRotationsLoading] = useState(true);
+  const [proceduresRefresh, setProceduresRefresh] = useState(0); // used to refresh procedure lists
 
   // Rotation modal state
   const [showRotationModal, setShowRotationModal] = useState(false);
@@ -1134,46 +1145,101 @@ export default function RotationGuide() {
 
   useEffect(() => { fetchRotations(); }, [fetchRotations]);
 
-  // Load custom sections
+  // Load custom sections from Supabase
   useEffect(() => {
     const load = async () => {
       if (!user?.id) return;
-      const { data } = await supabase
-        .from('user_settings').select('value')
-        .eq('user_id', user.id).eq('key', SECTION_STORAGE_KEY).maybeSingle();
-      const saved = data?.value;
-      if (Array.isArray(saved) && saved.length > 0) {
-        setSections(saved.map(sv => {
-          const def = DEFAULT_SECTIONS.find(d => d.id === sv.id);
-          if (def) return { ...def, color: sv.color, bg: sv.bg ?? def.bg, cardBg: sv.cardBg ?? def.cardBg, cardBorder: sv.cardBorder ?? def.cardBorder };
-          return { id:sv.id, label:sv.id, icon:BookOpen, color:sv.color, bg:sv.bg??colorToGrad(sv.color), cardBg:sv.cardBg??colorToSoftBg(sv.color), cardBorder:sv.cardBorder??(sv.color+'44'), overview:`${sv.id} rotation section.`, objectives:[], safety:[] };
-        }));
-      } else {
+      try {
+        const { data, error } = await supabase
+          .from('user_settings')
+          .select('value')
+          .eq('user_id', user.id)
+          .eq('key', SECTION_STORAGE_KEY)
+          .maybeSingle();
+        if (error) {
+          console.error('Load sections error:', error);
+          setSections(DEFAULT_SECTIONS);
+          setSectionsLoaded(true);
+          return;
+        }
+        const saved = data?.value;
+        if (Array.isArray(saved) && saved.length > 0) {
+          const merged = saved.map(sv => {
+            const def = DEFAULT_SECTIONS.find(d => d.id === sv.id);
+            if (def) {
+              return {
+                ...def,
+                color: sv.color ?? def.color,
+                bg: sv.bg ?? def.bg,
+                cardBg: sv.cardBg ?? def.cardBg,
+                cardBorder: sv.cardBorder ?? def.cardBorder,
+              };
+            }
+            const meta = generateSectionMeta(sv.id);
+            return {
+              id: sv.id,
+              label: sv.id,
+              icon: BookOpen,
+              color: sv.color ?? meta.color,
+              bg: sv.bg ?? meta.bg,
+              cardBg: sv.cardBg ?? meta.cardBg,
+              cardBorder: sv.cardBorder ?? meta.cardBorder,
+              overview: `${sv.id} rotation section.`,
+              objectives: [],
+              safety: [],
+            };
+          });
+          setSections(merged);
+        } else {
+          setSections(DEFAULT_SECTIONS);
+        }
+      } catch (err) {
+        console.error('Unexpected load error:', err);
         setSections(DEFAULT_SECTIONS);
+      } finally {
+        setSectionsLoaded(true);
       }
-      setSectionsLoaded(true);
     };
     load();
   }, [user?.id]);
 
-  // Save custom sections
+  // Save custom sections whenever they change
   useEffect(() => {
     if (!user?.id || !sectionsLoaded) return;
-    supabase.from('user_settings').upsert([{
-      user_id: user.id,
-      key: SECTION_STORAGE_KEY,
-      value: sections.map(s => ({ id:s.id, color:s.color, bg:s.bg, cardBg:s.cardBg, cardBorder:s.cardBorder })),
-    }], { onConflict: 'user_id,key' });
+    const save = async () => {
+      const toSave = sections.map(s => ({
+        id: s.id,
+        color: s.color,
+        bg: s.bg,
+        cardBg: s.cardBg,
+        cardBorder: s.cardBorder,
+      }));
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert([{
+          user_id: user.id,
+          key: SECTION_STORAGE_KEY,
+          value: toSave,
+        }], { onConflict: 'user_id,key' });
+      if (error) console.error('Save sections error:', error);
+      else console.log('Sections saved successfully');
+    };
+    save();
   }, [sections, sectionsLoaded, user?.id]);
 
   const handleAddSection = (label) => {
     const meta = generateSectionMeta(label);
     setSections(prev => [...prev, {
-      id: label, label, icon: BookOpen,
-      color: meta.color, bg: colorToGrad(meta.color),
-      cardBg: meta.cardBg, cardBorder: meta.color+'44',
+      id: label,
+      label,
+      icon: BookOpen,
+      color: meta.color,
+      bg: meta.bg,
+      cardBg: meta.cardBg,
+      cardBorder: meta.cardBorder,
       overview: `${label} rotation section.`,
-      objectives: [], safety: [],
+      objectives: [],
+      safety: [],
     }]);
   };
 
@@ -1181,7 +1247,11 @@ export default function RotationGuide() {
 
   const handleColorChange = (id, color) => {
     setSections(prev => prev.map(s => s.id !== id ? s : {
-      ...s, color, bg: colorToGrad(color), cardBg: colorToSoftBg(color), cardBorder: color+'44',
+      ...s,
+      color,
+      bg: colorToGrad(color),
+      cardBg: colorToSoftBg(color),
+      cardBorder: color + '44',
     }));
   };
 
@@ -1197,41 +1267,20 @@ export default function RotationGuide() {
     setRotations(prev => prev.filter(r => r.id !== id));
   };
 
-  const handleProcedureSaved = (saved, isEdit) => {
-    // Refresh the procedure list in the active section panel
-    // We'll trigger a refresh by changing a key in SectionPanel, but simpler: re-fetch all procedures? 
-    // Instead, we'll let SectionPanel manage its own procedures list via its internal fetch.
-    // Since the modal closes and SectionPanel is still mounted, we need to signal it to refetch.
-    // To avoid prop drilling, we'll use a global refresh flag or simply rely on the fact that SectionPanel
-    // will re-fetch when its meta.id changes. But the section doesn't change.
-    // Alternative: lift procedures state up, but that's heavy. Instead, we can attach a custom event or use a context.
-    // For simplicity, we'll just call fetchProcedures via a ref. But given the component structure, 
-    // we can add a `key` to SectionPanel that increments on save. That would force remount and refetch.
-    // However, that might be overkill. Since ProcedureModal is only used within ProceduresTab, 
-    // we can pass a refresh callback from SectionPanel to the modal? But the modal is rendered at top level.
-    // To keep it simple and working, we'll let the user manually refresh or just not worry because 
-    // the procedure list will eventually update when they navigate away and back. But that's poor UX.
-    // Better: lift the procedures state to RotationGuide? That would be large. 
-    // Actually, the easiest fix: after saving a procedure, we can trigger a custom event that SectionPanel listens to.
-    // I'll add a simple window event dispatch and listener in SectionPanel.
-    window.dispatchEvent(new CustomEvent('refreshProcedures', { detail: { section: saved.section_name } }));
-  };
-
-  // Listen for refresh events in SectionPanel is done inside useEffect.
-  // We'll modify SectionPanel to listen for this event and refetch.
-
-  // For now, we'll just call handleProcedureSaved and inside SectionPanel we'll add an effect that listens.
-  // But since the code is already long, I'll add a simplified approach: we'll pass a refreshKey to SectionPanel.
-  // But ProcedureModal is at the top, we can't easily update each SectionPanel's key.
-  // Given the complexity, I'll rely on the fact that ProcedureModal is only used for the currently active section,
-  // and we can store the procedures in RotationGuide and pass down. But that's heavy.
-  // Instead, I'll add a `proceduresRefresh` state in RotationGuide that increments, and pass it down to ProceduresTab then to SectionPanel.
-  // SectionPanel will use it as a dependency in fetchProcedures.
-  const [proceduresRefresh, setProceduresRefresh] = useState(0);
-
-  const handleProcedureSavedWrapper = () => {
+  const handleProcedureSaved = () => {
+    // Increment refresh counter to trigger re-fetch in SectionPanel
     setProceduresRefresh(prev => prev + 1);
   };
+
+  // Pass refresh key to ProceduresTab -> SectionPanel as a prop to re-fetch procedures
+  // We'll add a key to SectionPanel that changes on each save.
+  // But SectionPanel is inside ProceduresTab, which is inside RotationGuide. We can pass a refreshKey down.
+  // Instead of complicating, I'll add a useEffect in SectionPanel that listens to a custom event,
+  // but that would require modifying SectionPanel. The simpler way: pass refreshKey as a prop.
+  // I'll modify ProceduresTab to accept a refreshKey prop and pass it to SectionPanel, which will use it in fetchProcedures dependency.
+  // Actually, I'll just add a `key` to SectionPanel that changes on each save – that forces a remount and refetch.
+  // But the SectionPanel for the active section would be recreated, which is fine.
+  // However, the parent ProceduresTab would need to know about the refresh key. I'll implement that.
 
   return (
     <>
@@ -1662,6 +1711,7 @@ export default function RotationGuide() {
 
         {mainTab === 'procedures' && (
           <ProceduresTab
+            key={proceduresRefresh} // force re-render when procedures saved
             sections={sections}
             onOpenProcedureModal={(section, procedure) => {
               setProcedureSection(section);
@@ -1688,10 +1738,7 @@ export default function RotationGuide() {
           section={procedureSection}
           editing={editingProcedure}
           onClose={() => { setShowProcedureModal(false); setEditingProcedure(null); setProcedureSection(''); }}
-          onSaved={(saved, isEdit) => {
-            // Refresh the procedure list in SectionPanel
-            setProceduresRefresh(prev => prev + 1);
-          }}
+          onSaved={handleProcedureSaved}
         />
       )}
 

@@ -11,7 +11,7 @@ import {
    CONSTANTS
 ───────────────────────────────────────────── */
 const MAX_FILE_MB  = 50;
-const CAP_MB       = 200;
+const CAP_MB       = 10;
 const CAP_BYTES    = CAP_MB  * 1024 * 1024;
 const MAX_BYTES    = MAX_FILE_MB * 1024 * 1024;
 const ACCEPT       = '.pdf,.doc,.docx,.ppt,.pptx';
@@ -504,19 +504,32 @@ export default function DocumentsPage() {
         .sb-free { font-size: 12px; color: #bbb; }
 
         /* ── Upload zone ── */
-        .uz-zone {
-          border: 2px dashed #ffd6e1;
-          border-radius: 26px;
-          background: rgba(255,255,255,0.8);
-          padding: 32px 24px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 10px;
-          cursor: pointer;
-          transition: all 0.2s;
-          text-align: center;
-        }
+        /* Upload zone — now with gradient background */
+.uz-zone {
+  border: 2px dashed rgba(255,200,220,0.7);
+  border-radius: 26px;
+  background: radial-gradient(circle at top left, rgba(255,143,177,0.18), transparent 32%),
+              radial-gradient(circle at bottom right, rgba(95,141,255,0.16), transparent 34%),
+              linear-gradient(135deg, #fff8fb 0%, #f7f9ff 54%, #edfaf4 100%);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
+}
+.uz-zone:hover,
+.uz-zone.dragging {
+  border-color: #ff8fb1;
+  background: radial-gradient(circle at top left, rgba(255,143,177,0.28), transparent 32%),
+              radial-gradient(circle at bottom right, rgba(95,141,255,0.24), transparent 34%),
+              linear-gradient(135deg, #fff8fb 0%, #f7f9ff 54%, #edfaf4 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px rgba(255,111,145,0.12), inset 0 1px 0 white;
+}
         .uz-zone:hover,
         .uz-zone.dragging {
           border-color: #ff8fb1;
@@ -542,11 +555,16 @@ export default function DocumentsPage() {
 
         /* ── Full state ── */
         .uz-full {
-          border-color: #ffd0d0;
-          background: #fff8f8;
-          cursor: default;
-        }
-        .uz-full:hover { transform: none; box-shadow: none; }
+  border-color: #ffd0d0;
+  background: radial-gradient(circle at top left, rgba(224,85,85,0.12), transparent 32%),
+              radial-gradient(circle at bottom right, rgba(224,85,85,0.08), transparent 34%),
+              linear-gradient(135deg, #fff8fb 0%, #fef0f0 54%, #fff0f0 100%);
+  cursor: default;
+}
+.uz-full:hover {
+  transform: none;
+  box-shadow: none;
+}
         .uz-full-icon {
           width: 52px; height: 52px;
           border-radius: 18px;
@@ -557,8 +575,13 @@ export default function DocumentsPage() {
         .uz-full-hint  { font-size: 13px; color: #cc8080; margin: 0; line-height: 1.6; }
 
         /* ── Uploading state ── */
-        .uz-uploading-state { cursor: default; pointer-events: none; }
-        .uz-uploading-text { font-size: 14px; font-weight: 600; color: #ff6f91; margin: 0; }
+.uz-uploading-state {
+  cursor: default;
+  pointer-events: none;
+  background: radial-gradient(circle at top left, rgba(255,143,177,0.18), transparent 32%),
+              radial-gradient(circle at bottom right, rgba(95,141,255,0.16), transparent 34%),
+              linear-gradient(135deg, #fff8fb 0%, #f7f9ff 54%, #edfaf4 100%);
+}        .uz-uploading-text { font-size: 14px; font-weight: 600; color: #ff6f91; margin: 0; }
         .uz-progress-track {
           width: 100%; max-width: 260px; height: 6px;
           background: #ffd6e1; border-radius: 999px; overflow: hidden;
@@ -670,11 +693,15 @@ export default function DocumentsPage() {
 
         /* ── Empty ── */
         .dp-empty {
-          text-align: center; padding: 56px 24px;
-          display: flex; flex-direction: column; align-items: center; gap: 12px;
-          background: rgba(255,255,255,0.6);
-          border-radius: 28px; border: 1.5px dashed #ffd6e1;
-        }
+  text-align: center; padding: 56px 24px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  background: radial-gradient(circle at top left, rgba(255,143,177,0.18), transparent 32%),
+              radial-gradient(circle at bottom right, rgba(95,141,255,0.16), transparent 34%),
+              linear-gradient(135deg, #fff8fb 0%, #f7f9ff 54%, #edfaf4 100%);
+  border-radius: 28px;
+  border: 1.5px dashed rgba(255,200,220,0.7);
+  box-shadow: 0 2px 12px rgba(255,111,145,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+}
         .dp-empty-icon  { font-size: 48px; line-height: 1; margin-bottom: 4px; }
         .dp-empty-title { margin: 0; font-size: 1.3rem; color: #333; font-weight: 700; }
         .dp-empty-hint  { margin: 0; color: #aaa; font-size: 14px; max-width: 340px; line-height: 1.6; }
@@ -776,8 +803,10 @@ export default function DocumentsPage() {
         {/* Storage usage bar — always visible */}
         <StorageBar usedBytes={usedBytes} />
           <p className="dp-preview-note">
-            Note: preview rendering may differ from the uploaded PPTX. Use “Open original” to verify the exact file.
-          </p>
+          Note: preview rendering may differ from the uploaded PPTX. Use “Open original” to verify the exact file.
+            <br />
+            <strong>📦 Storage limit:</strong> Each user has a total of 10 MB for all uploaded documents. Please delete old files if you need more space.
+          </p>        
         {/* Upload zone — locked when full */}
         <UploadZone
           onUpload={handleUpload}

@@ -21,6 +21,7 @@ import DailyReportTracker from './components/QuotaTracker';
 import ShiftPlanner       from './components/ShiftPlanner';
 import NotesSection       from './components/NotesSection';
 import DocumentsPage      from './components/DocumentsPage';
+import GlobalSearch       from './components/GlobalSearch';  // <-- ADDED
 
 import { isSupabaseConfigured } from './lib/supabase';
 import Logo from './assets/Logo.png';
@@ -322,19 +323,32 @@ function AppLayout({ children }) {
         @media (min-width: 1024px) {
           .main-content { max-width: 1180px; margin: 0 auto; }
         }
+        .top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+@media (max-width: 640px) {
+  .top-bar-right {
+    gap: 8px;
+  }
+}
       `}</style>
 
       <div className="app-shell">
         <header className="top-bar">
-          <Link to="/" className="brand-link">
-            <img src={Logo} alt="MedTech Mate Logo" className="brand-logo" />
-          </Link>
-          {user && (
-            <button className="menu-toggle" onClick={() => setMenuOpen(true)}>
-              <Menu size={20} />
-            </button>
-          )}
-        </header>
+  <Link to="/" className="brand-link">
+    <img src={Logo} alt="MedTech Mate Logo" className="brand-logo" />
+  </Link>
+  {user && (
+    <div className="top-bar-right">
+      <GlobalSearch />
+      <button className="menu-toggle" onClick={() => setMenuOpen(true)}>
+        <Menu size={20} />
+      </button>
+    </div>
+  )}
+</header>
 
         {user && <HamburgerMenu open={menuOpen} setOpen={setMenuOpen} />}
 

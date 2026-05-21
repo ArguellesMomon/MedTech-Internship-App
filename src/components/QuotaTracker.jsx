@@ -66,8 +66,6 @@ function normalizeStoredSections(saved) {
 /* ─────────────────────────────────────────────
    CONSTANTS
 ───────────────────────────────────────────── */
-
-
 const DEFAULT_PROCEDURES = {
   'Hematology':         ['CBC (Complete Blood Count)', 'Peripheral Blood Smear', 'ESR', 'Platelet Count', 'PT/APTT', 'Reticulocyte Count'],
   'Clinical Chemistry': ['Blood Glucose', 'Lipid Profile', 'Liver Function Tests', 'BUN/Creatinine', 'Electrolytes', 'Urinalysis'],
@@ -130,7 +128,6 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
   return (
     <div className="ms-overlay" onClick={onClose}>
       <div className="ms-modal" onClick={e => e.stopPropagation()}>
-        {/* Header */}
         <div className="ms-head">
           <div className="ms-head-left">
             <div className="ms-head-icon"><Settings2 size={18} /></div>
@@ -142,7 +139,6 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
           <button className="ms-close" onClick={onClose}><X size={16} /></button>
         </div>
 
-        {/* Add new section */}
         <div className="ms-add-box">
           <p className="ms-box-label">New Section</p>
           <div className="ms-add-row">
@@ -162,7 +158,6 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
           {error && <p className="ms-error">{error}</p>}
         </div>
 
-        {/* Section list */}
         <div>
           <p className="ms-box-label">
             All Sections
@@ -213,7 +208,7 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
 }
 
 /* ─────────────────────────────────────────────
-   HERO STATS BAR — clean 3-stat grid (no pass rate / quota)
+   HERO STATS BAR — clean 3‑stat grid
 ───────────────────────────────────────────── */
 function HeroStats({ logs }) {
   const todayStr  = new Date().toISOString().slice(0, 10);
@@ -248,7 +243,7 @@ function HeroStats({ logs }) {
 }
 
 /* ─────────────────────────────────────────────
-   LOG ENTRY MODAL — sleek slide-up sheet with colored header
+   LOG ENTRY MODAL
 ───────────────────────────────────────────── */
 function LogModal({ editing, defaultSection, quotasBySection, sections, sectionMap, onClose, onSaved }) {
   const { user } = useAuth();
@@ -257,7 +252,6 @@ function LogModal({ editing, defaultSection, quotasBySection, sections, sectionM
     editing?.section_name ?? defaultSection ?? sections[0]?.id ?? ''
   );
 
-  // Derive accent color from selected section
   const meta         = sectionMap[sectionId] ?? generateSectionMeta(sectionId);
   const accentColor  = meta?.color ?? '#ff6f91';
   const accentGrad   = meta?.grad  ?? `linear-gradient(135deg,${accentColor}cc,${accentColor})`;
@@ -318,8 +312,6 @@ function LogModal({ editing, defaultSection, quotasBySection, sections, sectionM
   return (
     <div className="lm-overlay" onClick={onClose}>
       <div className="lm-sheet" onClick={e => e.stopPropagation()}>
-
-        {/* Colored gradient header */}
         <div className="lm-header" style={{ background: accentGrad }}>
           <div className="lm-header-left">
             <div className="lm-header-icon">
@@ -331,8 +323,6 @@ function LogModal({ editing, defaultSection, quotasBySection, sections, sectionM
         </div>
 
         <form onSubmit={handleSubmit} className="lm-body">
-
-          {/* Section pills */}
           <div>
             <p className="lm-flabel">Section</p>
             <div className="lm-sec-pills">
@@ -353,7 +343,6 @@ function LogModal({ editing, defaultSection, quotasBySection, sections, sectionM
             </div>
           </div>
 
-          {/* Date + Count */}
           <div className="lm-row2">
             <label className="lm-flabel">
               Date *
@@ -380,7 +369,6 @@ function LogModal({ editing, defaultSection, quotasBySection, sections, sectionM
             </label>
           </div>
 
-          {/* Procedure */}
           <div>
             <p className="lm-flabel">Procedure *</p>
             <select
@@ -395,9 +383,6 @@ function LogModal({ editing, defaultSection, quotasBySection, sections, sectionM
             </select>
           </div>
 
-
-
-          {/* Supervisor */}
           <label className="lm-flabel">
             Supervisor
             <input
@@ -409,7 +394,6 @@ function LogModal({ editing, defaultSection, quotasBySection, sections, sectionM
             />
           </label>
 
-          {/* Notes */}
           <label className="lm-flabel">
             Reflection / Notes
             <textarea
@@ -436,7 +420,6 @@ function LogModal({ editing, defaultSection, quotasBySection, sections, sectionM
             </button>
             <button type="button" className="lm-secondary" onClick={onClose}>Cancel</button>
           </div>
-
         </form>
       </div>
     </div>
@@ -482,7 +465,6 @@ function DailyLogTab({ logs, quotasBySection, sections, sectionMap, onAdd, onEdi
 
   return (
     <div className="dl-wrap">
-      {/* Toolbar */}
       <div className="dl-toolbar">
         <div className="dl-search-wrap">
           <Search size={13} className="dl-search-icon" />
@@ -505,12 +487,9 @@ function DailyLogTab({ logs, quotasBySection, sections, sectionMap, onAdd, onEdi
         </button>
       </div>
 
-      {/* Collapsible filter panel */}
       <div className={`dl-fp-outer ${showFilters ? 'open' : ''}`}>
         <div className="dl-fp-inner">
           <div className="dl-filter-panel">
-
-            {/* Section filter */}
             <div className="dl-filter-group">
               <div className="dl-filter-group-header">
                 <span className="dl-filter-group-label">Section</span>
@@ -538,8 +517,6 @@ function DailyLogTab({ logs, quotasBySection, sections, sectionMap, onAdd, onEdi
               </div>
             </div>
 
-           
-
             {activeFilters > 0 && (
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <button className="dl-clear-all" onClick={() => { setFilterSection(''); setSearch(''); }}>
@@ -551,12 +528,10 @@ function DailyLogTab({ logs, quotasBySection, sections, sectionMap, onAdd, onEdi
         </div>
       </div>
 
-      {/* Results count */}
       {(activeFilters > 0 || search) && (
         <p className="dl-results-count">{filtered.length} of {logs.length} entries</p>
       )}
 
-      {/* Empty */}
       {grouped.length === 0 && (
         <div className="dl-empty-hero">
           <div className="dl-empty-hero-icon">{logs.length === 0 ? '📓' : '🔍'}</div>
@@ -572,7 +547,6 @@ function DailyLogTab({ logs, quotasBySection, sections, sectionMap, onAdd, onEdi
         </div>
       )}
 
-      {/* Timeline */}
       <div className="dl-timeline">
         {grouped.map(([dateStr, dayLogs]) => (
           <div key={dateStr} className="dl-day-group">
@@ -600,7 +574,6 @@ function DailyLogTab({ logs, quotasBySection, sections, sectionMap, onAdd, onEdi
                         <span className="dl-tag" style={{ background: secMeta?.bg, color: secMeta?.color }}>
                           {log.section_name}
                         </span>
-                        
                         <span className="dl-tag count" style={{ background: secMeta?.bg, color: secMeta?.color }}>
                           ×{log.count_done}
                         </span>
@@ -728,7 +701,6 @@ function QuotaBoardTab({ logs, quotasBySection, sections, sectionMap, onQuotasCh
 
   return (
     <div className="qb-wrap">
-      {/* Section overview grid */}
       <div className="qb-header-row">
         <p className="qb-overview-label">Sections</p>
         <button className="qb-manage-link" onClick={onManageSections}>
@@ -759,7 +731,6 @@ function QuotaBoardTab({ logs, quotasBySection, sections, sectionMap, onQuotasCh
         ))}
       </div>
 
-      {/* Expanded section detail */}
       {expandedSection && (() => {
         const secMeta = sectionMap[expandedSection] ?? generateSectionMeta(expandedSection);
         const quotas  = quotasBySection[expandedSection] ?? [];
@@ -797,7 +768,6 @@ function QuotaBoardTab({ logs, quotasBySection, sections, sectionMap, onQuotasCh
 
             {error && <p className="qb-error">{error}</p>}
 
-            {/* New row */}
             {isAddingNew && (
               <div className="qb-edit-card" style={{ borderColor: secMeta.color + '55' }}>
                 <input className="qb-input qb-proc-input" placeholder="Procedure name…" autoFocus
@@ -874,8 +844,7 @@ function QuotaBoardTab({ logs, quotasBySection, sections, sectionMap, onQuotasCh
                     <span className="qb-qname">{q.task_name}</span>
                     <div className="qb-qrow-right">
                       {logCount > 0 && logCount !== manCount && (
-                        <span className="qb-log-hint" title="Counted from your daily logs">
-                        </span>
+                        <span className="qb-log-hint" title="Counted from your daily logs"></span>
                       )}
                       <span className="qb-count" style={{ color: complete ? '#4abf95' : secMeta.color }}>
                         {effective}/{q.target_count}{complete ? ' ✅' : ''}
@@ -909,7 +878,6 @@ function QuotaBoardTab({ logs, quotasBySection, sections, sectionMap, onQuotasCh
               );
             })}
 
-            {/* Suggested procedures */}
             {untrackedDefaults.length > 0 && (
               <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: `1.5px solid ${secMeta.color}22` }}>
                 <p className="qb-detail-sub" style={{ marginBottom: '10px', color: secMeta.color, fontWeight: 600 }}>
@@ -942,7 +910,7 @@ function QuotaBoardTab({ logs, quotasBySection, sections, sectionMap, onQuotasCh
 }
 
 /* ─────────────────────────────────────────────
-   MAIN
+   MAIN COMPONENT
 ───────────────────────────────────────────── */
 export default function DailyReportTracker() {
   const { user } = useAuth();
@@ -960,32 +928,76 @@ export default function DailyReportTracker() {
   const [sectionsLoaded, setSectionsLoaded] = useState(false);
   const [showManage,     setShowManage]     = useState(false);
 
+  // ── Load custom sections from Supabase ──
   useEffect(() => {
     const loadSections = async () => {
-      const { data } = await supabase
-        .from('user_settings')
-        .select('value')
-        .eq('user_id', user.id)
-        .eq('key', CUSTOM_SECTION_STORAGE_KEY)
-        .maybeSingle();
-      setSections(data?.value ? normalizeStoredSections(data.value) : BASE_SECTIONS);
-      setSectionsLoaded(true);
+      try {
+        const { data, error } = await supabase
+          .from('user_settings')
+          .select('value')
+          .eq('user_id', user.id)
+          .eq('key', CUSTOM_SECTION_STORAGE_KEY)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Load sections error:', error);
+          setSections(BASE_SECTIONS);
+          setSectionsLoaded(true);
+          return;
+        }
+
+        const saved = data?.value;
+        if (saved && Array.isArray(saved) && saved.length > 0) {
+          setSections(normalizeStoredSections(saved));
+        } else {
+          setSections(BASE_SECTIONS);
+        }
+      } catch (err) {
+        console.error('Unexpected load error:', err);
+        setSections(BASE_SECTIONS);
+      } finally {
+        setSectionsLoaded(true);
+      }
     };
     loadSections();
   }, [user.id]);
 
+  // ── Save sections whenever they change ──
   useEffect(() => {
     if (!sectionsLoaded) return;
-    supabase.from('user_settings').upsert([{
-      user_id: user.id,
-      key: CUSTOM_SECTION_STORAGE_KEY,
-      value: sections,
-    }], { onConflict: 'user_id,key' });
+
+    const saveSections = async () => {
+      try {
+        const toSave = sections.map(s => ({
+          id: s.id,
+          color: s.color,
+          bg: s.bg,
+          grad: s.grad,
+        }));
+        const { error } = await supabase
+          .from('user_settings')
+          .upsert(
+            {
+              user_id: user.id,
+              key: CUSTOM_SECTION_STORAGE_KEY,
+              value: toSave,
+            },
+            { onConflict: 'user_id,key' }
+          );
+        if (error) console.error('Save sections error:', error);
+        else console.log('DailyReportTracker sections saved');
+      } catch (err) {
+        console.error('Unexpected save error:', err);
+      }
+    };
+    saveSections();
   }, [sections, sectionsLoaded, user.id]);
 
   const sectionMap = useMemo(() => {
     const map = {};
-    sections.forEach(s => { map[s.id] = { ...generateSectionMeta(s.id), ...s }; });
+    sections.forEach(s => {
+      map[s.id] = { ...generateSectionMeta(s.id), ...s };
+    });
     return map;
   }, [sections]);
 
@@ -1005,10 +1017,10 @@ export default function DailyReportTracker() {
     setSections(prev => prev.map(s => s.id === id ? { ...s, color, bg, grad } : s));
   };
 
+  // ── Load daily logs and quotas ──
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-
       const { data: logsData, error: logsErr } = await supabase
         .from('daily_reports').select('*').eq('user_id', user.id)
         .order('log_date', { ascending: false }).order('created_at', { ascending: false });
@@ -1038,7 +1050,7 @@ export default function DailyReportTracker() {
       setLoading(false);
     };
     load();
-  }, [user.id]);
+  }, [user.id, sections]);
 
   const handleLogSaved = useCallback((saved, isEdit) => {
     setAllLogs(prev => isEdit ? prev.map(l => l.id === saved.id ? saved : l) : [saved, ...prev]);
@@ -1119,7 +1131,7 @@ export default function DailyReportTracker() {
           padding: 16px 20px; font-size: 13px; margin-bottom: 24px; line-height: 1.5;
         }
 
-        /* ─── Hero Stats — clean grid matching NotesSection ─── */
+        /* ─── Hero Stats ─── */
         .hs-stats {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -1257,8 +1269,9 @@ export default function DailyReportTracker() {
         .dl-empty-hero {
           text-align: center; padding: 56px 24px;
           display: flex; flex-direction: column; align-items: center; gap: 12px;
-          background: rgba(255,255,255,0.6);
-          border-radius: 28px; border: 1.5px dashed #ffd6e1;
+background: radial-gradient(circle at top left, rgba(255,143,177,0.18), transparent 32%),
+            radial-gradient(circle at bottom right, rgba(95,141,255,0.16), transparent 34%),
+            linear-gradient(135deg, #fff8fb 0%, #f7f9ff 54%, #edfaf4 100%);          border-radius: 28px; border: 1.5px dashed #ffd6e1;
         }
         .dl-empty-hero-icon { font-size: 48px; line-height: 1; margin-bottom: 4px; }
         .dl-empty-hero h3 { margin: 0; font-size: 1.3rem; color: #333; font-weight: 700; }
@@ -1336,8 +1349,9 @@ export default function DailyReportTracker() {
         .qb-empty-hero {
           text-align: center; padding: 40px 24px;
           display: flex; flex-direction: column; align-items: center; gap: 12px;
-          background: rgba(255,255,255,0.6);
-          border-radius: 24px; border: 1.5px dashed #ffd6e1;
+background: radial-gradient(circle at top left, rgba(255,143,177,0.18), transparent 32%),
+            radial-gradient(circle at bottom right, rgba(95,141,255,0.16), transparent 34%),
+            linear-gradient(135deg, #fff8fb 0%, #f7f9ff 54%, #edfaf4 100%);          border-radius: 24px; border: 1.5px dashed #ffd6e1;
         }
         .qb-empty-hero-icon { font-size: 44px; line-height: 1; margin-bottom: 4px; }
         .qb-empty-hero h3 { margin: 0; font-size: 1.15rem; color: #333; font-weight: 700; }
@@ -1385,14 +1399,14 @@ export default function DailyReportTracker() {
         .qb-default-delete-btn { display: inline-flex; align-items: center; justify-content: center; border: 1.5px solid #e0e0e0; border-radius: 999px; padding: 6px 8px; background: #fff; color: #999; cursor: pointer; transition: 0.2s; }
         .qb-default-delete-btn:hover { border-color: #ff6f91; color: #ff6f91; background: #ffe0ea; transform: translateY(-1px); }
 
-        /* ─── Log Modal — slide-up sheet with colored header ─── */
+        /* ─── Log Modal ─── */
         .lm-overlay {
           position: fixed; inset: 0;
           background: rgba(0,0,0,0.28);
           backdrop-filter: blur(6px);
           z-index: 1000;
           display: flex;
-          align-items: flex-end;         /* sheet rises from bottom */
+          align-items: flex-end;
           justify-content: center;
         }
         .lm-sheet {
@@ -1410,7 +1424,6 @@ export default function DailyReportTracker() {
           to   { transform: translateY(0);    opacity: 1; }
         }
 
-        /* Colored gradient header */
         .lm-header {
           display: flex; align-items: center; justify-content: space-between;
           padding: 18px 22px; gap: 12px; flex-shrink: 0;
@@ -1430,14 +1443,12 @@ export default function DailyReportTracker() {
         }
         .lm-header-close:hover { background: rgba(255,255,255,0.32); }
 
-        /* Scrollable form body */
         .lm-body {
           flex: 1; overflow-y: auto;
           padding: 22px;
           display: flex; flex-direction: column; gap: 16px;
         }
 
-        /* Section pills */
         .lm-sec-pills { display: flex; flex-wrap: wrap; gap: 7px; }
         .lm-sec-pill {
           padding: 6px 12px; border-radius: 999px; border: 1.5px solid;
@@ -1445,7 +1456,6 @@ export default function DailyReportTracker() {
           cursor: pointer; transition: all 0.15s; white-space: nowrap; font-family: inherit;
         }
 
-        /* Form fields */
         .lm-row2 { display: flex; gap: 14px; }
         .lm-row2 > * { flex: 1; }
         .lm-flabel {
@@ -1478,11 +1488,8 @@ export default function DailyReportTracker() {
           box-shadow: 0 0 0 3px color-mix(in srgb, var(--a, #ff8fb1) 18%, transparent);
         }
 
-          
-
         .lm-error { background: #fde8e8; color: #c0392b; border-radius: 12px; padding: 10px 14px; font-size: 13px; margin: 0; }
 
-        /* Actions */
         .lm-actions { display: flex; gap: 10px; padding-top: 4px; }
         .lm-primary {
           display: inline-flex; align-items: center; gap: 7px;
@@ -1550,7 +1557,6 @@ export default function DailyReportTracker() {
           .ms-add-btn { padding-inline: 16px; }
         }
         @media (min-width: 768px) {
-          /* On wider screens, center the sheet instead of anchoring to bottom */
           .lm-overlay { align-items: center; padding: 24px; }
           .lm-sheet   { border-radius: 28px; max-height: 88vh; }
         }
@@ -1576,10 +1582,8 @@ export default function DailyReportTracker() {
           </div>
         ) : (
           <>
-            {/* Clean 3-stat grid */}
             <HeroStats logs={allLogs} />
 
-            {/* Tabs */}
             <div className="qtr-tabs">
               <button className={`qtr-tab ${activeTab === 'log' ? 'active' : ''}`} onClick={() => setActiveTab('log')}>
                 <span className="qtr-tab-icon"><ClipboardList size={18} /></span>
@@ -1626,7 +1630,6 @@ export default function DailyReportTracker() {
         )}
       </div>
 
-      {/* Log Entry Modal */}
       {showModal && (
         <LogModal
           editing={editingLog}
@@ -1639,7 +1642,6 @@ export default function DailyReportTracker() {
         />
       )}
 
-      {/* Manage Sections Modal */}
       {showManage && (
         <ManageSectionsModal
           sections={sections}

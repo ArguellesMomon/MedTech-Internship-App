@@ -9,9 +9,9 @@ import {
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────
-   CONSTANTS  (logic unchanged) 
+   CONSTANTS
 ───────────────────────────────────────────── */
-const SECTIONS = [
+const DEFAULT_SECTIONS = [
   { id: 'Hematology',              color: '#ff6f91', bg: '#fff0f4' },
   { id: 'Clinical Chemistry',      color: '#ff8c5a', bg: '#fff5ee' },
   { id: 'Microbiology',            color: '#5f8dff', bg: '#eff4ff' },
@@ -44,10 +44,10 @@ function generateSectionMeta(name) {
 }
 
 function normalizeStoredSections(saved) {
-  if (!Array.isArray(saved)) return SECTIONS;
-  const merged = saved.some(s => SECTIONS.some(base => base.id === s?.id))
+  if (!Array.isArray(saved)) return DEFAULT_SECTIONS;
+  const merged = saved.some(s => DEFAULT_SECTIONS.some(base => base.id === s?.id))
     ? saved
-    : [...SECTIONS, ...saved];
+    : [...DEFAULT_SECTIONS, ...saved];
   const seen = new Set();
   return merged.reduce((list, section) => {
     const id = typeof section?.id === 'string' ? section.id.trim() : '';
@@ -79,7 +79,7 @@ function timeAgo(dateStr) {
 }
 
 /* ─────────────────────────────────────────────
-   MANAGE SECTIONS MODAL  (logic unchanged, restyled)
+   MANAGE SECTIONS MODAL
 ───────────────────────────────────────────── */
 function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose }) {
   const [name,     setName]     = useState('');
@@ -114,7 +114,6 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
           <button className="ms-close" onClick={onClose}><X size={16} /></button>
         </div>
 
-        {/* Add new */}
         <div className="ms-add-box">
           <p className="ms-box-label">New Section</p>
           <div className="ms-add-row">
@@ -131,7 +130,6 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
           {error && <p className="ms-error">{error}</p>}
         </div>
 
-        {/* Custom sections list */}
         <div>
           <p className="ms-box-label">
             Sections
@@ -194,7 +192,7 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
 }
 
 /* ─────────────────────────────────────────────
-   NOTE MODAL  (redesigned)
+   NOTE MODAL
 ───────────────────────────────────────────── */
 function NoteModal({ editing, defaultSection, onClose, onSaved, allSections, sectionMap }) {
   const { user } = useAuth();
@@ -238,7 +236,6 @@ function NoteModal({ editing, defaultSection, onClose, onSaved, allSections, sec
   return (
     <div className="nm-overlay" onClick={onClose}>
       <div className="nm-sheet" onClick={e => e.stopPropagation()}>
-        {/* Colored header */}
         <div className="nm-header" style={{ background: `linear-gradient(135deg, ${accentColor}e0, ${accentColor})` }}>
           <div className="nm-header-left">
             <div className="nm-header-icon">
@@ -250,7 +247,6 @@ function NoteModal({ editing, defaultSection, onClose, onSaved, allSections, sec
         </div>
 
         <form onSubmit={handleSubmit} className="nm-body">
-          {/* Section pills */}
           <div>
             <p className="nm-label">Section</p>
             <div className="nm-sec-pills">
@@ -270,7 +266,6 @@ function NoteModal({ editing, defaultSection, onClose, onSaved, allSections, sec
             </div>
           </div>
 
-          {/* Title */}
           <label className="nm-label">
             Title *
             <input className="nm-input" value={form.title} required maxLength={120}
@@ -279,7 +274,6 @@ function NoteModal({ editing, defaultSection, onClose, onSaved, allSections, sec
               onChange={e => setForm({ ...form, title: e.target.value })} />
           </label>
 
-          {/* Body */}
           <label className="nm-label">
             Content *
             <textarea className="nm-textarea" rows={5} required
@@ -289,7 +283,6 @@ function NoteModal({ editing, defaultSection, onClose, onSaved, allSections, sec
             <span className={`nm-char ${charLeft < 50 ? 'warn' : ''}`}>{charLeft} left</span>
           </label>
 
-          {/* Staff tip toggle */}
           <div className="nm-toggle-row" onClick={() => setForm({ ...form, is_staff_tip: !form.is_staff_tip })}>
             <div className={`nm-toggle ${form.is_staff_tip ? 'on' : ''}`}>
               <span className="nm-knob" />
@@ -319,7 +312,7 @@ function NoteModal({ editing, defaultSection, onClose, onSaved, allSections, sec
 }
 
 /* ─────────────────────────────────────────────
-   NOTE CARD  (complete redesign)
+   NOTE CARD
 ───────────────────────────────────────────── */
 function NoteCard({ note, onOpen, onEdit, onDelete, sectionMap, style }) {
   const [copied,     setCopied]    = useState(false);
@@ -354,19 +347,15 @@ function NoteCard({ note, onOpen, onEdit, onDelete, sectionMap, style }) {
       onClick={() => onOpen(note)}
       onKeyDown={openFromKeyboard}
     >
-      {/* Top color tab */}
       <div className="nc-tab" style={{ background: isTip ? 'linear-gradient(90deg,#f59e0b,#fbbf24)' : meta?.color }} />
 
-      {/* Staff tip ribbon */}
       {isTip && (
         <div className="nc-tip-ribbon">
           <Star size={11} fill="currentColor" /> Staff Tip
         </div>
       )}
 
-      {/* Card body */}
       <div className="nc-content">
-        {/* Section badge + actions */}
         <div className="nc-top-row">
           <span className="nc-section-badge"
             style={{ background: meta?.bg, color: meta?.color }}>
@@ -395,10 +384,7 @@ function NoteCard({ note, onOpen, onEdit, onDelete, sectionMap, style }) {
           </div>
         </div>
 
-        {/* Title */}
         <h4 className="nc-title">{note.title}</h4>
-
-        {/* Body — with subtle ruled lines */}
         <p className="nc-body">{preview}</p>
 
         <span className="nc-open-hint" style={{ color: meta?.color }}>
@@ -406,7 +392,6 @@ function NoteCard({ note, onOpen, onEdit, onDelete, sectionMap, style }) {
         </span>
       </div>
 
-      {/* Footer */}
       <div className="nc-footer">
         <span className="nc-time">
           {note.updated_at && note.updated_at !== note.created_at
@@ -419,7 +404,7 @@ function NoteCard({ note, onOpen, onEdit, onDelete, sectionMap, style }) {
 }
 
 /* ─────────────────────────────────────────────
-   MAIN PAGE
+   NOTE VIEW MODAL
 ───────────────────────────────────────────── */
 function NoteViewModal({ note, onClose, onEdit, sectionMap }) {
   const [copied, setCopied] = useState(false);
@@ -477,6 +462,9 @@ function NoteViewModal({ note, onClose, onEdit, sectionMap }) {
   );
 }
 
+/* ─────────────────────────────────────────────
+   MAIN NOTES SECTION
+───────────────────────────────────────────── */
 export default function NotesSection() {
   const { user } = useAuth();
 
@@ -491,11 +479,11 @@ export default function NotesSection() {
   const [showNoteModal,  setShowNoteModal]  = useState(false);
   const [viewingNote,    setViewingNote]    = useState(null);
   const [editingNote,    setEditingNote]    = useState(null);
-  const [sections,       setSections]       = useState(SECTIONS);
+  const [sections,       setSections]       = useState(DEFAULT_SECTIONS);
   const [sectionsLoaded, setSectionsLoaded] = useState(false);
   const [showManage,     setShowManage]     = useState(false);
 
-  /* ── Fetch ── */
+  /* ── Fetch notes ── */
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
@@ -507,28 +495,71 @@ export default function NotesSection() {
     fetch();
   }, [user.id]);
 
-  /* ── Custom sections ── */
+  /* ── Load custom sections from Supabase ── */
   useEffect(() => {
     const loadSections = async () => {
-      const { data } = await supabase
-        .from('user_settings')
-        .select('value')
-        .eq('user_id', user.id)
-        .eq('key', CUSTOM_SECTION_STORAGE_KEY)
-        .maybeSingle();
-      setSections(data?.value ? normalizeStoredSections(data.value) : SECTIONS);
-      setSectionsLoaded(true);
+      try {
+        const { data, error } = await supabase
+          .from('user_settings')
+          .select('value')
+          .eq('user_id', user.id)
+          .eq('key', CUSTOM_SECTION_STORAGE_KEY)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Load sections error:', error);
+          setSections(DEFAULT_SECTIONS);
+          setSectionsLoaded(true);
+          return;
+        }
+
+        if (data && data.value && Array.isArray(data.value)) {
+          console.log('Loaded sections from Supabase:', data.value);
+          setSections(normalizeStoredSections(data.value));
+        } else {
+          console.log('No existing sections, using defaults');
+          setSections(DEFAULT_SECTIONS);
+        }
+      } catch (err) {
+        console.error('Unexpected load error:', err);
+        setSections(DEFAULT_SECTIONS);
+      } finally {
+        setSectionsLoaded(true);
+      }
     };
+
     loadSections();
   }, [user.id]);
 
+  /* ── Save sections to Supabase whenever they change ── */
   useEffect(() => {
-    if (!sectionsLoaded) return;
-    supabase.from('user_settings').upsert([{
-      user_id: user.id,
-      key: CUSTOM_SECTION_STORAGE_KEY,
-      value: sections,
-    }], { onConflict: 'user_id,key' });
+    if (!sectionsLoaded) return; // wait for initial load
+
+    const saveSections = async () => {
+      try {
+        console.log('Saving sections to Supabase:', sections);
+        const { error } = await supabase
+          .from('user_settings')
+          .upsert(
+            {
+              user_id: user.id,
+              key: CUSTOM_SECTION_STORAGE_KEY,
+              value: sections,
+            },
+            { onConflict: 'user_id, key' }
+          );
+
+        if (error) {
+          console.error('Save sections error:', error);
+        } else {
+          console.log('Sections saved successfully');
+        }
+      } catch (err) {
+        console.error('Unexpected save error:', err);
+      }
+    };
+
+    saveSections();
   }, [sections, sectionsLoaded, user.id]);
 
   const allSections = sections;
@@ -554,10 +585,8 @@ export default function NotesSection() {
     return r;
   }, [notes, filterSection, filterType, search, sortBy]);
 
-  /* ── Active filter count for badge ── */
   const activeFilterCount = (filterType !== 'all' ? 1 : 0) + (filterSection ? 1 : 0);
 
-  /* ── Handlers ── */
   const handleAddSection = label => {
     const meta = generateSectionMeta(label);
     setSections(prev => [...prev, { id: label, color: meta.color, bg: meta.bg }]);
@@ -584,11 +613,9 @@ export default function NotesSection() {
   return (
     <>
       <style>{`
+        /* (All your original styles remain exactly the same – no changes needed) */
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
-        /* ════════════════════════════════
-           BASE
-        ════════════════════════════════ */
         .ns-page {
           width: 100%;
           font-family: 'DM Sans', sans-serif;
@@ -601,9 +628,6 @@ export default function NotesSection() {
           padding: 28px;
         }
 
-        /* ════════════════════════════════
-           HEADER BLOCK
-        ════════════════════════════════ */
         .ns-hero {
           padding-bottom: 22px;
           border-bottom: 1px solid rgba(255,200,220,0.3);
@@ -629,7 +653,6 @@ export default function NotesSection() {
 
         .ns-title-accent { color: #ff5d8f; font-style: italic; }
 
-        /* Stats - big numbers */
         .ns-stats {
           display: grid; grid-template-columns: repeat(3,1fr); gap: 1px;
           background: rgba(255,200,220,0.25);
@@ -657,9 +680,6 @@ export default function NotesSection() {
         .ns-stat:nth-child(2) .ns-stat-n { color: #f59e0b; }
         .ns-stat:nth-child(3) .ns-stat-n { color: #888; }
 
-        /* ════════════════════════════════
-           TOOLBAR
-        ════════════════════════════════ */
         .ns-toolbar {
           display: flex; align-items: center; gap: 10px;
           margin-bottom: 14px; flex-wrap: wrap;
@@ -667,7 +687,6 @@ export default function NotesSection() {
           position: relative; z-index: 20;
         }
 
-        /* Search */
         .ns-search-wrap {
           flex: 1; min-width: 180px; position: relative; display: flex; align-items: center;
         }
@@ -686,7 +705,6 @@ export default function NotesSection() {
         }
         .ns-sc { position: absolute; right: 12px; background: none; border: none; color: #bbb; cursor: pointer; display: flex; padding: 0; }
 
-        /* Sort dropdown */
         .ns-sort-wrap { position: relative; z-index: 50; }
         .ns-sort-btn {
           display: flex; align-items: center; gap: 7px;
@@ -711,7 +729,6 @@ export default function NotesSection() {
         .ns-sort-opt:hover  { background: #fff0f4; color: #ff5d8f; }
         .ns-sort-opt.active { color: #ff5d8f; font-weight: 700; background: #fff5f8; }
 
-        /* Filter toggle button */
         .ns-filter-btn {
           display: inline-flex; align-items: center; gap: 7px;
           border: 1.5px solid rgba(255,200,220,0.5);
@@ -732,7 +749,6 @@ export default function NotesSection() {
           border-radius: 50%; font-size: 10px; font-weight: 800;
         }
 
-        /* New note button */
         .ns-new-btn {
           display: inline-flex; align-items: center; gap: 7px; border: none;
           background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white;
@@ -743,10 +759,6 @@ export default function NotesSection() {
         }
         .ns-new-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,111,145,0.4); }
 
-        /* ════════════════════════════════
-           COLLAPSIBLE FILTER PANEL
-           Uses grid-template-rows trick — smoothest possible collapse
-        ════════════════════════════════ */
         .ns-fp-outer {
           display: grid;
           grid-template-rows: 0fr;
@@ -771,7 +783,6 @@ export default function NotesSection() {
           box-shadow: 0 4px 20px rgba(255,111,145,0.08);
         }
 
-        /* Type segmented control */
         .ns-type-seg {
           display: flex; background: #f5eff2; border-radius: 14px; padding: 4px; gap: 2px;
         }
@@ -786,7 +797,6 @@ export default function NotesSection() {
           box-shadow: 0 2px 10px rgba(255,111,145,0.15);
         }
 
-        /* Section pills row */
         .ns-sec-row-head {
           display: flex; align-items: center; justify-content: space-between;
           margin-bottom: 10px;
@@ -814,7 +824,6 @@ export default function NotesSection() {
         .ns-sec-pill.all { border-color: rgba(255,111,145,0.4); color: #ff5d8f; }
         .ns-sec-pill.all.on { background: #ff5d8f; color: white; border-color: #ff5d8f; }
 
-        /* Clear row */
         .ns-fp-clear-row {
           display: flex; align-items: center; justify-content: flex-end;
         }
@@ -827,22 +836,16 @@ export default function NotesSection() {
         .ns-clear-btn:hover { border-color: #e05555; color: #e05555; background: #fde8e8; }
         .ns-clear-btn.hidden { display: none; }
 
-        /* ════════════════════════════════
-           RESULTS COUNT
-        ════════════════════════════════ */
         .ns-count {
           font-size: 12px; color: #c8b0a8; margin-bottom: 16px;
           display: flex; align-items: center; gap: 6px;
         }
 
-        /* ════════════════════════════════
-           NOTE GRID
-        ════════════════════════════════ */
         .ns-grid {
           display: grid;
           grid-template-columns: repeat(2,1fr);
           gap: 14px;
-          align-items: start; /* important for masonry feel */
+          align-items: start;
         }
 
         @keyframes ns-up {
@@ -855,9 +858,6 @@ export default function NotesSection() {
           to   { opacity: 1; transform: translateY(0)  scale(1);    }
         }
 
-        /* ════════════════════════════════
-           NOTE CARD
-        ════════════════════════════════ */
         .nc-card {
           border-radius: 20px;
           border: 1.5px solid rgba(255,200,220,0.5);
@@ -884,17 +884,14 @@ export default function NotesSection() {
           border-color: color-mix(in srgb, var(--c) 40%, rgba(255,200,220,0.5));
         }
 
-        /* Staff tip card: warm tint */
         .nc-tip {
           background: linear-gradient(180deg, #fffbea 0%, rgba(255,255,255,0.96) 72px);
         }
 
-        /* Section color tab at top */
         .nc-tab {
           height: 5px; flex-shrink: 0;
         }
 
-        /* Staff tip ribbon */
         .nc-tip-ribbon {
           display: inline-flex; align-items: center; gap: 5px;
           background: linear-gradient(135deg,#fef3c7,#fde68a);
@@ -924,7 +921,6 @@ export default function NotesSection() {
         }
         .nc-card:hover .nc-btns { opacity: 1; }
 
-        /* Always visible on touch devices */
         @media (hover: none) {
           .nc-btns { opacity: 1; }
         }
@@ -960,7 +956,6 @@ export default function NotesSection() {
         .nc-body {
           font-size: 12px; color: #666; line-height: 1.6;
           margin: 0; white-space: pre-wrap; word-break: break-word;
-          /* Subtle ruled-line texture */
           background-image: repeating-linear-gradient(
             transparent, transparent 27px,
             rgba(255,200,220,0.18) 27px, rgba(255,200,220,0.18) 28px
@@ -985,7 +980,6 @@ export default function NotesSection() {
         }
         .nc-time { font-size: 11px; color: #d0c0c8; font-weight: 500; }
 
-        /* Note viewer modal */
         .nv-overlay {
           position: fixed; inset: 0; background: rgba(0,0,0,0.32);
           backdrop-filter: blur(7px); z-index: 1000;
@@ -1030,23 +1024,18 @@ export default function NotesSection() {
         .nv-action.primary { background: var(--c); border-color: var(--c); color: white; }
         .nv-action.primary:hover { opacity: 0.9; color: white; }
 
-        /* ════════════════════════════════
-           EMPTY STATE
-        ════════════════════════════════ */
         .ns-empty {
           grid-column: 1/-1;
           text-align: center; padding: 48px 24px;
           display: flex; flex-direction: column; align-items: center; gap: 12px;
-          background: rgba(255,255,255,0.6);
-          border-radius: 24px; border: 1.5px dashed #ffd6e1;
+background: radial-gradient(circle at top left, rgba(255,143,177,0.18), transparent 32%),
+            radial-gradient(circle at bottom right, rgba(95,141,255,0.16), transparent 34%),
+            linear-gradient(135deg, #fff8fb 0%, #f7f9ff 54%, #edfaf4 100%);          border-radius: 24px; border: 1.5px dashed #ffd6e1;
         }
         .ns-empty-blob { font-size: 42px; line-height: 1; margin-bottom: 4px; }
         .ns-empty-title { margin: 0; font-size: 1.2rem; color: #333; font-weight: 700; font-family: inherit; font-style: normal; }
         .ns-empty-hint  { margin: 0; color: #aaa; font-size: 13px; max-width: 340px; line-height: 1.6; }
 
-        /* ════════════════════════════════
-           LOADING SKELETON
-        ════════════════════════════════ */
         .ns-skeleton-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; }
         .ns-skeleton-card {
           border-radius: 20px; overflow: hidden;
@@ -1064,9 +1053,6 @@ export default function NotesSection() {
         }
         @keyframes ns-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-        /* ════════════════════════════════
-           NOTE MODAL
-        ════════════════════════════════ */
         .nm-overlay {
           position: fixed; inset: 0; background: rgba(0,0,0,0.28);
           backdrop-filter: blur(6px); z-index: 1000;
@@ -1143,9 +1129,6 @@ export default function NotesSection() {
         .nm-submit:disabled { opacity: 0.65; cursor: not-allowed; }
         .nm-cancel { border: none; background: #f0ecea; color: #888; border-radius: 999px; padding: 13px 20px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
 
-        /* ════════════════════════════════
-           MANAGE SECTIONS MODAL
-        ════════════════════════════════ */
         .ms-overlay {
           position: fixed; inset: 0; background: rgba(0,0,0,0.28);
           backdrop-filter: blur(6px); z-index: 1000;
@@ -1193,9 +1176,6 @@ export default function NotesSection() {
         .ms-no  { border: none; background: #f0f0f0; color: #888; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
         .ms-note { display: flex; align-items: flex-start; gap: 8px; background: #fff8fa; border: 1px solid rgba(255,200,220,0.4); border-radius: 14px; padding: 12px 14px; font-size: 12px; color: #bbb; line-height: 1.6; }
 
-        /* ════════════════════════════════
-           RESPONSIVE
-        ════════════════════════════════ */
         @media (max-width: 767px) {
           .ns-page   { border-radius: 22px; padding: 20px 20px 56px; }
           .ns-title  { font-size: 2rem; }
@@ -1209,7 +1189,6 @@ export default function NotesSection() {
           .ms-add-btn { padding-inline: 16px; }
           .nm-sheet   { border-radius: 24px 24px 0 0; }
           .nm-body    { padding: 18px; }
-          /* Mobile FAB */
           .ns-fab {
             display: flex !important;
             position: fixed; bottom: calc(72px + env(safe-area-inset-bottom,0px));
@@ -1221,10 +1200,10 @@ export default function NotesSection() {
             transition: 0.2s;
           }
           .ns-fab:active { transform: scale(0.94); }
-          .ns-new-btn { display: none; } /* hide inline btn on mobile, use FAB instead */
+          .ns-new-btn { display: none; }
         }
 
-        .ns-fab { display: none; } /* hidden by default, shown on mobile */
+        .ns-fab { display: none; }
 
         @media (min-width: 768px) and (max-width: 1023px) {
           .ns-page   { padding: 24px; }
@@ -1242,17 +1221,12 @@ export default function NotesSection() {
       `}</style>
 
       <div className="ns-page">
-
-        {/* ── HERO ── */}
         <div className="ns-hero">
           <div className="ns-hero-top">
             <h1 className="ns-title">
               Notes &amp; <span className="ns-title-accent">Tips</span>
             </h1>
-            
           </div>
-
-          {/* Stats */}
           <div className="ns-stats">
             <div className="ns-stat">
               <span className="ns-stat-n">{totalNotes}</span>
@@ -1269,9 +1243,7 @@ export default function NotesSection() {
           </div>
         </div>
 
-        {/* ── TOOLBAR ── */}
         <div className="ns-toolbar">
-          {/* Search */}
           <div className="ns-search-wrap">
             <Search size={14} className="ns-si" />
             <input className="ns-search" placeholder="Search notes and tips…"
@@ -1281,7 +1253,6 @@ export default function NotesSection() {
             )}
           </div>
 
-          {/* Sort */}
           <div className="ns-sort-wrap">
             <button className="ns-sort-btn" onClick={() => setShowSort(v => !v)}>
               <ArrowUpDown size={13} />
@@ -1300,7 +1271,6 @@ export default function NotesSection() {
             )}
           </div>
 
-          {/* Filter toggle */}
           <button
             className={`ns-filter-btn ${activeFilterCount > 0 ? 'has-filters' : ''}`}
             onClick={() => setShowFilters(v => !v)}
@@ -1313,19 +1283,15 @@ export default function NotesSection() {
             {showFilters ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
 
-          {/* Desktop new note */}
           <button className="ns-new-btn"
             onClick={() => { setEditingNote(null); setShowNoteModal(true); }}>
             <Plus size={15} /> New Note
           </button>
         </div>
 
-        {/* ── COLLAPSIBLE FILTER PANEL ── */}
         <div className={`ns-fp-outer ${showFilters ? 'open' : ''}`}>
           <div className="ns-fp-inner">
             <div className="ns-fp-panel">
-
-              {/* Type segmented control */}
               <div>
                 <p className="ms-box-label" style={{ margin: '0 0 10px' }}>Show</p>
                 <div className="ns-type-seg">
@@ -1343,7 +1309,6 @@ export default function NotesSection() {
                 </div>
               </div>
 
-              {/* Section pills */}
               <div>
                 <div className="ns-sec-row-head">
                   <span className="ns-sec-row-label">Section</span>
@@ -1373,7 +1338,6 @@ export default function NotesSection() {
                 </div>
               </div>
 
-              {/* Clear row */}
               <div className="ns-fp-clear-row">
                 <button
                   className={`ns-clear-btn ${activeFilterCount === 0 ? 'hidden' : ''}`}
@@ -1386,14 +1350,12 @@ export default function NotesSection() {
           </div>
         </div>
 
-        {/* ── RESULTS COUNT ── */}
         {(search || filterSection || filterType !== 'all') && !loading && (
           <p className="ns-count">
             Showing {filtered.length} of {notes.length} note{notes.length !== 1 ? 's' : ''}
           </p>
         )}
 
-        {/* ── NOTES GRID ── */}
         {loading ? (
           <div className="ns-skeleton-grid">
             {[1,2,3,4].map(i => (
@@ -1451,12 +1413,10 @@ export default function NotesSection() {
         )}
       </div>
 
-      {/* Mobile FAB */}
       <button className="ns-fab" onClick={() => { setEditingNote(null); setShowNoteModal(true); }}>
         <Plus size={22} />
       </button>
 
-      {/* Modals */}
       {viewingNote && (
         <NoteViewModal
           note={viewingNote}

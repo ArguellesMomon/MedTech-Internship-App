@@ -36,7 +36,7 @@ const SECTION_META = {
   'Histopathology/Cytology': { color: '#4abf95', bg: '#edfaf4' },
 };
 
-const SECTION_STORAGE_KEY = 'shift_planner.sections';
+const SECTION_STORAGE_KEY = 'rotation_guide.sections';
 const DEFAULT_SECTION_LIST = SECTIONS.map(id => ({ id, ...SECTION_META[id] }));
 const SECTION_COLOR_PRESETS = [
   '#ff6f91', '#ff8c5a', '#5f8dff', '#e05555', '#4abf95',
@@ -76,7 +76,7 @@ const STUDY_TIPS = [
 ];
 
 /* ─────────────────────────────────────────────
-   HELPERS  (unchanged)
+   HELPERS
 ───────────────────────────────────────────── */
 function toDateStr(d) {
   const year  = d.getFullYear();
@@ -187,15 +187,13 @@ function isMissingTableError(error) {
 }
 
 /* ─────────────────────────────────────────────
-   SHARED MODAL STYLES  (injected once)
+   SHARED MODAL STYLES (injected once)
 ───────────────────────────────────────────── */
 const MODAL_STYLES = `
   /* ═══════════════════════════════════════════
      SHARED BOTTOM-SHEET / CENTERED MODAL BASE
-     Mirrors NoteSection modal pattern exactly
   ═══════════════════════════════════════════ */
 
-  /* Overlay */
   .m-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.30);
@@ -208,7 +206,6 @@ const MODAL_STYLES = `
     padding: 0;
   }
 
-  /* Sheet — slides up from bottom on all sizes */
   .m-sheet {
     background: #fff;
     width: 100%;
@@ -227,7 +224,6 @@ const MODAL_STYLES = `
     to   { transform: translateY(0);   opacity: 1; }
   }
 
-  /* On tablets/desktop: center it like NoteSection does */
   @media (min-width: 640px) {
     .m-overlay {
       align-items: center;
@@ -239,7 +235,6 @@ const MODAL_STYLES = `
     }
   }
 
-  /* Drag pill */
   .m-drag-pill {
     width: 36px; height: 4px;
     background: rgba(255,255,255,0.45);
@@ -252,7 +247,6 @@ const MODAL_STYLES = `
   }
   @media (min-width: 640px) { .m-drag-pill { display: none; } }
 
-  /* Gradient header */
   .m-header {
     display: flex; align-items: center;
     justify-content: space-between;
@@ -296,7 +290,6 @@ const MODAL_STYLES = `
   }
   .m-close-btn:hover { background: rgba(255,255,255,0.30); }
 
-  /* Scrollable body */
   .m-body {
     flex: 1; overflow-y: auto;
     padding: 22px;
@@ -307,7 +300,6 @@ const MODAL_STYLES = `
   .m-body::-webkit-scrollbar-track { background: transparent; }
   .m-body::-webkit-scrollbar-thumb { background: #ffd6e1; border-radius: 4px; }
 
-  /* Field label */
   .m-label {
     display: flex; flex-direction: column; gap: 8px;
     font-size: 11px; font-weight: 800;
@@ -315,7 +307,6 @@ const MODAL_STYLES = `
     color: #c8b0a8; margin: 0;
   }
 
-  /* Text input */
   .m-input {
     border: 1.5px solid rgba(255,200,220,0.6);
     background: #fff8fa; border-radius: 14px;
@@ -330,7 +321,6 @@ const MODAL_STYLES = `
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-accent, #ff8fb1) 18%, transparent);
   }
 
-  /* Textarea */
   .m-textarea {
     border: 1.5px solid rgba(255,200,220,0.6);
     background: #fff8fa; border-radius: 14px;
@@ -346,7 +336,6 @@ const MODAL_STYLES = `
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-accent, #ff8fb1) 18%, transparent);
   }
 
-  /* Pill row */
   .m-pills { display: flex; flex-wrap: wrap; gap: 8px; }
 
   .m-pill {
@@ -362,7 +351,6 @@ const MODAL_STYLES = `
     box-shadow: 0 4px 14px color-mix(in srgb, var(--pill-color, #ff6f91) 30%, transparent);
   }
 
-  /* Duration preview chip */
   .m-duration-chip {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 10px 16px; border-radius: 14px;
@@ -372,17 +360,14 @@ const MODAL_STYLES = `
     align-self: flex-start;
   }
 
-  /* 2-col time row */
   .m-time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-  /* Error */
   .m-err {
     background: #fde8e8; color: #c0392b;
     border-radius: 12px; padding: 10px 14px;
     font-size: 13px; margin: 0;
   }
 
-  /* Action buttons */
   .m-actions { display: flex; gap: 10px; padding-top: 4px; padding-bottom: 8px; }
 
   .m-submit {
@@ -408,7 +393,6 @@ const MODAL_STYLES = `
   }
   .m-cancel:hover { background: #e8e2e4; }
 
-  /* Select field */
   .m-select {
     border: 1.5px solid rgba(255,200,220,0.6);
     background: #fff8fa; border-radius: 14px;
@@ -428,14 +412,12 @@ const MODAL_STYLES = `
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-accent, #ff8fb1) 18%, transparent);
   }
 
-  /* Divider */
   .m-divider {
     height: 1px;
     background: rgba(255,200,220,0.3);
     margin: 2px 0;
   }
 
-  /* ══ Exam modal countdown preview ══ */
   .m-countdown {
     display: flex; align-items: center; gap: 10px;
     padding: 12px 16px; border-radius: 16px;
@@ -443,7 +425,7 @@ const MODAL_STYLES = `
   }
   .m-countdown-icon { font-size: 20px; line-height: 1; }
 
-  /* ══ Manage Sections Modal ══ */
+  /* Manage Sections Modal */
   .msm-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.30);
@@ -498,7 +480,7 @@ const MODAL_STYLES = `
 `;
 
 /* ─────────────────────────────────────────────
-   SHIFT MODAL  ← completely redesigned
+   SHIFT MODAL
 ───────────────────────────────────────────── */
 function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
   const { user } = useAuth();
@@ -546,7 +528,6 @@ function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
       >
         <div className="m-drag-pill" />
 
-        {/* Gradient header */}
         <div
           className="m-header"
           style={{ background: `linear-gradient(135deg, ${accentColor}d0, ${accentColor})` }}
@@ -565,7 +546,6 @@ function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
 
         <form onSubmit={handleSubmit} className="m-body">
 
-          {/* Shift type pills */}
           <div>
             <p className="m-label" style={{ marginBottom: 10 }}>Shift Type</p>
             <div className="m-pills">
@@ -589,7 +569,6 @@ function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
 
           <div className="m-divider" />
 
-          {/* Section */}
           <label className="m-label">
             Section
             <select
@@ -600,14 +579,12 @@ function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
             </select>
           </label>
 
-          {/* Date */}
           <label className="m-label">
             Date *
             <input type="date" className="m-input" value={form.shift_date}
               onChange={e => setForm({ ...form, shift_date: e.target.value })} required />
           </label>
 
-          {/* Times */}
           <div className="m-time-row">
             <label className="m-label">
               Start Time *
@@ -621,7 +598,6 @@ function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
             </label>
           </div>
 
-          {/* Duration chip */}
           {duration && (
             <div className="m-duration-chip">
               <Timer size={14} />
@@ -629,7 +605,6 @@ function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
             </div>
           )}
 
-          {/* Notes */}
           <label className="m-label">
             Notes
             <textarea className="m-textarea" rows={3}
@@ -656,7 +631,7 @@ function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
 }
 
 /* ─────────────────────────────────────────────
-   EXAM MODAL  ← completely redesigned
+   EXAM MODAL
 ───────────────────────────────────────────── */
 function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMap }) {
   const { user } = useAuth();
@@ -704,7 +679,6 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
       >
         <div className="m-drag-pill" />
 
-        {/* Gradient header */}
         <div
           className="m-header"
           style={{ background: `linear-gradient(135deg, ${accentColor}d0, ${accentColor})` }}
@@ -727,7 +701,6 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
 
         <form onSubmit={handleSubmit} className="m-body">
 
-          {/* Countdown preview */}
           {form.exam_date && urgency && (
             <div className="m-countdown"
               style={{ background: urgency.badgeBg, borderColor: urgency.borderColor + '55' }}>
@@ -737,7 +710,6 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
             </div>
           )}
 
-          {/* Exam name */}
           <label className="m-label">
             Exam Name *
             <input className="m-input" required maxLength={120}
@@ -746,7 +718,6 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
               onChange={e => setForm({ ...form, exam_name: e.target.value })} />
           </label>
 
-          {/* Exam date */}
           <label className="m-label">
             Exam Date *
             <input type="date" className="m-input" value={form.exam_date} required
@@ -755,7 +726,6 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
 
           <div className="m-divider" />
 
-          {/* Section pills */}
           <div>
             <p className="m-label" style={{ marginBottom: 10 }}>Section</p>
             <div className="m-pills">
@@ -776,7 +746,6 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
             </div>
           </div>
 
-          {/* Notes */}
           <label className="m-label">
             Description & Study Notes
             <textarea className="m-textarea" rows={4}
@@ -803,7 +772,7 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
 }
 
 /* ─────────────────────────────────────────────
-   MANAGE SECTIONS MODAL  (restyled, same logic)
+   MANAGE SECTIONS MODAL
 ───────────────────────────────────────────── */
 function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose }) {
   const [name,     setName]     = useState('');
@@ -823,7 +792,6 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
     <div className="msm-overlay" onClick={onClose}>
       <style>{MODAL_STYLES}</style>
       <div className="msm-modal" onClick={e => e.stopPropagation()}>
-
         <div className="msm-head">
           <div className="msm-head-left">
             <div className="msm-head-icon"><Settings2 size={18} /></div>
@@ -905,7 +873,7 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
 }
 
 /* ─────────────────────────────────────────────
-   All remaining sub-components (unchanged logic)
+   EXAM CALENDAR
 ───────────────────────────────────────────── */
 function ExamCalendar({ exams, onAdd, onEdit, currentMonth, onPrevMonth, onNextMonth }) {
   const year  = currentMonth.getFullYear();
@@ -994,6 +962,9 @@ function ExamCalendar({ exams, onAdd, onEdit, currentMonth, onPrevMonth, onNextM
   );
 }
 
+/* ─────────────────────────────────────────────
+   EXAM HISTORY LIST
+───────────────────────────────────────────── */
 function ExamHistoryList({ allExams, onEdit, onDelete, sectionMap }) {
   const [filterTab,  setFilterTab]  = useState('upcoming');
   const [filterSec,  setFilterSec]  = useState('');
@@ -1128,6 +1099,9 @@ function ExamHistoryList({ allExams, onEdit, onDelete, sectionMap }) {
   );
 }
 
+/* ─────────────────────────────────────────────
+   EXAM STUDY WELLNESS
+───────────────────────────────────────────── */
 function ExamStudyWellness({ exams }) {
   const { user } = useAuth();
   const [tipIndex,    setTipIndex]    = useState(() => Math.floor(Math.random() * STUDY_TIPS.length));
@@ -1269,6 +1243,9 @@ function ExamStudyWellness({ exams }) {
   );
 }
 
+/* ─────────────────────────────────────────────
+   EXAMS PANEL
+───────────────────────────────────────────── */
 function ExamsPanel({ exams, loading, error, onAdd, onEdit, onDelete, sections, sectionMap,
   currentMonth, onPrevMonth, onNextMonth }) {
   const stats = useMemo(() => ({
@@ -1295,6 +1272,9 @@ function ExamsPanel({ exams, loading, error, onAdd, onEdit, onDelete, sections, 
   );
 }
 
+/* ─────────────────────────────────────────────
+   WEEKLY STATS
+───────────────────────────────────────────── */
 function WeeklyStats({ shifts }) {
   const totalHours = useMemo(() => shifts.reduce((sum, s) => sum + calcDurationHrs(s.start_time, s.end_time), 0), [shifts]);
   const typeCounts = useMemo(() => { const c = {}; shifts.forEach(s => { c[s.shift_type] = (c[s.shift_type] ?? 0) + 1; }); return c; }, [shifts]);
@@ -1318,6 +1298,9 @@ function WeeklyStats({ shifts }) {
   );
 }
 
+/* ─────────────────────────────────────────────
+   SHIFT CALENDAR
+───────────────────────────────────────────── */
 function ShiftCalendar({ shifts, exams, onAdd, onEdit, onDelete, currentWeek, onPrevWeek, onNextWeek }) {
   const weekStart = getWeekStart(currentWeek);
   const weekDates = Array.from({ length: 7 }).map((_, i) => {
@@ -1390,6 +1373,9 @@ function ShiftCalendar({ shifts, exams, onAdd, onEdit, onDelete, currentWeek, on
   );
 }
 
+/* ─────────────────────────────────────────────
+   ALL SHIFTS LIST
+───────────────────────────────────────────── */
 function AllShiftsList({ allShifts, onEdit, onDelete }) {
   const [filterType, setFilterType] = useState('');
   const [showFilter, setShowFilter] = useState(false);
@@ -1481,6 +1467,9 @@ function AllShiftsList({ allShifts, onEdit, onDelete }) {
   );
 }
 
+/* ─────────────────────────────────────────────
+   WELLNESS PANEL
+───────────────────────────────────────────── */
 function WellnessPanel({ weekShifts }) {
   const [tipIndex,  setTipIndex]  = useState(() => Math.floor(Math.random() * WELLNESS_TIPS.length));
   const [hydration, setHydration] = useState(0);
@@ -1538,7 +1527,7 @@ function WellnessPanel({ weekShifts }) {
 }
 
 /* ─────────────────────────────────────────────
-   MAIN SHIFT PLANNER
+   MAIN SHIFT PLANNER (with fixed section persistence)
 ───────────────────────────────────────────── */
 export default function ShiftPlanner() {
   const location = useLocation();
@@ -1569,21 +1558,76 @@ export default function ShiftPlanner() {
   const upcomingExamCount = useMemo(() => allExams.filter(e => daysUntil(e.exam_date) >= 0).length, [allExams]);
   const sectionMap = useMemo(() => Object.fromEntries(sections.map(s => [s.id, s])), [sections]);
 
+  // ── Load custom sections from Supabase ──
   useEffect(() => {
     const loadSections = async () => {
-      const { data } = await supabase.from('user_settings').select('value')
-        .eq('user_id', user.id).eq('key', SECTION_STORAGE_KEY).maybeSingle();
-      setSections(data?.value ? normalizeSections(data.value) : DEFAULT_SECTION_LIST);
-      setSectionsLoaded(true);
+      try {
+        const { data, error } = await supabase
+          .from('user_settings')
+          .select('value')
+          .eq('user_id', user.id)
+          .eq('key', SECTION_STORAGE_KEY)
+          .maybeSingle();
+
+        if (error) {
+          console.error('ShiftPlanner load sections error:', error);
+          setSections(DEFAULT_SECTION_LIST);
+          setSectionsLoaded(true);
+          return;
+        }
+
+        const saved = data?.value;
+        if (saved && Array.isArray(saved) && saved.length > 0) {
+          const normalized = normalizeSections(saved);
+          console.log('ShiftPlanner loaded sections from Supabase:', normalized);
+          setSections(normalized);
+        } else {
+          setSections(DEFAULT_SECTION_LIST);
+        }
+      } catch (err) {
+        console.error('ShiftPlanner unexpected load error:', err);
+        setSections(DEFAULT_SECTION_LIST);
+      } finally {
+        setSectionsLoaded(true);
+      }
     };
     loadSections();
   }, [user.id]);
 
+  // ── Save custom sections whenever they change ──
   useEffect(() => {
     if (!sectionsLoaded) return;
-    supabase.from('user_settings').upsert([{ user_id: user.id, key: SECTION_STORAGE_KEY, value: sections }], { onConflict: 'user_id,key' });
+
+    const saveSections = async () => {
+      try {
+        const toSave = sections.map(s => ({
+          id: s.id,
+          color: s.color,
+          bg: s.bg,
+        }));
+        const { error } = await supabase
+          .from('user_settings')
+          .upsert(
+            {
+              user_id: user.id,
+              key: SECTION_STORAGE_KEY,
+              value: toSave,
+            },
+            { onConflict: 'user_id,key' }
+          );
+        if (error) {
+          console.error('ShiftPlanner save sections error:', error);
+        } else {
+          console.log('ShiftPlanner sections saved successfully');
+        }
+      } catch (err) {
+        console.error('ShiftPlanner unexpected save error:', err);
+      }
+    };
+    saveSections();
   }, [sections, sectionsLoaded, user.id]);
 
+  // ── Fetch shifts ──
   useEffect(() => {
     const fetchAll = async () => {
       setLoadingShifts(true);
@@ -1594,6 +1638,7 @@ export default function ShiftPlanner() {
     fetchAll();
   }, [user.id]);
 
+  // ── Filter shifts for current week ──
   useEffect(() => {
     const weekStart = getWeekStart(currentWeek);
     const weekEnd   = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
@@ -1601,6 +1646,7 @@ export default function ShiftPlanner() {
     setWeekShifts(allShifts.filter(sh => sh.shift_date >= s && sh.shift_date <= e));
   }, [allShifts, currentWeek]);
 
+  // ── Fetch exams ──
   useEffect(() => {
     const fetchExams = async () => {
       setLoadingExams(true);
@@ -1615,6 +1661,7 @@ export default function ShiftPlanner() {
     fetchExams();
   }, [user.id]);
 
+  // ── Handlers ──
   const handleShiftSaved  = (saved, isEdit) => isEdit
     ? setAllShifts(prev => prev.map(s => s.id === saved.id ? saved : s))
     : setAllShifts(prev => [saved, ...prev]);
@@ -1638,9 +1685,16 @@ export default function ShiftPlanner() {
   const openAddExam   = (dateStr) => { setEditingExam(null); setExamDefaultDate(dateStr ?? ''); setShowExamModal(true); };
   const openEditExam  = (exam)    => { setEditingExam(exam); setExamDefaultDate(''); setShowExamModal(true); };
 
-  const handleAddSection         = (label) => { const meta = generateSectionMeta(label); setSections(prev => [...prev, { id: label, ...meta }]); };
-  const handleRemoveSection      = (id)    => setSections(prev => prev.filter(s => s.id !== id));
-  const handleSectionColorChange = (id, color) => setSections(prev => prev.map(s => s.id === id ? { ...s, color, bg: colorToSoftBg(color) } : s));
+  const handleAddSection = (label) => {
+    const meta = generateSectionMeta(label);
+    setSections(prev => [...prev, { id: label, color: meta.color, bg: meta.bg }]);
+  };
+
+  const handleRemoveSection = (id) => setSections(prev => prev.filter(s => s.id !== id));
+
+  const handleSectionColorChange = (id, color) => {
+    setSections(prev => prev.map(s => s.id === id ? { ...s, color, bg: colorToSoftBg(color) } : s));
+  };
 
   const prevWeek = () => setCurrentWeek(d => { const n = new Date(d); n.setDate(d.getDate() - 7); return n; });
   const nextWeek = (cmd) => {
@@ -1907,8 +1961,22 @@ export default function ShiftPlanner() {
         .sp-tip-text  { margin: 0; font-size: 13px; color: #555; line-height: 1.55; }
         .sp-next-tip-btn { align-self: flex-start; background: none; border: none; color: #ff8fb1; font-size: 12px; font-weight: 600; cursor: pointer; padding: 0; }
         .sp-next-tip-btn:hover { color: #ff5d8f; }
-        .sp-empty { text-align: center; color: #bbb; padding: 24px 0; font-size: 14px; }
-
+        .sp-empty {
+          text-align: center;
+          padding: 56px 24px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+          background: radial-gradient(circle at top left, rgba(255,143,177,0.18), transparent 32%),
+                      radial-gradient(circle at bottom right, rgba(95,141,255,0.16), transparent 34%),
+                      linear-gradient(135deg, #fff8fb 0%, #f7f9ff 54%, #edfaf4 100%);
+          border-radius: 28px;
+          border: 1.5px dashed rgba(255,200,220,0.7);
+          box-shadow: 0 2px 12px rgba(255,111,145,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+          color: #888;
+          font-size: 14px;
+        }
         /* ── Exam Panel ── */
         .ex-panel { width: 100%; display: flex; flex-direction: column; gap: 20px; }
         .ex-error-box { display: flex; align-items: center; gap: 10px; background: #fff0f0; color: #c0392b; border: 1px solid #ffd0d0; border-radius: 16px; padding: 14px 18px; font-size: 13px; }
@@ -1957,7 +2025,6 @@ export default function ShiftPlanner() {
       <div className="sp-page">
         <h2 className="sp-page-title">Shift <span className="sp-title-accent">Planner</span></h2>
 
-        {/* Tab switcher */}
         <div className="sp-page-tabs">
           <button className={`sp-page-tab ${activeTab === 'shifts' ? 'active' : ''}`} onClick={() => setActiveTab('shifts')}>
             <CalendarDays size={16} />
@@ -1976,7 +2043,6 @@ export default function ShiftPlanner() {
           </button>
         </div>
 
-        {/* Manage sections */}
         <div className="sp-sections-toolbar">
           <button className="sp-manage-sec-btn" onClick={() => setShowSectionManage(true)}>
             <Settings2 size={13} /> Manage Sections
@@ -2012,7 +2078,6 @@ export default function ShiftPlanner() {
         )}
       </div>
 
-      {/* ── Modals — rendered outside .sp-page ── */}
       {showShiftModal && (
         <ShiftModal
           editing={editingShift}
