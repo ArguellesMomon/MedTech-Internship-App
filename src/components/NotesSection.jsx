@@ -151,8 +151,7 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
                   <div key={sec.id} className={`ms-row ${isRem ? 'ms-row-rem' : ''}`}>
                     <div className="ms-row-main">
                       <div className="ms-sec-pill"
-                        style={{ background: meta.bg, color: meta.color, borderColor: meta.color + '44' }}>
-                        <span className="ms-dot" style={{ background: meta.color }} />
+  style={{ background: colorToSoftBg(meta.color), color: meta.color, borderColor: meta.color + '44' }}>                        <span className="ms-dot" style={{ background: meta.color }} />
                         {sec.id}
                       </div>
                       <label className="ms-color-control" title={`Change ${sec.id} color`}>

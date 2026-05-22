@@ -5,6 +5,7 @@ import {
   Route,
   Routes,
   useLocation,
+  useNavigate,
 } from 'react-router-dom';
 
 import { useAuth } from './auth/AuthProvider';
@@ -22,6 +23,7 @@ import ShiftPlanner       from './components/ShiftPlanner';
 import NotesSection       from './components/NotesSection';
 import DocumentsPage      from './components/DocumentsPage';
 import GlobalSearch       from './components/GlobalSearch';  // <-- ADDED
+import AIChatbot          from './components/AiChatbot';
 
 import { isSupabaseConfigured } from './lib/supabase';
 import Logo from './assets/Logo.png';
@@ -30,7 +32,7 @@ import {
   Menu, X,
   LayoutDashboard, Microscope, ClipboardList,
   CalendarClock, NotebookPen,
-  User, LogOut, Info, FolderOpen,
+  User, LogOut, Info, FolderOpen, Stethoscope,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────
@@ -176,11 +178,15 @@ function HamburgerMenu({ open, setOpen }) {
 function AppLayout({ children }) {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Pages that render their own full-screen layout
   const SHELL_FREE = ['/landing', '/login', '/signup'];
   const hideShell  = SHELL_FREE.includes(location.pathname);
+
+  // Don't show FAB on the AI chat page itself (it has its own back button)
+  const isAiPage = location.pathname === '/ai-chat';
 
   // If this page manages its own layout, just render children
   if (hideShell) {
@@ -333,6 +339,73 @@ function AppLayout({ children }) {
     gap: 8px;
   }
 }
+
+        /* ── AI FAB (Floating Action Button) ── */
+        .ai-fab {
+          position: fixed;
+          bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+          right: 22px;
+          z-index: 350;
+          width: 58px;
+          height: 58px;
+          border-radius: 50%;
+          border: none;
+          background: linear-gradient(135deg, #ff8fb1, #ff5d8f);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow:
+            0 6px 20px rgba(255, 93, 143, 0.45),
+            0 2px 8px rgba(255, 93, 143, 0.3);
+          transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1),
+                      box-shadow 0.22s ease;
+          font-family: 'Poppins', sans-serif;
+        }
+        .ai-fab:hover {
+          transform: scale(1.1) translateY(-2px);
+          box-shadow:
+            0 10px 28px rgba(255, 93, 143, 0.5),
+            0 4px 12px rgba(255, 93, 143, 0.35);
+        }
+        .ai-fab:active { transform: scale(0.96); }
+
+        /* Pulse ring animation */
+        .ai-fab::before {
+          content: '';
+          position: absolute;
+          inset: -4px;
+          border-radius: 50%;
+          border: 2px solid rgba(255, 143, 177, 0.5);
+          animation: fabPulse 2.4s ease-out infinite;
+        }
+        @keyframes fabPulse {
+          0%   { transform: scale(1);   opacity: 0.7; }
+          70%  { transform: scale(1.3); opacity: 0; }
+          100% { transform: scale(1.3); opacity: 0; }
+        }
+
+        /* Tooltip label */
+        .ai-fab-label {
+          position: absolute;
+          right: 68px;
+          background: rgba(50, 50, 50, 0.85);
+          color: white;
+          font-size: 11.5px;
+          font-weight: 600;
+          padding: 5px 10px;
+          border-radius: 8px;
+          white-space: nowrap;
+          pointer-events: none;
+          opacity: 0;
+          transform: translateX(6px);
+          transition: opacity 0.2s, transform 0.2s;
+        }
+        .ai-fab:hover .ai-fab-label {
+          opacity: 1;
+          transform: translateX(0);
+        }
       `}</style>
 
       <div className="app-shell">
@@ -351,6 +424,18 @@ function AppLayout({ children }) {
 </header>
 
         {user && <HamburgerMenu open={menuOpen} setOpen={setMenuOpen} />}
+
+        {/* ── Floating AI Chat Button ── */}
+        {user && !isAiPage && (
+          <button
+            className="ai-fab"
+            onClick={() => navigate('/ai-chat')}
+            aria-label="Open AI Medical Assistant"
+          >
+            <Stethoscope size={24} />
+            <span className="ai-fab-label">MedMate AI</span>
+          </button>
+        )}
 
         <main className="main-content">
           {children}
@@ -432,6 +517,7 @@ export default function App() {
           <Route path="/notes"     element={<ProtectedRoute><NotesSection /></ProtectedRoute>} />
           <Route path="/profile"   element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/documents" element={<ProtectedRoute><DocumentsPage /></ProtectedRoute>} />
+          <Route path="/ai-chat"   element={<ProtectedRoute><AIChatbot /></ProtectedRoute>} />
 
           {/* ── Public utility ── */}
           <Route path="/about"     element={<About />} />

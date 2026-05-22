@@ -135,7 +135,15 @@ function colorToSoftBg(hex) {
 }
 
 function colorToGrad(hex) {
-  return `linear-gradient(135deg,${hex}cc,${hex})`;
+  const c = hex.replace('#', '');
+  if (c.length !== 6) return `linear-gradient(135deg,${hex},${hex})`;
+  const r = parseInt(c.slice(0, 2), 16);
+  const g = parseInt(c.slice(2, 4), 16);
+  const b = parseInt(c.slice(4, 6), 16);
+  // Mix 35% white into each channel → opaque lighter shade for gradient start
+  const mix = v => Math.round(v + (255 - v) * 0.35).toString(16).padStart(2, '0');
+  const lighter = `#${mix(r)}${mix(g)}${mix(b)}`;
+  return `linear-gradient(135deg,${lighter},${hex})`;
 }
 
 function generateSectionMeta(name) {
@@ -1077,7 +1085,7 @@ function SectionPanel({ meta, onOpenProcedureModal }) {
 /* ─────────────────────────────────────────────
    PROCEDURES TAB (receives openProcedureModal callback)
 ───────────────────────────────────────────── */
-function ProceduresTab({ sections, onOpenProcedureModal }) {
+function ProceduresTab({ sections, onOpenProcedureModal, onManageSections }) {
   const [activeSection, setActiveSection] = useState(sections[0]?.id ?? '');
   const activeMeta = sections.find(s => s.id === activeSection) ?? sections[0];
 
@@ -1089,6 +1097,12 @@ function ProceduresTab({ sections, onOpenProcedureModal }) {
 
   return (
     <div>
+      <div className="pt-header-row">
+        <p className="pt-header-label">Sections</p>
+        <button className="pt-manage-link" onClick={onManageSections}>
+          <Settings2 size={11} /> Edit Sections
+        </button>
+      </div>
       <div className="section-tabs">
         {sections.map(s => {
           const SIcon = s.icon ?? BookOpen;
@@ -1638,6 +1652,22 @@ export default function RotationGuide() {
         .msm-yes { border:none; background:linear-gradient(135deg,#ff8f8f,#e05555); color:white; border-radius:999px; padding:4px 11px; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; }
         .msm-no  { border:none; background:#f0f0f0; color:#888; border-radius:999px; padding:4px 11px; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; }
         .msm-note { display: flex; align-items: flex-start; gap: 8px; background: #fff8fa; border: 1px solid rgba(255,200,220,0.4); border-radius: 14px; padding: 12px 14px; font-size: 12px; color: #ccc; line-height: 1.6; }
+        
+        .pt-header-row {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-bottom: 14px;
+        }
+        .pt-header-label {
+          font-size: 11px; font-weight: 700; text-transform: uppercase;
+          letter-spacing: 0.07em; color: #ccc; margin: 0;
+        }
+        .pt-manage-link {
+          display: inline-flex; align-items: center; gap: 5px;
+          background: none; border: none; color: #ff8fb1;
+          font-size: 12px; font-weight: 600; cursor: pointer;
+          font-family: inherit; transition: color 0.15s; padding: 0;
+        }
+        .pt-manage-link:hover { color: #ff5d8f; }
 
         @media (max-width: 768px) {
           .rg-page { border-radius: 22px; padding: 20px 20px 56px; }
@@ -1710,10 +1740,11 @@ export default function RotationGuide() {
         )}
 
         {mainTab === 'procedures' && (
-          <ProceduresTab
-            key={proceduresRefresh} // force re-render when procedures saved
-            sections={sections}
-            onOpenProcedureModal={(section, procedure) => {
+  <ProceduresTab
+    key={proceduresRefresh}
+    sections={sections}
+    onManageSections={() => setShowSectionModal(true)}
+    onOpenProcedureModal={(section, procedure) => {
               setProcedureSection(section);
               setEditingProcedure(procedure);
               setShowProcedureModal(true);
