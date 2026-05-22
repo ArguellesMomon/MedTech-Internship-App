@@ -5,7 +5,7 @@ import {
   Stethoscope, Bot, User, AlertCircle, MessageSquare,
   Search, X, ChevronLeft, Sparkles, Zap,
 } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient'; // adjust path
+import { supabase } from '../lib/supabase.js'; // adjust path
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
 const GROQ_URL  = 'https://api.groq.com/openai/v1/chat/completions';
