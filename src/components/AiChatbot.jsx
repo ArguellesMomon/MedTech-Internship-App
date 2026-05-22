@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Plus, Menu, Send, Trash2, Copy, Check, RefreshCw,
+  Plus, PanelLeft, Send, Trash2, Copy, Check, RefreshCw,
   Stethoscope, Bot, User, AlertCircle, MessageSquare,
   Search, X, ChevronLeft, Sparkles, Zap,
 } from 'lucide-react';
@@ -243,55 +243,58 @@ export default function AIChatbot() {
   }, []);
 
   // Load all conversations from Supabase
-  const loadConversations = useCallback(async () => {
-    try {
-      const userId = await getUserId();
-      const { data: messages, error: msgErr } = await supabase
-        .from('chat_messages')
-        .select('conversation_id, role, content, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true });
+  // Replace your loadConversations useCallback with this:
 
-      if (msgErr) throw msgErr;
+const loadConversations = useCallback(async () => {
+  try {
+    const userId = await getUserId();
+    const { data: messages, error: msgErr } = await supabase
+      .from('chat_messages')
+      .select('conversation_id, role, content, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
 
-      // Group by conversation_id
-      const convMap = new Map();
-      messages?.forEach(msg => {
-        const cid = msg.conversation_id;
-        if (!convMap.has(cid)) {
-          convMap.set(cid, {
-            id: cid,
-            title: 'New conversation',
-            messages: [],
-            updatedAt: new Date(msg.created_at).getTime(),
-            createdAt: new Date(msg.created_at).getTime(),
-          });
-        }
-        const conv = convMap.get(cid);
-        conv.messages.push({
-          id: `${cid}_${msg.created_at}`,
-          role: msg.role,
-          content: msg.content,
-          ts: new Date(msg.created_at).getTime(),
+    if (msgErr) throw msgErr;
+
+    const convMap = new Map();
+    messages?.forEach(msg => {
+      const cid = msg.conversation_id;
+      if (!convMap.has(cid)) {
+        convMap.set(cid, {
+          id: cid,
+          title: 'New conversation',
+          messages: [],
+          updatedAt: new Date(msg.created_at).getTime(),
+          createdAt: new Date(msg.created_at).getTime(),
         });
-        conv.updatedAt = Math.max(conv.updatedAt, new Date(msg.created_at).getTime());
-        // Set title from first user message
-        if (conv.title === 'New conversation' && msg.role === 'user') {
-          conv.title = trunc(msg.content);
-        }
-      });
-
-      const convsArray = Array.from(convMap.values());
-      convsArray.sort((a, b) => b.updatedAt - a.updatedAt);
-      setConvs(convsArray);
-      if (convsArray.length > 0 && !activeId) {
-        setActiveId(convsArray[0].id);
       }
-    } catch (err) {
-      console.error('Load conversations error:', err);
-      setError('Failed to load chat history.');
-    }
-  }, [getUserId, activeId]);
+      const conv = convMap.get(cid);
+      conv.messages.push({
+        id: `${cid}_${msg.created_at}`,
+        role: msg.role,
+        content: msg.content,
+        ts: new Date(msg.created_at).getTime(),
+      });
+      conv.updatedAt = Math.max(conv.updatedAt, new Date(msg.created_at).getTime());
+      if (conv.title === 'New conversation' && msg.role === 'user') {
+        conv.title = trunc(msg.content);
+      }
+    });
+
+    const convsArray = Array.from(convMap.values());
+    convsArray.sort((a, b) => b.updatedAt - a.updatedAt);
+    setConvs(convsArray);
+
+    // ✅ Use functional update — no activeId dependency needed
+    setActiveId(prev => {
+      if (!prev && convsArray.length > 0) return convsArray[0].id;
+      return prev;
+    });
+  } catch (err) {
+    console.error('Load conversations error:', err);
+    setError('Failed to load chat history.');
+  }
+}, [getUserId]); // ✅ activeId removed from deps
 
   // Save a message to Supabase
   const saveMessage = useCallback(async (conversationId, role, content) => {
@@ -645,26 +648,16 @@ export default function AIChatbot() {
             </div>
           </aside>
 
-          {/* Main */}
           <div className="mm-main">
-            <div className="mm-header">
-              <button className="mm-menu-btn" onClick={() => setSbOpen(s => !s)}>
-                {sbOpen ? <X size={18} /> : <Menu size={18} />}
-              </button>
-              <div className="mm-header-center">
-                <div className="mm-header-icon"><Stethoscope size={14} /></div>
-                <div className="mm-header-text">
-                  <span className="mm-header-title">{activeConv?.title || 'MedMate AI'}</span>
-                  <span className="mm-header-sub">Medical AI Assistant</span>
-                </div>
-              </div>
-              <div className="mm-header-right">
-                {msgs.length > 0 && (
-                  <button className="mm-hdr-btn danger" title="Clear conversation" onClick={clearCurrentConversation}>
-                    <Trash2 size={15} />
-                  </button>
-                )}
-              </div>
+  <div className="mm-topbar">
+    <button className="mm-sb-toggle" onClick={() => setSbOpen(s => !s)} title="Toggle sidebar">
+      <PanelLeft size={16} />
+    </button>
+    <span className="mm-ctitle">
+      {activeConv?.title || 'New Conversation'}
+    </span>
+    
+             
             </div>
 
             <div className="mm-msgs" ref={msgsRef}>
@@ -951,52 +944,29 @@ const CSS = `
   position: relative;
   overflow: hidden;
 }
-.mm-header {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px 18px;
-  background: rgba(255,255,255,0.96);
-  backdrop-filter: blur(24px);
-  border-bottom: 1px solid rgba(255,200,220,0.35);
+.mm-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
   flex-shrink: 0;
-  position: sticky; top: 0;
-  z-index: 10;
-  box-shadow: 0 2px 16px rgba(255,111,145,0.08);
 }
-.mm-menu-btn {
-  width: 38px; height: 38px; border-radius: 12px; border: none;
-  background: #fff0f4; color: #ff8fb1; cursor: pointer;
+.mm-sb-toggle {
+  width: 30px; height: 30px;
+  border-radius: 9px; border: none;
+  background: transparent;
+  color: #ff5d8f;
   display: flex; align-items: center; justify-content: center;
-  transition: all 0.18s; flex-shrink: 0;
+  cursor: pointer; transition: 0.18s; flex-shrink: 0;
 }
-.mm-menu-btn:hover { background: #ffd6e8; color: #ff5d8f; transform: scale(1.06); }
-.mm-header-center {
-  flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0;
-}
-.mm-header-icon {
-  width: 34px; height: 34px; border-radius: 11px;
-  background: linear-gradient(135deg, #ff8fb1, #ff6f91);
-  display: flex; align-items: center; justify-content: center;
-  color: white; flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(255,111,145,0.3);
-}
-.mm-header-text {
-  display: flex; flex-direction: column; gap: 1px; min-width: 0;
-}
-.mm-header-title {
-  font-size: 14px; font-weight: 700; color: #1c1412;
+.mm-sb-toggle:hover { background: #fff0f4; color: #ff5d8f; }
+.mm-ctitle {
+  flex: 1;
+  font-size: 12.5px; font-weight: 600;
+  color: #ff5d8f;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-family: 'Fraunces', serif; font-style: italic;
+  letter-spacing: -0.1px;
 }
-.mm-header-sub { font-size: 10.5px; color: #c8b0a8; font-weight: 500; }
-.mm-header-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.mm-hdr-btn {
-  width: 36px; height: 36px; border-radius: 11px; border: none;
-  background: #f5eef2; color: #c8b0a8; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.18s;
-}
-.mm-hdr-btn:hover { background: #ffe4ec; color: #ff5d8f; }
-.mm-hdr-btn.danger:hover { background: #fde8e8; color: #e05555; }
 
 .mm-msgs {
   flex: 1;
@@ -1276,7 +1246,7 @@ const CSS = `
   flex: 1; border: none; outline: none; resize: none;
   background: transparent; font-size: 14px; color: #333;
   font-family: 'DM Sans', sans-serif;
-  line-height: 1.55; max-height: 140px; min-height: 22px; padding: 0;
+  line-height: 1; max-height: 140px; min-height: 22px; padding: 10px 0;
   -webkit-appearance: none;
 }
 .mm-ta::placeholder { color: #ccc; }
