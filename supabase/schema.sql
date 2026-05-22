@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════
--- MEDTECH MATE — DATABASE SCHEMA
+-- MEDTECH MATE — DATABASE SCHEMA (with chat_messages for AI Chatbot)
 -- Run this entire file in your Supabase SQL Editor.
 -- It is safe to re-run: all DROP statements are idempotent.
 -- ═══════════════════════════════════════════════════════════════
@@ -9,6 +9,7 @@
 -- 1. DROP EXISTING TABLES  (clean slate)
 -- ─────────────────────────────────────────────
 
+drop table if exists public.chat_messages         cascade;
 drop table if exists public.documents              cascade;
 drop table if exists public.mood_logs              cascade;
 drop table if exists public.procedures             cascade;
@@ -43,7 +44,7 @@ create table public.profiles (
   updated_at              timestamptz default now()
 );
 
--- â”€â”€ User Settings (replaces browser localStorage) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- User Settings (replaces browser localStorage)
 create table public.user_settings (
   id         uuid        primary key default gen_random_uuid(),
   user_id    uuid        not null references auth.users(id) on delete cascade,
@@ -84,8 +85,6 @@ create table public.quotas (
 );
 
 -- ── Daily Reports / Logbook ───────────────────
--- "log_date"  = the date the procedure was performed (new column name)
--- "progress"  = kept for backward-compat with InternDashboard (OverallProgress widget)
 create table public.daily_reports (
   id             uuid        primary key default gen_random_uuid(),
   user_id        uuid        not null references auth.users(id) on delete cascade,
@@ -163,7 +162,6 @@ create table public.encouragement_messages (
 );
 
 -- ── Mood Logs ─────────────────────────────────
--- Stores daily mood check-ins from the Encouragement widget
 create table public.mood_logs (
   id         uuid        primary key default gen_random_uuid(),
   user_id    uuid        not null references auth.users(id) on delete cascade,
@@ -172,7 +170,6 @@ create table public.mood_logs (
 );
 
 -- ── Documents (file library) ──────────────────
--- Metadata for files uploaded to the documents storage bucket
 create table public.documents (
   id           uuid        primary key default gen_random_uuid(),
   user_id      uuid        not null references auth.users(id) on delete cascade,
@@ -186,7 +183,6 @@ create table public.documents (
 );
 
 -- ── Procedures (Rotation Guide library) ───────
--- Shared across all authenticated users; not user-scoped
 create table public.procedures (
   id             uuid        primary key default gen_random_uuid(),
   section_name   text        not null,
@@ -194,6 +190,16 @@ create table public.procedures (
   description    text,
   safety_notes   text,
   created_at     timestamptz default now()
+);
+
+-- ⭐ NEW: Chat Messages (persistent conversation history for AI Chatbot)
+create table public.chat_messages (
+  id              uuid        primary key default gen_random_uuid(),
+  user_id         uuid        not null references auth.users(id) on delete cascade,
+  conversation_id text        not null,   -- unique per chat session (e.g., "conv_abc123")
+  role            text        not null check (role in ('user', 'assistant')),
+  content         text        not null,
+  created_at      timestamptz default now()
 );
 
 
@@ -237,6 +243,13 @@ create index if not exists idx_documents_user
 create index if not exists idx_user_settings_user_key
   on public.user_settings (user_id, key);
 
+-- ⭐ New indexes for chat_messages
+create index if not exists idx_chat_messages_user_conversation
+  on public.chat_messages (user_id, conversation_id, created_at);
+
+create index if not exists idx_chat_messages_user_created
+  on public.chat_messages (user_id, created_at);
+
 
 -- ─────────────────────────────────────────────
 -- 4. ROW LEVEL SECURITY
@@ -255,6 +268,7 @@ alter table public.mood_logs            enable row level security;
 alter table public.procedures           enable row level security;
 alter table public.documents            enable row level security;
 alter table public.user_settings        enable row level security;
+alter table public.chat_messages        enable row level security;  -- ⭐
 
 
 -- ── Profiles ──────────────────────────────────
@@ -313,14 +327,13 @@ create policy "notes_all_own"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- â”€â”€ User Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+-- User Settings
 create policy "user_settings_all_own"
   on public.user_settings for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
 -- ── Encouragement Messages ────────────────────
--- All authenticated users can read active messages
 create policy "encouragement_select_active"
   on public.encouragement_messages for select
   to authenticated
@@ -333,7 +346,6 @@ create policy "mood_logs_all_own"
   with check (auth.uid() = user_id);
 
 -- ── Procedures ────────────────────────────────
--- Any authenticated user can read and manage the shared procedures library
 create policy "procedures_select_authenticated"
   on public.procedures for select
   to authenticated
@@ -355,10 +367,27 @@ create policy "procedures_delete_authenticated"
   to authenticated
   using (true);
 
-
 -- ── Documents ─────────────────────────────────
 create policy "documents_all_own"
   on public.documents for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- ⭐ Chat Messages RLS policies
+create policy "chat_messages_select_own"
+  on public.chat_messages for select
+  using (auth.uid() = user_id);
+
+create policy "chat_messages_insert_own"
+  on public.chat_messages for insert
+  with check (auth.uid() = user_id);
+
+create policy "chat_messages_delete_own"
+  on public.chat_messages for delete
+  using (auth.uid() = user_id);
+
+create policy "chat_messages_update_own"
+  on public.chat_messages for update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
@@ -386,9 +415,7 @@ insert into public.encouragement_messages (message, section_name, mood_tag) valu
   ('Histopathology: where science becomes art. Your eyes are learning to see what others can''t. 🔭', 'Histopathology/Cytology', null);
 
 -- ── Default procedures library ────────────────
--- Pre-seeded so the Rotation Guide has content on first run.
--- Users can add/edit/delete these through the app.
-
+-- (your full list remains intact – included below)
 insert into public.procedures (section_name, procedure_name, description, safety_notes) values
 
   -- Hematology
@@ -611,13 +638,11 @@ drop policy if exists "Users can upload own documents"     on storage.objects;
 drop policy if exists "Users can update own documents"     on storage.objects;
 drop policy if exists "Users can delete own documents"     on storage.objects;
 
--- Public read so direct file_url links work without auth tokens
 create policy "Documents are publicly accessible"
   on storage.objects for select
   to public
   using (bucket_id = 'documents');
 
--- Each user uploads only into their own folder (documents/<user_id>/...)
 create policy "Users can upload own documents"
   on storage.objects for insert
   to authenticated
