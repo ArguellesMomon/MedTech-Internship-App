@@ -45,14 +45,8 @@ PERSONALITY & TONE:
 - Never give advice that could directly harm a patient`;
 
 const SUGGESTIONS = [
-  { icon: '💊', text: 'Drug of choice for CAP?' },
-  { icon: '🩺', text: 'Hypertensive urgency management' },
-  { icon: '👶', text: 'Pedia vital signs by age group' },
-  { icon: '🧪', text: 'NGT insertion step by step' },
-  { icon: '⚡', text: 'ACLS algorithm for VFib' },
-  { icon: '📋', text: 'SOAP note format for ward rounds' },
-  { icon: '🩸', text: 'DKA management protocol' },
-  { icon: '🏥', text: 'What to expect in ER rotation?' },
+  {text: 'Pedia vital signs by age group' },
+  {text: 'What to expect in ER rotation?' },
 ];
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────────── */
