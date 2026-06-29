@@ -22,11 +22,12 @@ import DailyReportTracker from './components/QuotaTracker';
 import ShiftPlanner       from './components/ShiftPlanner';
 import NotesSection       from './components/NotesSection';
 import DocumentsPage      from './components/DocumentsPage';
-import GlobalSearch       from './components/GlobalSearch';  // <-- ADDED
+import GlobalSearch       from './components/GlobalSearch';
 import AIChatbot          from './components/AiChatbot';
 
 import { isSupabaseConfigured } from './lib/supabase';
 import Logo from './assets/Logo.png';
+import HamsterLogo from './assets/Hamster.png';
 
 import {
   Menu, X,
@@ -330,15 +331,13 @@ function AppLayout({ children }) {
           .main-content { max-width: 1180px; margin: 0 auto; }
         }
         .top-bar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-@media (max-width: 640px) {
-  .top-bar-right {
-    gap: 8px;
-  }
-}
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        @media (max-width: 640px) {
+          .top-bar-right { gap: 8px; }
+        }
 
         /* ── AI FAB (Floating Action Button) ── */
         .ai-fab {
@@ -346,11 +345,11 @@ function AppLayout({ children }) {
           bottom: calc(28px + env(safe-area-inset-bottom, 0px));
           right: 22px;
           z-index: 350;
-          width: 58px;
-          height: 58px;
+          width: 62px;
+          height: 62px;
           border-radius: 50%;
           border: none;
-          background: linear-gradient(135deg, #ff8fb1, #ff5d8f);
+          background: linear-gradient(135deg, #ff8fb1, #dc93aa);
           color: white;
           display: flex;
           align-items: center;
@@ -362,6 +361,8 @@ function AppLayout({ children }) {
           transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1),
                       box-shadow 0.22s ease;
           font-family: 'Poppins', sans-serif;
+          overflow: hidden;
+          padding: 0;
         }
         .ai-fab:hover {
           transform: scale(1.1) translateY(-2px);
@@ -386,10 +387,21 @@ function AppLayout({ children }) {
           100% { transform: scale(1.3); opacity: 0; }
         }
 
+        /* Hamster logo inside FAB */
+        .ai-fab-img {
+          width: 64px;
+          height: 64px;
+          object-fit: contain;
+          border-radius: 50%;
+          display: block;
+          position: relative;
+          z-index: 1;
+        }
+
         /* Tooltip label */
         .ai-fab-label {
           position: absolute;
-          right: 68px;
+          right: 72px;
           background: rgba(50, 50, 50, 0.85);
           color: white;
           font-size: 11.5px;
@@ -410,18 +422,18 @@ function AppLayout({ children }) {
 
       <div className="app-shell">
         <header className="top-bar">
-  <Link to="/" className="brand-link">
-    <img src={Logo} alt="MedTech Mate Logo" className="brand-logo" />
-  </Link>
-  {user && (
-    <div className="top-bar-right">
-      <GlobalSearch />
-      <button className="menu-toggle" onClick={() => setMenuOpen(true)}>
-        <Menu size={20} />
-      </button>
-    </div>
-  )}
-</header>
+          <Link to="/" className="brand-link">
+            <img src={Logo} alt="MedTech Mate Logo" className="brand-logo" />
+          </Link>
+          {user && (
+            <div className="top-bar-right">
+              <GlobalSearch />
+              <button className="menu-toggle" onClick={() => setMenuOpen(true)}>
+                <Menu size={20} />
+              </button>
+            </div>
+          )}
+        </header>
 
         {user && <HamburgerMenu open={menuOpen} setOpen={setMenuOpen} />}
 
@@ -432,7 +444,7 @@ function AppLayout({ children }) {
             onClick={() => navigate('/ai-chat')}
             aria-label="Open AI Medical Assistant"
           >
-            <Stethoscope size={24} />
+            <img src={HamsterLogo} alt="MedMate AI" className="ai-fab-img" />
             <span className="ai-fab-label">MedMate AI</span>
           </button>
         )}
