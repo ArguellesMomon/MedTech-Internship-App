@@ -1,312 +1,206 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../auth/AuthProvider';
-
-import InternDashboard from '../components/InternDashboard';
-import RotationGuide from '../components/RotationGuide';
-import DailyReportTracker from '../components/QuotaTracker';
-import ShiftPlanner from '../components/ShiftPlanner';
-import NotesSection from '../components/NotesSection';
-
 import {
-  LayoutDashboard,
-  ClipboardList,
-  CalendarClock,
-  NotebookPen,
+  Plus,
+  ArrowUpRight,
   Microscope,
-  FolderOpen,
+  CalendarDays,
+  NotebookPen,
+  TrendingUp,
+  ClipboardList,
+  X,
 } from 'lucide-react';
-
-function Dashboard() {
-  const { user } = useAuth();
-
-  const [activeTab, setActiveTab] = useState('dashboard');
-
-  const tabs = [
+import { useAuth } from '../auth/useAuth';
+import useOverview from '../hooks/useOverview';
+import { localDate } from '../lib/dates';
+import Dialog from '../components/ui/Dialog';
+import {
+  RotationCard,
+  ScheduleCard,
+  QuotaCard,
+  NotesCard,
+} from '../components/dashboard/OverviewCards';
+import CareCard from '../components/dashboard/CareCard';
+export default function Dashboard() {
+  const { profile } = useAuth();
+  const data = useOverview();
+  const [quickAdd, setQuickAdd] = useState(false);
+  const today = localDate();
+  const current = data.rotations.find(
+    (rotation) => rotation.start_date <= today && rotation.end_date >= today,
+  );
+  const target = data.quotas.reduce((sum, q) => sum + q.target_count, 0);
+  const completed = data.quotas.reduce(
+    (sum, q) => sum + Math.min(q.completed_count, q.target_count),
+    0,
+  );
+  const pct = target ? Math.round((completed / target) * 100) : 0;
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const shiftsThisWeek = data.shifts.filter(
+    (s) =>
+      s.shift_type !== 'rest' &&
+      s.shift_date >= localDate(weekStart) &&
+      s.shift_date <= localDate(weekEnd),
+  ).length;
+  const stats = [
     {
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard size={18} />,
+      icon: Microscope,
+      value: data.rotations.filter((r) => r.end_date < today).length,
+      label: 'Rotations completed',
+      color: 'rose',
+      caption: 'Your journey so far',
     },
     {
-      id: 'guide',
-      label: 'Rotation Guide',
-      icon: <Microscope size={18} />,
+      icon: TrendingUp,
+      value: pct + '%',
+      label: 'Quota progress',
+      color: 'sage',
+      caption: completed + ' of ' + target + ' procedures',
     },
     {
-      id: 'reports',
-      label: 'Daily Reports',
-      icon: <ClipboardList size={18} />,
+      icon: CalendarDays,
+      value: shiftsThisWeek,
+      label: 'Shifts this week',
+      color: 'lavender',
+      caption: 'A little planning helps',
     },
     {
-      id: 'shifts',
-      label: 'Shifts',
-      icon: <CalendarClock size={18} />,
-    },
-    {
-      id: 'notes',
-      label: 'Notes',
-      icon: <NotebookPen size={18} />,
+      icon: NotebookPen,
+      value: data.notes.length,
+      label: 'Notes collected',
+      color: 'peach',
+      caption: 'Your growing knowledge',
     },
   ];
-
   return (
-    <>
-      <style>
-        {`
-          * {
-            box-sizing: border-box;
-          }
-
-          .dashboard-page {
-            width: 100%;
-            min-height: 100vh;
-          }
-
-          .welcome-section {
-            margin-bottom: 0;
-          }
-
-          .welcome-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #ff5d8f;
-            margin-bottom: 10px;
-          }
-
-          .welcome-subtitle {
-            color: #777;
-            font-size: 1rem;
-            line-height: 1.6;
-          }
-
-          .welcome-actions {
-            margin-top: 22px;
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-          }
-
-          .welcome-action-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 18px;
-            border-radius: 999px;
-            background: linear-gradient(135deg,#ff8fb1,#ff6f91);
-            color: white;
-            font-weight: 700;
-            font-size: 0.95rem;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-          }
-
-          .welcome-action-link:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 10px 24px rgba(255,111,145,0.22);
-          }
-
-          .welcome-action-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-          }
-
-          .dashboard-container {
-            display: flex;
-            gap: 24px;
-            width: 100%;
-          }
-
-          .dashboard-nav {
-            width: 270px;
-            min-width: 270px;
-
-            background: rgba(255,255,255,0.72);
-            backdrop-filter: blur(14px);
-
-            border-radius: 28px;
-
-            padding: 20px;
-
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-
-            box-shadow: 0 8px 24px rgba(255, 111, 145, 0.08);
-            border: 1px solid rgba(255,255,255,0.4);
-
-            height: fit-content;
-          }
-
-          .nav-button {
-            width: 100%;
-            border: none;
-            background: transparent;
-
-            padding: 16px 18px;
-
-            border-radius: 18px;
-
-            display: flex;
-            align-items: center;
-            gap: 12px;
-
-            font-size: 15px;
-            font-weight: 500;
-
-            color: #666;
-
-            cursor: pointer;
-
-            transition: all 0.22s ease;
-          }
-
-          .nav-button:hover {
-            background: rgba(255,255,255,0.9);
-            color: #ff5d8f;
-            transform: translateY(-1px);
-          }
-
-          .nav-button.active {
-            background: linear-gradient(
-              135deg,
-              #ff8fb1,
-              #ff6f91
-            );
-
-            color: white;
-
-            box-shadow: 0 8px 22px rgba(255,111,145,0.24);
-          }
-
-          .dashboard-content {
-            flex: 1;
-
-            background: rgba(255,255,255,0.9);
-            backdrop-filter: blur(12px);
-
-            border-radius: 28px;
-
-            padding: 28px;
-
-            min-height: 720px;
-
-            box-shadow: 0 2px 12px rgba(255,111,145,0.05), 0 6px 28px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.9);
-            border: 1px solid rgba(255,220,232,0.55);
-          }
-
-          .user-card {
-            background: linear-gradient(
-              135deg,
-              #ff8fb1,
-              #ff6f91
-            );
-
-            border-radius: 24px;
-
-            padding: 24px;
-
-            margin-bottom: 28px;
-
-            color: white;
-
-            box-shadow: 0 10px 30px rgba(255,111,145,0.24);
-          }
-
-          .user-card h2 {
-            margin: 0;
-            font-size: 1.6rem;
-          }
-
-          .user-card p {
-            margin-top: 10px;
-            opacity: 0.95;
-            line-height: 1.6;
-          }
-
-          /* iPhone */
-          @media (max-width: 768px) {
-            .dashboard-container {
-              flex-direction: column;
-              gap: 26px;
-            }
-
-            .dashboard-nav {
-              width: 100%;
-              min-width: 100%;
-
-              flex-direction: row;
-
-              overflow-x: auto;
-
-              padding: 14px;
-            }
-
-            .nav-button {
-              min-width: fit-content;
-              white-space: nowrap;
-            }
-
-            .dashboard-content {
-              margin-top: 10px;
-              border-radius: 22px;
-              padding: 20px 20px 56px;
-              min-height: auto;
-            }
-
-            .welcome-title {
-              font-size: 1.6rem;
-            }
-
-            .user-card {
-              padding: 20px;
-            }
-          }
-
-          /* iPad */
-          @media (min-width: 769px) and (max-width: 1024px) {
-            .dashboard-nav {
-              width: 220px;
-              min-width: 220px;
-            }
-
-            .dashboard-content {
-              padding: 24px;
-            }
-          }
-        `}
-      </style>
-
-      <main className="dashboard-page">
-        {/* Welcome */}
-        <section className="welcome-section">
-          
-        </section>
-
-
-        {/* Main Dashboard */}
-        <div className="dashboard-container">
-          {/* Sidebar */}
-          
-
-          {/* Content */}
-          <div className="dashboard-content">
-            {activeTab === 'dashboard' && <InternDashboard />}
-
-            {activeTab === 'guide' && <RotationGuide />}
-
-            {activeTab === 'reports' && <DailyReportTracker />}
-
-            {activeTab === 'shifts' && <ShiftPlanner />}
-
-            {activeTab === 'notes' && <NotesSection />}
-          </div>
+    <div className="overview-page">
+      <div className="overview-heading">
+        <div>
+          <p className="eyebrow">
+            {new Date().toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+          </p>
+          <h1>
+            A little more confident,
+            <br />
+            <em>every day.</em>
+            <span className="heading-spark">✦</span>
+          </h1>
+          <p>
+            Welcome back, {profile?.full_name?.trim().split(/\s+/)[0] || 'intern'}. Let’s make room
+            for a good day.
+          </p>
         </div>
-      </main>
-    </>
+        <button className="button primary" onClick={() => setQuickAdd(true)}>
+          <Plus size={18} />
+          Quick add
+        </button>
+      </div>
+      {data.error ? (
+        <div className="overview-error" role="alert">
+          <p>{data.error}</p>
+          <button className="button secondary" onClick={data.retry}>
+            Try again
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="overview-stat-grid" aria-busy={data.loading}>
+            {stats.map(({ icon: Icon, value, label, color, caption }) => (
+              <div className="overview-stat" key={label}>
+                <div className={'stat-icon ' + color}>
+                  <Icon size={19} />
+                </div>
+                <strong>{data.loading ? '—' : value}</strong>
+                <span>{label}</span>
+                <small>{caption}</small>
+              </div>
+            ))}
+          </div>
+          {data.loading ? (
+            <div className="overview-skeleton" role="status" aria-label="Loading your overview">
+              <div />
+              <div />
+              <div />
+            </div>
+          ) : (
+            <div className="overview-grid">
+              <RotationCard rotation={current} />
+              <ScheduleCard shifts={data.shifts} exams={data.exams} />
+              <QuotaCard quotas={data.quotas} />
+              <NotesCard notes={data.notes} />
+            </div>
+          )}
+        </>
+      )}
+      <div className="overview-quick-links">
+        <Link to="/reports?new=1">
+          <ClipboardList size={18} />
+          <span>Log today’s little wins</span>
+          <ArrowUpRight size={16} />
+        </Link>
+        <Link to="/documents">
+          <NotebookPen size={18} />
+          <span>Keep your references close</span>
+          <ArrowUpRight size={16} />
+        </Link>
+      </div>
+      <CareCard />
+      {quickAdd && (
+        <Dialog onClose={() => setQuickAdd(false)} label="Quick add">
+          <div className="quick-add-sheet">
+            <div className="sheet-heading">
+              <div>
+                <p className="eyebrow">MAKE A LITTLE PROGRESS</p>
+                <h2>What would you like to add?</h2>
+              </div>
+              <button
+                className="icon-button"
+                onClick={() => setQuickAdd(false)}
+                aria-label="Close quick add"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="quick-add-options">
+              {[
+                [
+                  '/reports?new=1',
+                  ClipboardList,
+                  'Daily report',
+                  'Capture a procedure or a little win.',
+                ],
+                ['/shifts?new=1', CalendarDays, 'Duty shift', 'Make a plan for your next shift.'],
+                ['/notes?new=1', NotebookPen, 'Personal note', 'Keep a tip or thought for later.'],
+                [
+                  '/rotations?new=1',
+                  Microscope,
+                  'Rotation',
+                  'Map out the next part of your journey.',
+                ],
+              ].map(([to, Icon, title, description]) => (
+                <Link key={to} to={to} onClick={() => setQuickAdd(false)}>
+                  <span className="stat-icon rose">
+                    <Icon size={21} />
+                  </span>
+                  <span>
+                    <strong>{title}</strong>
+                    <small>{description}</small>
+                  </span>
+                  <ArrowUpRight size={18} />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </Dialog>
+      )}
+    </div>
   );
 }
-
-export default Dashboard;

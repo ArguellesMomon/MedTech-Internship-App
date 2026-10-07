@@ -1,0 +1,105 @@
+/* Dialogs */
+.dialog-overlay,
+.navigation-overlay,
+body > [role='dialog'] {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #17101d66;
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: pageEnter 0.2s ease;
+}
+.quick-add-sheet,
+.navigation-sheet {
+  width: 100%;
+  max-width: 500px;
+  padding: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: 0 24px 80px #160d2540;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+}
+.sheet-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+.sheet-heading h2 {
+  font-family: var(--font-display);
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 500;
+  margin-top: 6px;
+}
+.sheet-heading .eyebrow {
+  font-size: 8px;
+}
+.quick-add-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.quick-add-options > a {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  transition: background 0.2s;
+}
+.quick-add-options > a:hover {
+  background: var(--rose-soft);
+}
+.quick-add-options strong {
+  font-size: 12px;
+  display: block;
+}
+.quick-add-options small {
+  font-size: 10px;
+  color: var(--muted);
+  display: block;
+  margin-top: 3px;
+}
+.quick-add-options > a > svg {
+  margin-left: auto;
+  color: var(--muted);
+}
+.navigation-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border);
+}
+.navigation-extras a,
+.navigation-extras button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  background: none;
+  min-height: 44px;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.sheet-footnote {
+  text-align: center;
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-style: italic;
+  margin-top: 24px;
+  font-size: 15px;
+}

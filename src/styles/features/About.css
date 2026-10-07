@@ -1,0 +1,820 @@
+@layer legacy {
+  /* ── ROOT ── */
+  .ab-root {
+    font-family: var(--font-sans);
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 8px 0 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    color: var(--ink);
+  }
+
+  /* ── HERO ── */
+  .ab-hero {
+    background: linear-gradient(160deg, var(--accent-light) 0%, var(--accent) 45%, #ff8c5a 100%);
+    border-radius: 28px;
+    padding: 40px 28px 36px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .ab-hero::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: var(--surface);
+    pointer-events: none;
+  }
+
+  .ab-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -70px;
+    left: -30px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: var(--surface);
+    pointer-events: none;
+  }
+
+  .ab-hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
+    padding: 5px 13px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--on-accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .ab-hero-title {
+    font-family: var(--font-sans);
+    font-size: 2.6rem;
+    line-height: 1.12;
+    color: var(--on-accent);
+    margin: 0 0 14px;
+    position: relative;
+    z-index: 1;
+    letter-spacing: -0.5px;
+  }
+
+  .ab-hero-title em {
+    font-style: italic;
+    opacity: 0.88;
+  }
+
+  .ab-hero-sub {
+    font-size: 15px;
+    line-height: 1.65;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+  }
+
+  /* ── SECTION CARD ── */
+  .ab-card {
+    background: var(--surface);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 220, 234, 0.55);
+    box-shadow: 0 4px 20px rgba(255, 111, 145, 0.06);
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+
+  .ab-card-inner {
+    padding: 26px 24px;
+  }
+
+  /* ── SECTION LABEL ── */
+  .ab-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 10px;
+  }
+
+  /* ── BODY TEXT ── */
+  .ab-body {
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  .ab-body + .ab-body {
+    margin-top: 10px;
+  }
+
+  /* ── HEADING inside card ── */
+  .ab-heading {
+    font-family: var(--font-sans);
+    font-size: 1.5rem;
+    color: var(--ink);
+    margin: 0 0 10px;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+  }
+
+  /* ── DIVIDER ── */
+  .ab-rule {
+    border: none;
+    border-top: 1px solid #ffeef4;
+    margin: 20px 0;
+  }
+
+  /* ── FEATURES LIST ── */
+  .ab-features {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .ab-feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .ab-feature-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .ab-feature-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 3px;
+  }
+
+  .ab-feature-desc {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0;
+    line-height: 1.55;
+  }
+
+  /* ── DEDICATION ── */
+  .ab-dedication {
+    background: linear-gradient(135deg, #fff0f5, var(--rose-soft));
+    border: 1.5px solid #ffd6e8;
+    border-radius: 20px;
+    padding: 22px 22px 20px;
+    position: relative;
+  }
+
+  .ab-dedication-quote {
+    font-family: var(--font-sans);
+    font-size: 1.25rem;
+    font-style: italic;
+    color: #cc5580;
+    line-height: 1.55;
+    margin: 0 0 14px;
+    padding-left: 14px;
+    border-left: 3px solid #ffb8d0;
+  }
+
+  .ab-dedication-to {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .ab-dedication-heart {
+    animation: heartbeat 1.6s ease-in-out infinite;
+  }
+
+  @keyframes heartbeat {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    14% {
+      transform: scale(1.18);
+    }
+    28% {
+      transform: scale(1);
+    }
+    42% {
+      transform: scale(1.12);
+    }
+    56% {
+      transform: scale(1);
+    }
+  }
+
+  /* ── MAKER CARD ── */
+  .ab-maker {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .ab-maker-avatar {
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-sans);
+    font-size: 1.5rem;
+    color: var(--on-accent);
+    flex-shrink: 0;
+    box-shadow: 0 6px 18px rgba(255, 111, 145, 0.28);
+  }
+
+  .ab-maker-name {
+    font-family: var(--font-sans);
+    font-size: 1.2rem;
+    color: var(--ink);
+    margin: 0 0 2px;
+  }
+
+  .ab-maker-role {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0;
+    font-weight: 500;
+  }
+
+  .ab-maker-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--rose-soft);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-light);
+    margin-top: 6px;
+  }
+
+  /* ── CONTACT CHIPS ── */
+  .ab-contact-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .ab-contact-chip {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--rose-soft);
+    border: 1.5px solid #ffd6e8;
+    border-radius: 16px;
+    padding: 13px 16px;
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 500;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+      border-color 0.2s,
+      background 0.2s,
+      transform 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .ab-contact-chip:hover {
+    border-color: var(--accent-light);
+    background: var(--rose-soft);
+    transform: translateY(-1px);
+  }
+
+  .ab-chip-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    color: var(--on-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .ab-chip-label {
+    flex: 1;
+    text-align: left;
+    word-break: break-all;
+  }
+
+  .ab-chip-copy {
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+  }
+
+  /* ── FOOTER NOTE ── */
+  .ab-footer {
+    text-align: center;
+    padding: 6px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .ab-version {
+    display: inline-block;
+    background: var(--rose-soft);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-light);
+  }
+
+  .ab-footer-note {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid rgba(255, 220, 234, 0.55);
+    border-radius: 24px;
+    padding: 24px 22px;
+    box-shadow: 0 4px 20px rgba(255, 111, 145, 0.06);
+    text-align: left;
+  }
+
+  .ab-footer-note-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 10px;
+  }
+
+  .ab-footer-note-body {
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--ink);
+    margin: 0 0 18px;
+  }
+
+  .ab-footer-sig {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid #ffeef4;
+  }
+
+  .ab-footer-sig-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-sans);
+    font-size: 1.1rem;
+    color: var(--on-accent);
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(255, 111, 145, 0.25);
+  }
+
+  .ab-footer-sig-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 2px;
+  }
+
+  .ab-footer-sig-role {
+    font-size: 11px;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .ab-footer-legal {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  /* ── TEAM LEAD ── */
+  .ab-team-lead {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .ab-team-lead-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-sans);
+    font-size: 1.6rem;
+    color: var(--on-accent);
+    flex-shrink: 0;
+    box-shadow: 0 8px 22px rgba(255, 111, 145, 0.3);
+  }
+
+  .ab-team-lead-info {
+    flex: 1;
+  }
+
+  .ab-team-lead-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 2px;
+  }
+
+  .ab-lead-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    color: var(--on-accent);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    box-shadow: 0 3px 10px rgba(255, 111, 145, 0.3);
+  }
+
+  .ab-team-lead-quote {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    line-height: 1.55;
+    margin: 8px 0 0;
+  }
+
+  /* ── AI TEAM ── */
+  .ab-ai-team {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .ab-ai-member {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: var(--rose-soft);
+    border: 1.5px solid #ffeef4;
+    border-radius: 18px;
+    padding: 16px;
+    transition:
+      border-color 0.2s,
+      transform 0.15s;
+  }
+
+  .ab-ai-member:hover {
+    border-color: #ffd6e8;
+    transform: translateY(-1px);
+  }
+
+  .ab-ai-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-sans);
+    font-size: 1.2rem;
+    color: var(--on-accent);
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  .ab-ai-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ab-ai-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+  }
+
+  .ab-ai-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  .ab-ai-tag {
+    border: 1px solid;
+    border-radius: 999px;
+    padding: 2px 9px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+
+  .ab-ai-quote {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    line-height: 1.6;
+    margin: 0 0 7px;
+  }
+
+  .ab-ai-role-chip {
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.85;
+  }
+
+  /* ── DISCLAIMER ── */
+  .ab-team-disclaimer {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 16px;
+    padding: 10px 14px;
+    background: var(--rose-soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    font-weight: 500;
+  }
+
+  /* ── RESPONSIVE — team additions ── */
+  @media (min-width: 481px) and (max-width: 1024px) and (orientation: portrait) {
+    .ab-team-lead-avatar {
+      width: 76px;
+      height: 76px;
+      font-size: 1.9rem;
+      border-radius: 24px;
+    }
+    .ab-team-lead-quote {
+      font-size: 14px;
+    }
+    .ab-ai-member {
+      padding: 20px;
+      border-radius: 22px;
+      gap: 16px;
+    }
+    .ab-ai-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      font-size: 1.4rem;
+    }
+    .ab-ai-name {
+      font-size: 16px;
+    }
+    .ab-ai-tag {
+      font-size: 11px;
+    }
+    .ab-ai-quote {
+      font-size: 14px;
+    }
+    .ab-ai-role-chip {
+      font-size: 13px;
+    }
+    .ab-team-disclaimer {
+      font-size: 13px;
+      padding: 12px 16px;
+    }
+    .ab-lead-badge {
+      font-size: 12px;
+      padding: 4px 12px;
+    }
+  }
+
+  @media (min-width: 768px) and (max-width: 1366px) and (orientation: landscape) {
+    .ab-team-lead-avatar {
+      width: 68px;
+      height: 68px;
+      font-size: 1.7rem;
+    }
+    .ab-ai-member {
+      padding: 18px;
+    }
+    .ab-ai-avatar {
+      width: 48px;
+      height: 48px;
+      font-size: 1.3rem;
+    }
+    .ab-ai-name {
+      font-size: 15px;
+    }
+    .ab-ai-quote {
+      font-size: 13px;
+    }
+  }
+
+  /* ── RESPONSIVE ── */
+
+  /* iPhone */
+  @media (max-width: 480px) {
+    .ab-hero {
+      padding: 32px 22px 30px;
+      border-radius: 22px;
+    }
+    .ab-hero-title {
+      font-size: 2rem;
+    }
+    .ab-hero-sub {
+      font-size: 14px;
+    }
+    .ab-card-inner {
+      padding: 22px 18px;
+    }
+    .ab-heading {
+      font-size: 1.35rem;
+    }
+    .ab-dedication-quote {
+      font-size: 1.1rem;
+    }
+  }
+
+  /* iPad portrait — full comfort */
+  @media (min-width: 481px) and (max-width: 1024px) and (orientation: portrait) {
+    .ab-root {
+      max-width: 100%;
+      padding: 16px 32px 64px;
+    }
+    .ab-hero {
+      padding: 52px 40px 48px;
+      border-radius: 32px;
+    }
+    .ab-hero-title {
+      font-size: 3.2rem;
+    }
+    .ab-hero-sub {
+      font-size: 17px;
+    }
+    .ab-card {
+      border-radius: 28px;
+      margin-bottom: 18px;
+    }
+    .ab-card-inner {
+      padding: 32px 30px;
+    }
+    .ab-heading {
+      font-size: 1.8rem;
+    }
+    .ab-body {
+      font-size: 16px;
+    }
+    .ab-feature-title {
+      font-size: 16px;
+    }
+    .ab-feature-desc {
+      font-size: 15px;
+    }
+    .ab-feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 15px;
+    }
+    .ab-feature-icon svg {
+      width: 22px;
+      height: 22px;
+    }
+    .ab-dedication-quote {
+      font-size: 1.45rem;
+    }
+    .ab-maker-avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 22px;
+    }
+    .ab-maker-name {
+      font-size: 1.4rem;
+    }
+    .ab-maker-role {
+      font-size: 14px;
+    }
+    .ab-contact-chip {
+      padding: 16px 18px;
+      font-size: 16px;
+      border-radius: 18px;
+    }
+    .ab-chip-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+    }
+    .ab-chip-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+    .ab-footer-note {
+      padding: 30px 28px;
+      border-radius: 28px;
+    }
+    .ab-footer-note-body {
+      font-size: 16px;
+    }
+    .ab-footer-sig-avatar {
+      width: 48px;
+      height: 48px;
+      font-size: 1.3rem;
+      border-radius: 14px;
+    }
+    .ab-footer-sig-name {
+      font-size: 15px;
+    }
+    .ab-footer-sig-role {
+      font-size: 13px;
+    }
+    .ab-footer-legal {
+      font-size: 13px;
+    }
+    .ab-label {
+      font-size: 11px;
+    }
+    .ab-footer-text {
+      font-size: 14px;
+    }
+    .ab-features {
+      gap: 18px;
+    }
+  }
+
+  /* iPad landscape */
+  @media (min-width: 768px) and (max-width: 1366px) and (orientation: landscape) {
+    .ab-root {
+      max-width: 100%;
+      padding: 12px 56px 56px;
+    }
+    .ab-hero {
+      padding: 44px 36px 40px;
+      border-radius: 28px;
+    }
+    .ab-hero-title {
+      font-size: 2.8rem;
+    }
+    .ab-hero-sub {
+      font-size: 16px;
+    }
+    .ab-card-inner {
+      padding: 28px 26px;
+    }
+    .ab-heading {
+      font-size: 1.6rem;
+    }
+    .ab-body {
+      font-size: 15px;
+    }
+    .ab-feature-title {
+      font-size: 15px;
+    }
+    .ab-feature-desc {
+      font-size: 14px;
+    }
+    .ab-contact-chip {
+      padding: 14px 16px;
+      font-size: 15px;
+    }
+  }
+}

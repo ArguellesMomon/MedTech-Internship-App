@@ -1,0 +1,331 @@
+/* Brand and workspace */
+.mate-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.2;
+}
+.brand-mate {
+  font-weight: 500;
+  color: var(--accent);
+}
+.mate-brand small {
+  display: block;
+  font-size: 7px;
+  letter-spacing: 1.9px;
+  margin-top: 6px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.brand-symbol {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  background: var(--rose-soft);
+  color: var(--accent);
+  border-radius: 12px;
+}
+.brand-symbol span {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  width: 5px;
+  height: 5px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+.workspace-shell {
+  min-height: 100dvh;
+}
+.workspace-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 244px;
+  padding: 34px 20px 24px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 60;
+  overflow-y: auto;
+}
+.workspace-sidebar > .mate-brand {
+  margin: 0 4px 42px;
+}
+.nav-eyebrow {
+  font-size: 9px;
+  letter-spacing: 1.8px;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 0 14px;
+  margin-bottom: 13px;
+}
+.workspace-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.workspace-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 47px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 11px;
+  background: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+  transition:
+    background 0.18s,
+    color 0.18s;
+}
+.workspace-nav-link:hover {
+  background: var(--surface-subtle);
+  color: var(--ink);
+}
+.workspace-nav-link.active {
+  background: var(--rose-soft);
+  color: var(--accent);
+}
+.nav-chevron {
+  margin-left: auto;
+  opacity: 0;
+}
+.active .nav-chevron {
+  opacity: 1;
+}
+.pip-sidebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 9px;
+  background: var(--sage-soft);
+  border: 1px solid color-mix(in srgb, var(--sage) 15%, transparent);
+  border-radius: 14px;
+  margin-top: 28px;
+}
+.pip-sidebar img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+.pip-sidebar strong {
+  display: block;
+  font-size: 10px;
+}
+.pip-sidebar small {
+  display: block;
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.pip-sidebar > svg {
+  margin-left: auto;
+  color: var(--sage);
+}
+.sidebar-bottom {
+  margin-top: auto;
+  padding-top: 32px;
+}
+.sidebar-bottom .workspace-nav-link {
+  font-size: 10px;
+  width: 100%;
+  min-height: 40px;
+}
+.sidebar-note {
+  display: flex;
+  gap: 10px;
+  color: var(--accent);
+  padding: 8px 14px 20px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+.sidebar-note svg {
+  margin-top: 3px;
+}
+.sidebar-note p {
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.sidebar-note span {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  color: var(--muted);
+}
+.workspace-body {
+  margin-left: 244px;
+  min-width: 0;
+}
+.workspace-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 74px;
+  padding: 0 40px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(18px);
+  gap: 12px;
+}
+.workspace-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.workspace-breadcrumb strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.profile-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--rose-soft);
+  border: 3px solid var(--surface);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--accent);
+  overflow: hidden;
+}
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mobile-brand,
+.tablet-menu {
+  display: none;
+}
+.workspace-main {
+  max-width: 1280px;
+  margin: auto;
+  padding: 36px 40px 24px;
+  min-height: calc(100dvh - 130px);
+  outline: none;
+}
+.workspace-footer {
+  max-width: 1280px;
+  margin: auto;
+  padding: 20px 40px 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+}
+.workspace-footer a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.demo-notice {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 40px;
+  background: var(--sage-soft);
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--sage);
+}
+.demo-notice > span {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+.demo-notice button {
+  background: none;
+  border: 0;
+  color: inherit;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  min-height: 28px;
+  font-weight: 700;
+  font-size: 10px;
+  padding: 0;
+}
+.mobile-bottom-nav {
+  display: none;
+}
+.page-enter {
+  animation: pageEnter 0.3s ease both;
+}
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.inline-error,
+.overview-error {
+  background: var(--rose-soft);
+  padding: 18px;
+  border-radius: 16px;
+  color: var(--accent);
+}
+.route-loading {
+  min-height: 55vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 20px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.loading-orbit {
+  height: 32px;
+  width: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.error-state {
+  padding: 60px 20px;
+  text-align: center;
+}
+.error-state h1 {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 500;
+}
+.error-state p {
+  margin: 20px auto;
+  max-width: 500px;
+  color: var(--muted);
+}

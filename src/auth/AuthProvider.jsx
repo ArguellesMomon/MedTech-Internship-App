@@ -1,214 +1,178 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-
-const AuthContext = createContext(null);
-
-function isMissingTableError(error) {
-  return (
-    error?.code === '42P01' ||
-    error?.code === 'PGRST205' ||
-    error?.message?.includes('schema cache') ||
-    error?.message?.includes('does not exist')
-  );
-}
-
+import { AuthContext } from './AuthContext';
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const user = session?.user ?? null;
-
+  const requestId = useRef(0);
+  const user = session?.user || null;
   const fetchProfile = useCallback(async (userId) => {
-    if (!isSupabaseConfigured) return;
-
+    const request = ++requestId.current;
     if (!userId) {
       setProfile(null);
       return;
     }
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (error && error.code !== 'PGRST116' && !isMissingTableError(error)) {
-      console.error('Failed to fetch profile:', error.message);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      if (error) throw error;
+      if (request === requestId.current) setProfile(data || null);
+    } catch (error) {
+      console.error('Profile could not load', error);
+      if (request === requestId.current) setProfile(null);
     }
-
-    setProfile(data ?? null);
   }, []);
-
   useEffect(() => {
     if (!isSupabaseConfigured) {
       setLoading(false);
-      return undefined;
+      return;
     }
-
-    let mounted = true;
-
-    async function loadSession() {
-      const { data, error } = await supabase.auth.getSession();
-
-      if (error) {
-        console.error('Failed to load auth session:', error.message);
-      }
-
-      if (!mounted) return;
-      setSession(data.session);
-      await fetchProfile(data.session?.user?.id);
-      setLoading(false);
-    }
-
-    loadSession();
-
+    let active = true;
+    supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (error) throw error;
+        if (active) setSession(data.session);
+      })
+      .catch((error) => console.error('Session could not load', error))
+      .finally(() => {
+        if (active) setLoading(false);
+      });
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      fetchProfile(nextSession?.user?.id);
+      if (active) {
+        setSession(nextSession);
+        setLoading(false);
+      }
     });
-
     return () => {
-      mounted = false;
+      active = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
-
-  async function signUp({ email, password, profileFields }) {
-    if (!isSupabaseConfigured) {
-      throw new Error('Supabase is not configured yet.');
-    }
-
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: profileFields?.full_name,
-        },
-      },
-    });
-
-    if (error) throw error;
-
-    if (data.user && profileFields) {
-      try {
-        await upsertProfile({
-          id: data.user.id,
-          email,
-          ...profileFields,
-        });
-      } catch (profileError) {
-        if (!isMissingTableError(profileError)) {
-          throw profileError;
-        }
-
-        return {
-          ...data,
-          profileWarning:
-            'Account created, but the database tables are not set up yet. Run supabase/schema.sql in your Supabase SQL Editor.',
-        };
-      }
-    }
-
-    return data;
-  }
-
-  async function signIn({ email, password }) {
-    if (!isSupabaseConfigured) {
-      throw new Error('Supabase is not configured yet.');
-    }
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) throw error;
-    return data;
-  }
-
-  async function signOut() {
-    if (!isSupabaseConfigured) return;
-
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+  }, []);
+  const invalidateProfile = useCallback(() => {
+    requestId.current++;
+  }, []);
+  useEffect(() => {
     setProfile(null);
+    fetchProfile(user?.id);
+    return invalidateProfile;
+  }, [user?.id, fetchProfile, invalidateProfile]);
+  function requireSetup() {
+    if (!isSupabaseConfigured)
+      throw new Error(
+        'Account sign-in is currently unavailable. You can explore the demo workspace from the home page.',
+      );
   }
-
   async function upsertProfile(values) {
-    if (!isSupabaseConfigured) {
-      throw new Error('Supabase is not configured yet.');
-    }
-
-    if (!values.id && !user?.id) {
-      throw new Error('Cannot save a profile without a user id.');
-    }
-
-    // Base fields always included
+    requireSetup();
+    const id = values.id || user?.id;
+    if (!id) throw new Error('Please sign in before saving your profile.');
+    const allowed = [
+      'full_name',
+      'school',
+      'year_level',
+      'program',
+      'avatar_url',
+      'internship_start_date',
+    ];
     const payload = {
-      id:           values.id    ?? user.id,
-      email:        values.email ?? user?.email,
-      full_name:    values.full_name,
-      school:       values.school,
-      year_level:   values.year_level,
-      program:      values.program,
-      updated_at:   new Date().toISOString(),
+      id,
+      email: values.email || user?.email,
+      updated_at: new Date().toISOString(),
     };
-
-    // Optional fields — only include when explicitly passed so existing
-    // callers that don't send them won't accidentally null the values out.
-    if (values.avatar_url !== undefined) {
-      payload.avatar_url = values.avatar_url;
+    for (const key of allowed) {
+      if (values[key] !== undefined)
+        payload[key] = key === 'internship_start_date' ? values[key] || null : values[key];
     }
-    if (values.internship_start_date !== undefined) {
-      payload.internship_start_date = values.internship_start_date || null;
-    }
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .upsert(payload)
-      .select()
-      .single();
-
+    const { data, error } = await supabase.from('profiles').upsert(payload).select().single();
     if (error) throw error;
     setProfile(data);
     return data;
   }
-
-  const value = useMemo(
-    () => ({
-      session,
-      user,
-      profile,
-      loading,
-      signUp,
-      signIn,
-      signOut,
-      upsertProfile,
-      refreshProfile: () => fetchProfile(user?.id),
-    }),
-    [session, user, profile, loading, fetchProfile],
-  );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error('useAuth must be used inside AuthProvider.');
+  async function signUp({ email, password, profileFields }) {
+    requireSetup();
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: { data: profileFields || {} },
+    });
+    if (error) throw error;
+    if (data.session && data.user && profileFields) {
+      try {
+        await upsertProfile({ id: data.user.id, email, ...profileFields });
+      } catch (error) {
+        console.error('Initial profile save failed', error);
+        return {
+          ...data,
+          profileWarning: 'Your account was created. You can finish your profile after signing in.',
+        };
+      }
+    }
+    return data;
   }
-
-  return context;
+  async function signIn({ email, password }) {
+    requireSetup();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error) throw error;
+    return data;
+  }
+  async function signOut() {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    setSession(null);
+    setProfile(null);
+  }
+  // Seed the profile after an email-confirmed first login, when RLS permits writes.
+  useEffect(() => {
+    if (!user?.id || !user.user_metadata?.full_name) return;
+    let active = true;
+    async function ensureProfile() {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (error || data || !active) return;
+      const fields = user.user_metadata;
+      const { error: saveError } = await supabase.from('profiles').upsert({
+        id: user.id,
+        email: user.email,
+        full_name: fields.full_name,
+        school: fields.school,
+        year_level: fields.year_level,
+        program: fields.program,
+      });
+      if (!saveError && active) fetchProfile(user.id);
+    }
+    ensureProfile();
+    return () => {
+      active = false;
+    };
+  }, [user?.id, user?.email, user?.user_metadata, fetchProfile]);
+  return (
+    <AuthContext.Provider
+      value={{
+        session,
+        user,
+        profile,
+        loading,
+        signUp,
+        signIn,
+        signOut,
+        upsertProfile,
+        refreshProfile: () => fetchProfile(user?.id),
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }

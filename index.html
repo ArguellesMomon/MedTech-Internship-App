@@ -1,31 +1,27 @@
 <!doctype html>
 <html lang="en">
   <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  
-  <title>MedTech Mate</title>
-
-  <!-- FAVICON -->
-  <link rel="icon" type="image/png" href="/Icon.png" />
-
-  <style>
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow-x: hidden;
-      position: fixed;
-    }
-    body {
-      width: 100vw;
-      height: 100vh;
-    }
-    #root {
-      width: 100%;
-      height: 100%;
-    }
-  </style>
-</head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#faf7f5" />
+    <meta
+      name="description"
+      content="A little more confident, every day. MedTech Mate is a personal workspace for medical technology interns: rotations, logbooks, shifts, study notes, and encouragement."
+    />
+    <title>MedTech Mate · Your internship companion</title>
+    <link rel="icon" type="image/png" href="/Icon.png" />
+    <script>
+      try {
+        var t = localStorage.getItem('medtech-theme') || 'system';
+        document.documentElement.dataset.theme =
+          t === 'system'
+            ? matchMedia('(prefers-color-scheme:dark)').matches
+              ? 'dark'
+              : 'light'
+            : t;
+      } catch (e) {}
+    </script>
+  </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>

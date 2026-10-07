@@ -1,343 +1,50 @@
-# MedTech Intern Companion Architecture
+# MedTech Mate architecture
 
-MedTech Intern Companion is a frontend-only React and Supabase app for medical technology students in the Philippines who are starting clinical internship. The app should feel warm, cute, and student-friendly, but the first implementation priority is a clean data model and feature structure.
+## Routes
 
-## Product Scope
+Public routes are /landing, /login, /signup, and /about. The protected workspace includes / (overview), /rotations, /reports, /shifts, /notes, /documents, /profile, and /ai-chat. The workspace has a persistent desktop sidebar, a phone/iPad bottom navigation bar, and an accessible More sheet. Page components load lazily so a visitor does not download every tool on first load.
 
-### Main Pages
+## Module map
 
-- `Login`: email/password login through Supabase Auth.
-- `Sign up`: creates a Supabase Auth user and initial profile.
-- `Profile`: editable name, school, year level, program, and future preferences.
-- `Dashboard`: current rotation, upcoming shifts, exam dates, quota overview, fatigue reminder, and encouragement.
-- `Rotations`: section tabs for Hematology, Clinical Chemistry, Microbiology, Blood Bank, Histopathology/Cytology, and other internship areas.
-- `Quota Tracker`: per-section tasks, targets, completed counts, checklist items, and progress bars.
-- `Shift Planner`: calendar or weekly view for duty days, rest days, night shifts, and notes.
-- `Notes`: personal notes and staff tips filtered by section.
-- `Encouragement`: random supportive messages and optional mood-sticker-style check-ins.
+| Module                                | Responsibility                                                               |
+| ------------------------------------- | ---------------------------------------------------------------------------- |
+| src/App.jsx                           | Lazy routes, protected access, loading and error states                      |
+| src/components/layout                 | Shared brand, route definitions, sidebar, topbar, mobile navigation          |
+| src/auth                              | Session lifecycle, profile persistence, context, and useAuth                 |
+| src/theme                             | Persisted light/dark/system preference and appearance controls               |
+| src/components/ui/Dialog.jsx          | Portal, focus trap, Escape, focus restoration, scroll locking                |
+| src/hooks/useOverview.js              | Parallel user-scoped overview queries with cancellation and retry            |
+| src/hooks/useQuickCreate.js           | Consumes quick-action query parameters and opens the correct form            |
+| src/components/dashboard              | Rotation, agenda, quota, notebook, and encouragement cards                   |
+| src/components/GlobalSearch.jsx       | Debounced search with stale-result protection and safe text rendering        |
+| src/components/ProfilePreferences.jsx | Appearance, local JSON backup, and demo reset                                |
+| src/lib/demo.js                       | Opt-in local client with independent sample records                          |
+| src/lib/dates.js                      | Calendar dates that retain the user’s local day                              |
+| src/lib/progress.js                   | Shared manual/logged quota calculations                                      |
+| api/chat.js                           | Authenticated provider proxy; secrets remain on the server                   |
+| src/styles                            | Tokens, layout, overview, dialogs, landing, responsive rules, feature polish |
+| src/styles/features                   | Extracted existing feature styles, contained in the legacy CSS layer         |
 
-### Profile Fields
+## Data responsibilities
 
-- `full_name`
-- `email`
-- `school`
-- `year_level`
-- `program`
-- `avatar_url`
-- `internship_start_date`
-- `preferred_reminder_time`
+Real records remain in Supabase. Auth state callbacks update the session; profile fetching occurs separately so it does not block the auth callback. Profile updates preserve fields omitted by the caller. Signup metadata can initialize the profile after email confirmation.
 
-## React Folder Structure
+The dashboard reads rotations, shifts, exams, quotas, notes, and daily reports. Quota progress takes the greater of the manually recorded total and the matching report total, matching the quota board without double-counting the same work. Procedure keys ignore case and surrounding spaces.
 
-```txt
-src/
-  auth/
-    AuthProvider.jsx
-  components/
-    dashboard/
-      CurrentRotation.jsx
-      ProgressSection.jsx
-      ShiftList.jsx
-      FatigueHelper.jsx
-    quotas/
-      QuotaTracker.jsx
-      QuotaSection.jsx
-      QuotaChecklist.jsx
-    rotations/
-      RotationTabs.jsx
-      ProcedureList.jsx
-      SafetyReminders.jsx
-    shifts/
-      ShiftCalendar.jsx
-      ShiftForm.jsx
-      ShiftList.jsx
-    notes/
-      NoteList.jsx
-      NoteForm.jsx
-      NoteEdit.jsx
-    encouragement/
-      EncouragementCard.jsx
-      MoodCheckIn.jsx
-  lib/
-    supabase.js
-  pages/
-    Dashboard.jsx
-    Login.jsx
-    Profile.jsx
-    Signup.jsx
-    Rotations.jsx
-    Quotas.jsx
-    Shifts.jsx
-    Notes.jsx
-```
+Search renders titles as React text, scopes personal records and recent history to the current user, ignores stale requests, and links notes directly to their viewing dialog. Connection errors are shown separately from empty results.
 
-The starter keeps several dashboard subcomponents inside `Dashboard.jsx` for readability. As the app grows, move them into `src/components/dashboard/`.
+Custom section settings only become writable after a successful initial read, preventing an unsuccessful load from replacing existing settings with defaults.
 
-## Component Trees
+## Theme and responsive design
 
-### Auth and Profile
+The CSS token palette defines surfaces, ink, muted text, borders, and rose/sage/lavender/peach accents. The initial document applies the saved theme before React starts. System mode follows media-query changes. Extracted feature CSS lives in the legacy layer; shared unlayered styles provide the consistent final treatment.
 
-```txt
-App
-  AuthProvider
-    AppLayout
-      Login
-      Signup
-      ProtectedRoute
-        Profile
-```
+Desktop uses a sidebar, tablet uses bottom navigation, and phone screens stack dashboard cards. Forms use 16px inputs on small screens, safe-area spacing, and viewport-based modal heights. The original fixed body and disabled zoom were removed. Animation respects prefers-reduced-motion. Pip’s original PNG is retained as source; the shipped WebP is 55,284 bytes.
 
-Auth logic lives in `src/auth/AuthProvider.jsx`.
+## Study chat
 
-- `supabase.auth.getSession()` hydrates the initial session.
-- `supabase.auth.onAuthStateChange()` keeps session state synced.
-- `supabase.auth.signUp()` creates accounts.
-- `supabase.auth.signInWithPassword()` logs users in.
-- `profiles.upsert()` saves editable profile fields.
+The browser sends conversation messages and the Supabase access token to the same-origin /api/chat endpoint. The server verifies the token with Supabase, validates message roles and lengths, and calls the provider using GROQ_API_KEY. Its in-memory request cap is per running server instance; a shared rate limiter is needed if a deployment requires a global quota across instances. Production chat configuration and provider access are separate from the frontend build.
 
-### Dashboard
+## Extending the tools
 
-```txt
-Dashboard
-  CurrentRotation
-  ShiftList
-  ProgressSection
-  FatigueHelper
-  EncouragementCard
-```
-
-Fetches:
-
-- `rotations` filtered by `user_id`, ordered by `start_date`.
-- `shifts` filtered by `user_id` and upcoming `shift_date`.
-- `quotas` filtered by `user_id`.
-- Later: `exam_dates`, `mood_logs`, and approved `encouragement_messages`.
-
-### Rotation and Procedure Guide
-
-```txt
-RotationsPage
-  RotationTabs
-  ProcedureList
-    ProcedureCard
-    SafetyReminders
-```
-
-Early version can hard-code general procedure guide content in local files, especially if it is static school-friendly guidance. Store it in Supabase when the user needs custom procedures, staff tips, school-specific checklists, or admin-managed content.
-
-### Quota and Task Tracker
-
-```txt
-QuotasPage
-  QuotaTracker
-    QuotaSection
-      ProgressBar
-      QuotaChecklist
-        QuotaTaskCheckbox
-```
-
-Each quota row belongs to one `user_id`. Updates should always include both `id` and `user_id` in the query to avoid accidental cross-user writes.
-
-### Shift Planner and Fatigue Helper
-
-```txt
-ShiftsPage
-  ShiftCalendar
-  ShiftList
-  ShiftForm
-  FatigueHelper
-```
-
-Store shift date, start/end time, section, shift type, and notes in Supabase. The fatigue helper can derive reminders from night shifts, consecutive shifts, or too few rest days.
-
-### Notes and Staff Tips
-
-```txt
-NotesPage
-  SectionFilter
-  NoteSearch
-  NoteList
-    NoteCard
-      NoteEdit
-  NoteForm
-```
-
-Personal notes are user-owned. Staff tips can either be user-owned notes marked with `is_staff_tip` or shared approved content in a separate table.
-
-### Encouragement
-
-```txt
-EncouragementCard
-MoodCheckIn
-```
-
-Start with local approved strings. Later, store approved messages in Supabase so they can be tagged by section, mood, or shift type.
-
-## Supabase Schema
-
-Run this in the Supabase SQL editor after creating a project.
-
-```sql
-create table public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  email text,
-  full_name text,
-  school text,
-  year_level text,
-  program text,
-  avatar_url text,
-  internship_start_date date,
-  preferred_reminder_time time,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
-create table public.rotations (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  section_name text not null,
-  hospital_site text,
-  start_date date not null,
-  end_date date not null,
-  supervisor_name text,
-  notes text,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
-create table public.quotas (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  section_name text not null,
-  task_name text not null,
-  target_count integer not null default 0,
-  completed_count integer not null default 0,
-  due_date date,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
-create table public.quota_tasks (
-  id uuid primary key default gen_random_uuid(),
-  quota_id uuid not null references public.quotas(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  label text not null,
-  is_done boolean not null default false,
-  completed_at timestamptz,
-  created_at timestamptz default now()
-);
-
-create table public.shifts (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  section_name text not null,
-  shift_date date not null,
-  start_time time not null,
-  end_time time not null,
-  shift_type text check (shift_type in ('morning', 'afternoon', 'night', 'rest', 'exam', 'other')) default 'morning',
-  notes text,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
-create table public.notes (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  section_name text,
-  title text not null,
-  body text not null,
-  is_staff_tip boolean not null default false,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
-create table public.encouragement_messages (
-  id uuid primary key default gen_random_uuid(),
-  message text not null,
-  section_name text,
-  mood_tag text,
-  is_active boolean not null default true,
-  created_at timestamptz default now()
-);
-
-create table public.mood_logs (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  mood_tag text not null,
-  note text,
-  logged_at timestamptz default now()
-);
-```
-
-## Row Level Security
-
-Enable RLS and add user-owned policies.
-
-```sql
-alter table public.profiles enable row level security;
-alter table public.rotations enable row level security;
-alter table public.quotas enable row level security;
-alter table public.quota_tasks enable row level security;
-alter table public.shifts enable row level security;
-alter table public.notes enable row level security;
-alter table public.mood_logs enable row level security;
-
-create policy "Users can read own profile"
-on public.profiles for select
-using (auth.uid() = id);
-
-create policy "Users can insert own profile"
-on public.profiles for insert
-with check (auth.uid() = id);
-
-create policy "Users can update own profile"
-on public.profiles for update
-using (auth.uid() = id)
-with check (auth.uid() = id);
-
-create policy "Users can manage own rotations"
-on public.rotations for all
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
-
-create policy "Users can manage own quotas"
-on public.quotas for all
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
-
-create policy "Users can manage own quota tasks"
-on public.quota_tasks for all
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
-
-create policy "Users can manage own shifts"
-on public.shifts for all
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
-
-create policy "Users can manage own notes"
-on public.notes for all
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
-
-create policy "Users can manage own mood logs"
-on public.mood_logs for all
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
-
-alter table public.encouragement_messages enable row level security;
-
-create policy "Anyone authenticated can read active encouragements"
-on public.encouragement_messages for select
-to authenticated
-using (is_active = true);
-```
-
-## High-Level Layout
-
-- Top bar: app name, profile link, logout.
-- Sidebar on desktop: Dashboard, Rotations, Quotas, Shifts, Notes.
-- Main content area: page heading, primary page modules, and forms.
-- Mobile: sidebar becomes a horizontal navigation area or bottom navigation.
-
-Keep visual design simple for now. Later styling can make the app soft, pastel, and student-friendly without changing the data flow.
+The existing large feature tools retain their original workflows, while their styling and dialogs are shared. Further extraction should move one cohesive feature at a time into a subfolder. Keep state and mutations in the owning tool, keep date/progress rules in shared helpers, and preserve Supabase row-level security. The existing procedure library remains shared under its existing schema; introducing private procedure ownership needs an explicit database migration.

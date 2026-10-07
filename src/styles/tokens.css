@@ -1,0 +1,234 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;650;700;800&display=swap');
+@layer legacy;
+:root {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Fraunces', Georgia, serif;
+  --bg: #faf7f5;
+  --surface: #fffdfc;
+  --surface-subtle: #f4efec;
+  --ink: #342b36;
+  --muted: #776b76;
+  --border: #e9e1e3;
+  --accent: #a94e70;
+  --danger: #b54b53;
+  --accent-light: #ce8ba0;
+  --rose-soft: #f6e8ed;
+  --sage: #4e7d6b;
+  --sage-soft: #eaf1ec;
+  --lavender: #796a9f;
+  --lavender-soft: #eeeaf5;
+  --peach: #a26a49;
+  --peach-soft: #f7ece2;
+  --on-accent: #fff;
+  --shadow: 0 4px 24px #3d223505;
+  --radius: 20px;
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  --bg: #19171d;
+  --surface: #242128;
+  --surface-subtle: #2c2831;
+  --ink: #f2eaf0;
+  --muted: #b5a9b5;
+  --border: #3a333e;
+  --accent: #dda0b7;
+  --danger: #f0a5ab;
+  --accent-light: #bc7d95;
+  --rose-soft: #37262f;
+  --sage: #9cc8b3;
+  --sage-soft: #23342d;
+  --lavender: #b9a9dd;
+  --lavender-soft: #302b3e;
+  --peach: #d6ac8d;
+  --peach-soft: #382d27;
+  --on-accent: #251822;
+  --shadow: 0 4px 24px #00000014;
+  color-scheme: dark;
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 90px;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+#root {
+  min-height: 100dvh;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button {
+  color: inherit;
+}
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+img {
+  max-width: 100%;
+  display: block;
+}
+svg {
+  flex-shrink: 0;
+}
+a,
+button {
+  touch-action: manipulation;
+}
+::selection {
+  background: var(--rose-soft);
+  color: var(--accent);
+}
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline-offset: 1px;
+}
+.skip-link {
+  position: fixed;
+  left: 16px;
+  top: -100px;
+  z-index: 2000;
+  background: var(--ink);
+  color: var(--bg);
+  padding: 12px 20px;
+  border-radius: 12px;
+}
+.skip-link:focus {
+  top: 16px;
+}
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--sage);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 13px 20px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  transition:
+    transform 0.2s,
+    background 0.2s,
+    box-shadow 0.2s;
+  white-space: normal;
+  text-align: center;
+}
+.button:hover {
+  transform: translateY(-2px);
+}
+.button:active {
+  transform: translateY(0);
+}
+.button.primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 4px 12px #a94e7018;
+}
+.button.secondary {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--ink);
+}
+.button.small {
+  min-height: 40px;
+  padding: 10px 15px;
+  font-size: 11px;
+}
+.button.text-button {
+  background: transparent;
+  color: var(--ink);
+  padding-inline: 8px;
+}
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 12px;
+  color: var(--muted);
+  transition: background 0.2s;
+}
+.icon-button:hover {
+  background: var(--rose-soft);
+  color: var(--accent);
+}
+.rose {
+  color: var(--accent);
+  background: var(--rose-soft);
+}
+.sage {
+  color: var(--sage);
+  background: var(--sage-soft);
+}
+.lavender {
+  color: var(--lavender);
+  background: var(--lavender-soft);
+}
+.peach {
+  color: var(--peach);
+  background: var(--peach-soft);
+}

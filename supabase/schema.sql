@@ -1,28 +1,15 @@
 -- ═══════════════════════════════════════════════════════════════
 -- MEDTECH MATE — DATABASE SCHEMA (with chat_messages for AI Chatbot)
 -- Run this entire file in your Supabase SQL Editor.
--- It is safe to re-run: all DROP statements are idempotent.
+-- Non-destructive bootstrap: existing records are preserved.
+-- Existing tables are not altered; use migrations for future schema changes.
 -- ═══════════════════════════════════════════════════════════════
 
 
 -- ─────────────────────────────────────────────
--- 1. DROP EXISTING TABLES  (clean slate)
+-- 1. PRESERVE EXISTING TABLES
 -- ─────────────────────────────────────────────
 
-drop table if exists public.chat_messages         cascade;
-drop table if exists public.documents              cascade;
-drop table if exists public.mood_logs              cascade;
-drop table if exists public.procedures             cascade;
-drop table if exists public.encouragement_messages cascade;
-drop table if exists public.exams                  cascade;
-drop table if exists public.notes                  cascade;
-drop table if exists public.shifts                 cascade;
-drop table if exists public.quota_tasks            cascade;
-drop table if exists public.daily_reports          cascade;
-drop table if exists public.quotas                 cascade;
-drop table if exists public.rotations              cascade;
-drop table if exists public.user_settings          cascade;
-drop table if exists public.profiles               cascade;
 
 
 -- ─────────────────────────────────────────────
@@ -30,7 +17,7 @@ drop table if exists public.profiles               cascade;
 -- ─────────────────────────────────────────────
 
 -- ── Profiles ──────────────────────────────────
-create table public.profiles (
+create table if not exists public.profiles (
   id                      uuid        primary key references auth.users(id) on delete cascade,
   email                   text,
   full_name               text,
@@ -45,7 +32,7 @@ create table public.profiles (
 );
 
 -- User Settings (replaces browser localStorage)
-create table public.user_settings (
+create table if not exists public.user_settings (
   id         uuid        primary key default gen_random_uuid(),
   user_id    uuid        not null references auth.users(id) on delete cascade,
   key        text        not null,
@@ -56,7 +43,7 @@ create table public.user_settings (
 );
 
 -- ── Rotations ─────────────────────────────────
-create table public.rotations (
+create table if not exists public.rotations (
   id              uuid        primary key default gen_random_uuid(),
   user_id         uuid        not null references auth.users(id) on delete cascade,
   section_name    text        not null,
@@ -72,7 +59,7 @@ create table public.rotations (
 );
 
 -- ── Quotas (procedure targets per section) ────
-create table public.quotas (
+create table if not exists public.quotas (
   id              uuid        primary key default gen_random_uuid(),
   user_id         uuid        not null references auth.users(id) on delete cascade,
   section_name    text        not null,
@@ -85,7 +72,7 @@ create table public.quotas (
 );
 
 -- ── Daily Reports / Logbook ───────────────────
-create table public.daily_reports (
+create table if not exists public.daily_reports (
   id             uuid        primary key default gen_random_uuid(),
   user_id        uuid        not null references auth.users(id) on delete cascade,
   section_name   text        not null,
@@ -102,7 +89,7 @@ create table public.daily_reports (
 );
 
 -- ── Quota Tasks (sub-tasks inside a quota) ────
-create table public.quota_tasks (
+create table if not exists public.quota_tasks (
   id           uuid        primary key default gen_random_uuid(),
   quota_id     uuid        not null references public.quotas(id) on delete cascade,
   user_id      uuid        not null references auth.users(id)  on delete cascade,
@@ -113,7 +100,7 @@ create table public.quota_tasks (
 );
 
 -- ── Shifts ────────────────────────────────────
-create table public.shifts (
+create table if not exists public.shifts (
   id           uuid        primary key default gen_random_uuid(),
   user_id      uuid        not null references auth.users(id) on delete cascade,
   section_name text        not null,
@@ -128,7 +115,7 @@ create table public.shifts (
 );
 
 -- ── Exams ─────────────────────────────────────
-create table public.exams (
+create table if not exists public.exams (
   id           uuid        primary key default gen_random_uuid(),
   user_id      uuid        not null references auth.users(id) on delete cascade,
   exam_name    text        not null,
@@ -140,7 +127,7 @@ create table public.exams (
 );
 
 -- ── Notes & Staff Tips ────────────────────────
-create table public.notes (
+create table if not exists public.notes (
   id           uuid        primary key default gen_random_uuid(),
   user_id      uuid        not null references auth.users(id) on delete cascade,
   section_name text,
@@ -152,7 +139,7 @@ create table public.notes (
 );
 
 -- ── Encouragement Messages ────────────────────
-create table public.encouragement_messages (
+create table if not exists public.encouragement_messages (
   id           uuid        primary key default gen_random_uuid(),
   message      text        not null,
   section_name text,
@@ -162,7 +149,7 @@ create table public.encouragement_messages (
 );
 
 -- ── Mood Logs ─────────────────────────────────
-create table public.mood_logs (
+create table if not exists public.mood_logs (
   id         uuid        primary key default gen_random_uuid(),
   user_id    uuid        not null references auth.users(id) on delete cascade,
   mood_tag   text        not null,
@@ -170,7 +157,7 @@ create table public.mood_logs (
 );
 
 -- ── Documents (file library) ──────────────────
-create table public.documents (
+create table if not exists public.documents (
   id           uuid        primary key default gen_random_uuid(),
   user_id      uuid        not null references auth.users(id) on delete cascade,
   file_name    text        not null,
@@ -183,7 +170,7 @@ create table public.documents (
 );
 
 -- ── Procedures (Rotation Guide library) ───────
-create table public.procedures (
+create table if not exists public.procedures (
   id             uuid        primary key default gen_random_uuid(),
   section_name   text        not null,
   procedure_name text        not null,
@@ -193,7 +180,7 @@ create table public.procedures (
 );
 
 -- ⭐ NEW: Chat Messages (persistent conversation history for AI Chatbot)
-create table public.chat_messages (
+create table if not exists public.chat_messages (
   id              uuid        primary key default gen_random_uuid(),
   user_id         uuid        not null references auth.users(id) on delete cascade,
   conversation_id text        not null,   -- unique per chat session (e.g., "conv_abc123")
@@ -272,120 +259,142 @@ alter table public.chat_messages        enable row level security;  -- ⭐
 
 
 -- ── Profiles ──────────────────────────────────
+drop policy if exists "profiles_select_own" on public.profiles;
 create policy "profiles_select_own"
   on public.profiles for select
   using (auth.uid() = id);
 
+drop policy if exists "profiles_insert_own" on public.profiles;
 create policy "profiles_insert_own"
   on public.profiles for insert
   with check (auth.uid() = id);
 
+drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own"
   on public.profiles for update
   using (auth.uid() = id)
   with check (auth.uid() = id);
 
 -- ── Rotations ─────────────────────────────────
+drop policy if exists "rotations_all_own" on public.rotations;
 create policy "rotations_all_own"
   on public.rotations for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
 -- ── Quotas ────────────────────────────────────
+drop policy if exists "quotas_all_own" on public.quotas;
 create policy "quotas_all_own"
   on public.quotas for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
 -- ── Quota Tasks ───────────────────────────────
+drop policy if exists "quota_tasks_all_own" on public.quota_tasks;
 create policy "quota_tasks_all_own"
   on public.quota_tasks for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
 -- ── Daily Reports ─────────────────────────────
+drop policy if exists "daily_reports_all_own" on public.daily_reports;
 create policy "daily_reports_all_own"
   on public.daily_reports for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
 -- ── Shifts ────────────────────────────────────
+drop policy if exists "shifts_all_own" on public.shifts;
 create policy "shifts_all_own"
   on public.shifts for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
 -- ── Exams ─────────────────────────────────────
+drop policy if exists "exams_all_own" on public.exams;
 create policy "exams_all_own"
   on public.exams for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
 -- ── Notes ─────────────────────────────────────
+drop policy if exists "notes_all_own" on public.notes;
 create policy "notes_all_own"
   on public.notes for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
 -- User Settings
+drop policy if exists "user_settings_all_own" on public.user_settings;
 create policy "user_settings_all_own"
   on public.user_settings for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
 -- ── Encouragement Messages ────────────────────
+drop policy if exists "encouragement_select_active" on public.encouragement_messages;
 create policy "encouragement_select_active"
   on public.encouragement_messages for select
   to authenticated
   using (is_active = true);
 
 -- ── Mood Logs ─────────────────────────────────
+drop policy if exists "mood_logs_all_own" on public.mood_logs;
 create policy "mood_logs_all_own"
   on public.mood_logs for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
 -- ── Procedures ────────────────────────────────
+drop policy if exists "procedures_select_authenticated" on public.procedures;
 create policy "procedures_select_authenticated"
   on public.procedures for select
   to authenticated
   using (true);
 
+drop policy if exists "procedures_insert_authenticated" on public.procedures;
 create policy "procedures_insert_authenticated"
   on public.procedures for insert
   to authenticated
   with check (true);
 
+drop policy if exists "procedures_update_authenticated" on public.procedures;
 create policy "procedures_update_authenticated"
   on public.procedures for update
   to authenticated
   using (true)
   with check (true);
 
+drop policy if exists "procedures_delete_authenticated" on public.procedures;
 create policy "procedures_delete_authenticated"
   on public.procedures for delete
   to authenticated
   using (true);
 
 -- ── Documents ─────────────────────────────────
+drop policy if exists "documents_all_own" on public.documents;
 create policy "documents_all_own"
   on public.documents for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
 -- ⭐ Chat Messages RLS policies
+drop policy if exists "chat_messages_select_own" on public.chat_messages;
 create policy "chat_messages_select_own"
   on public.chat_messages for select
   using (auth.uid() = user_id);
 
+drop policy if exists "chat_messages_insert_own" on public.chat_messages;
 create policy "chat_messages_insert_own"
   on public.chat_messages for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "chat_messages_delete_own" on public.chat_messages;
 create policy "chat_messages_delete_own"
   on public.chat_messages for delete
   using (auth.uid() = user_id);
 
+drop policy if exists "chat_messages_update_own" on public.chat_messages;
 create policy "chat_messages_update_own"
   on public.chat_messages for update
   using (auth.uid() = user_id)
@@ -397,8 +406,10 @@ create policy "chat_messages_update_own"
 -- ─────────────────────────────────────────────
 
 -- ── Encouragement messages ────────────────────
-insert into public.encouragement_messages (message, section_name, mood_tag) values
-  ('You''re doing great! Every procedure you complete brings you closer to becoming an excellent MLT. Keep going! 💪', null, null),
+insert into public.encouragement_messages (message, section_name, mood_tag)
+select seed.message, seed.section_name, seed.mood_tag
+from (values
+('You''re doing great! Every procedure you complete brings you closer to becoming an excellent MLT. Keep going! 💪', null, null),
   ('Remember to take breaks and stay hydrated. A healthy intern is an effective intern! 💧', null, 'Tired'),
   ('Every expert was once a beginner. The fact that you showed up today means you''re already succeeding. 🌟', null, null),
   ('One step at a time. Progress is progress, no matter how small. You''ve got this! ✨', null, null),
@@ -412,13 +423,16 @@ insert into public.encouragement_messages (message, section_name, mood_tag) valu
   ('Every blood smear you read is a story. Learn to read them well and you''ll help patients for a lifetime. 🩸', 'Hematology', null),
   ('Microbiology is the art of finding the invisible. Keep your technique sharp — the bugs can''t hide from you! 🦠', 'Microbiology', null),
   ('In the Blood Bank, precision saves lives. Your attention to detail today protects a patient tomorrow. 🏥', 'Blood Bank', null),
-  ('Histopathology: where science becomes art. Your eyes are learning to see what others can''t. 🔭', 'Histopathology/Cytology', null);
+  ('Histopathology: where science becomes art. Your eyes are learning to see what others can''t. 🔭', 'Histopathology/Cytology', null)
+) as seed (message, section_name, mood_tag)
+where not exists (select 1 from public.encouragement_messages existing where existing.message = seed.message);
 
 -- ── Default procedures library ────────────────
 -- (your full list remains intact – included below)
-insert into public.procedures (section_name, procedure_name, description, safety_notes) values
-
-  -- Hematology
+insert into public.procedures (section_name, procedure_name, description, safety_notes)
+select seed.section_name, seed.procedure_name, seed.description, seed.safety_notes
+from (values
+-- Hematology
   ('Hematology', 'CBC (Complete Blood Count)',
    'Measures red blood cells, white blood cells, hemoglobin, hematocrit, MCV, MCH, MCHC, and platelets using an automated hematology analyzer. Evaluate both analyzer flags and manual differentials.',
    'Handle all blood specimens as potentially infectious. Use gloves, lab coat, and face shield when operating the analyzer or processing samples.'),
@@ -549,7 +563,9 @@ insert into public.procedures (section_name, procedure_name, description, safety
 
   ('Histopathology/Cytology', 'Frozen Section (Intraoperative)',
    'Place fresh, unfixed tissue on cryostat chuck with OCT compound. Freeze rapidly at −20 to −25°C. Section at 5–10 µm. Stain with rapid H&E (accelerated 2–3 min protocol). Report to surgeon within 10–20 minutes of receiving specimen.',
-   'Frozen section room must be maintained at biocontainment level — treat all tissue as potentially infectious. Sharp cryostat blade — use safety protocols. Residual frozen tissue must be fixed in formalin and submitted for permanent sections. Never discard intraoperative tissue.');
+   'Frozen section room must be maintained at biocontainment level — treat all tissue as potentially infectious. Sharp cryostat blade — use safety protocols. Residual frozen tissue must be fixed in formalin and submitted for permanent sections. Never discard intraoperative tissue.')
+) as seed (section_name, procedure_name, description, safety_notes)
+where not exists (select 1 from public.procedures existing where existing.section_name = seed.section_name and existing.procedure_name = seed.procedure_name);
 
 
 -- ─────────────────────────────────────────────
