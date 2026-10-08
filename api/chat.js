@@ -1,7 +1,24 @@
 const SYSTEM_PROMPT =
   'You are Pip, a warm study companion for medical technology interns in the Philippines. Focus on hematology, clinical chemistry, microbiology, blood banking, histopathology, study organization, and encouragement. Use friendly plain language and Taglish when the user does. Discuss educational concepts; do not diagnose patients, prescribe drugs, provide patient-specific treatment, or replace the laboratory SOP or clinical supervisor. Never request identifiable patient data. For clinical topics remind the learner to verify with their instructor and approved local protocols. Be honest about uncertainty.';
+const DEFAULT_MODEL = 'openai/gpt-oss-120b';
+const PROVIDER_CODES = new Set([
+  'invalid_api_key',
+  'authentication_error',
+  'model_not_found',
+  'model_decommissioned',
+  'model_permission_blocked',
+  'rate_limit_exceeded',
+  'insufficient_quota',
+  'billing_hard_limit_reached',
+  'context_length_exceeded',
+]);
 const requests = new Map();
-export function createChatHandler({ env = process.env, fetchImpl = fetch, now = Date.now } = {}) {
+export function createChatHandler({
+  env = process.env,
+  fetchImpl = fetch,
+  now = Date.now,
+  logger = console,
+} = {}) {
   return async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
     const reply = (status, message) => res.status(status).json({ error: message });
@@ -9,9 +26,11 @@ export function createChatHandler({ env = process.env, fetchImpl = fetch, now = 
       res.setHeader('Allow', 'POST');
       return reply(405, 'Use POST to send a message.');
     }
-    const url = env.VITE_SUPABASE_URL,
-      key = env.VITE_SUPABASE_ANON_KEY;
-    if (!env.GROQ_API_KEY || !url || !key)
+    const url = env.VITE_SUPABASE_URL?.trim(),
+      key = env.VITE_SUPABASE_ANON_KEY?.trim(),
+      groqKey = env.GROQ_API_KEY?.trim(),
+      model = env.GROQ_MODEL?.trim() || DEFAULT_MODEL;
+    if (!groqKey || !url || !key)
       return reply(
         503,
         'Pip’s study chat is being set up. Your notes and other tools are still here.',
@@ -78,23 +97,67 @@ export function createChatHandler({ env = process.env, fetchImpl = fetch, now = 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + env.GROQ_API_KEY,
+          Authorization: 'Bearer ' + groqKey,
         },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          max_tokens: 1024,
+          model,
+          max_completion_tokens: 2048,
+          ...(model.startsWith('openai/gpt-oss-')
+            ? { reasoning_effort: 'low', include_reasoning: false }
+            : {}),
           messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
         }),
         signal: AbortSignal.timeout(30000),
       });
-      if (!upstream.ok)
+      if (!upstream.ok) {
+        // Log only known error codes and HTTP status, never provider messages or credentials.
+        const failure = await upstream.json?.().catch(() => null);
+        const code = PROVIDER_CODES.has(failure?.error?.code) ? failure.error.code : 'unknown';
+        logger.error('Pip provider request failed', { status: upstream.status, code });
+        if (upstream.status === 401)
+          return reply(
+            503,
+            'Pip’s AI connection needs a valid API key. Please ask the app owner to check the setup.',
+          );
+        if (['model_not_found', 'model_decommissioned'].includes(code) || upstream.status === 404)
+          return reply(
+            503,
+            'Pip’s AI model is unavailable. Please ask the app owner to update its setup.',
+          );
+        if (upstream.status === 403)
+          return reply(
+            503,
+            'Pip’s AI model is not enabled for this app. Please ask the app owner to check model access.',
+          );
+        if (['insufficient_quota', 'billing_hard_limit_reached'].includes(code))
+          return reply(
+            503,
+            'Pip’s AI usage allowance has been reached. Please ask the app owner to check the account.',
+          );
+        if (upstream.status === 429) {
+          const retry = Number(upstream.headers?.get('retry-after'));
+          res.setHeader(
+            'Retry-After',
+            String(Number.isFinite(retry) && retry > 0 ? Math.min(Math.ceil(retry), 3600) : 60),
+          );
+          return reply(
+            429,
+            'Pip is receiving too many messages right now. Please try again shortly.',
+          );
+        }
+        if (code === 'context_length_exceeded' || upstream.status === 413)
+          return reply(
+            400,
+            'This conversation is too long for Pip. Please start a new chat or send a shorter message.',
+          );
         return reply(502, 'Pip couldn’t answer right now. Please try again in a moment.');
+      }
       const data = await upstream.json();
       const content = data.choices?.[0]?.message?.content;
       if (!content) return reply(502, 'Pip couldn’t find the words. Please try again.');
       return res.status(200).json({ content });
     } catch (error) {
-      console.error('Study chat failed:', error.name);
+      logger.error('Study chat failed:', error.name);
       return reply(502, 'Pip couldn’t connect. Please try again in a moment.');
     }
   };
