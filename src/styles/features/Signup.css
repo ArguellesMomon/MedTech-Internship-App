@@ -169,13 +169,13 @@
   }
 
   .su-step-bubble.done {
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     color: var(--on-accent);
     box-shadow: 0 4px 12px rgba(255, 93, 143, 0.35);
   }
 
   .su-step-bubble.active {
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     color: var(--on-accent);
     box-shadow: 0 4px 16px rgba(255, 93, 143, 0.4);
     transform: scale(1.1);
@@ -195,7 +195,7 @@
   }
 
   .su-step-connector.filled {
-    background: linear-gradient(90deg, var(--accent-light), var(--accent));
+    background: var(--accent);
   }
 
   .su-step-label {
@@ -337,7 +337,7 @@
   .su-input {
     width: 100%;
     border: 1.5px solid rgba(255, 150, 180, 0.4);
-    background: rgba(255, 248, 250, 0.8);
+    background: var(--surface-subtle);
     border-radius: 18px;
     padding: 14px 16px 14px 46px;
     font-size: 15px;
@@ -402,11 +402,11 @@
   }
   .su-eye-toggle:hover {
     color: var(--accent);
-    background: rgba(255, 111, 145, 0.07);
+    background: var(--surface-subtle);
   }
   .su-eye-toggle:active {
     color: var(--accent);
-    background: rgba(255, 111, 145, 0.14);
+    background: var(--surface-subtle);
   }
 
   /* ── PASSWORD STRENGTH ── */
@@ -455,13 +455,13 @@
     color: var(--danger);
   }
   .su-strength-label.fair {
-    color: #ffb347;
+    color: var(--peach);
   }
   .su-strength-label.good {
-    color: #4abf95;
+    color: var(--sage);
   }
   .su-strength-label.strong {
-    color: #2ecc71;
+    color: var(--sage);
   }
 
   /* ── MESSAGES ── */
@@ -481,7 +481,7 @@
 
   .su-success {
     background: var(--sage-soft);
-    color: #248f5a;
+    color: var(--sage);
     border: 1px solid #c6f6d5;
     padding: 11px 14px;
     border-radius: 13px;
@@ -528,7 +528,7 @@
     justify-content: center;
     gap: 8px;
     border: none;
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     color: var(--on-accent);
     border-radius: 18px;
     padding: 13px 20px;

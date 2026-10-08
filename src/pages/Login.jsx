@@ -1,3 +1,4 @@
+import ThemedIcon from '../components/ui/ThemedIcon';
 import '../styles/features/Login.css';
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -155,7 +156,7 @@ export default function Login() {
             {/* Error */}
             {error && (
               <div className="error-box" role="alert">
-                ⚠️ {error}
+                <ThemedIcon name="TriangleAlert" /> {error}
               </div>
             )}
 

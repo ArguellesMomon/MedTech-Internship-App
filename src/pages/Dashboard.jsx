@@ -1,3 +1,4 @@
+import ThemedIcon from '../components/ui/ThemedIcon';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -91,7 +92,9 @@ export default function Dashboard() {
             A little more confident,
             <br />
             <em>every day.</em>
-            <span className="heading-spark">✦</span>
+            <span className="heading-spark">
+              <ThemedIcon name="Sparkles" />
+            </span>
           </h1>
           <p>
             Welcome back, {profile?.full_name?.trim().split(/\s+/)[0] || 'intern'}. Let’s make room

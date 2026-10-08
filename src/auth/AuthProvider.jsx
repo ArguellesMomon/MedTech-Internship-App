@@ -65,9 +65,7 @@ export function AuthProvider({ children }) {
   }, [user?.id, fetchProfile, invalidateProfile]);
   function requireSetup() {
     if (!isSupabaseConfigured)
-      throw new Error(
-        'Account sign-in is currently unavailable. You can explore the demo workspace from the home page.',
-      );
+      throw new Error('Account sign-in is currently unavailable. Please try again later.');
   }
   async function upsertProfile(values) {
     requireSetup();

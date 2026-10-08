@@ -14,7 +14,7 @@
 
   /* ── HERO ── */
   .ab-hero {
-    background: linear-gradient(160deg, var(--accent-light) 0%, var(--accent) 45%, #ff8c5a 100%);
+    background: var(--accent);
     border-radius: 28px;
     padding: 40px 28px 36px;
     position: relative;
@@ -182,7 +182,7 @@
 
   /* ── DEDICATION ── */
   .ab-dedication {
-    background: linear-gradient(135deg, #fff0f5, var(--rose-soft));
+    background: var(--surface-subtle);
     border: 1.5px solid #ffd6e8;
     border-radius: 20px;
     padding: 22px 22px 20px;
@@ -193,7 +193,7 @@
     font-family: var(--font-sans);
     font-size: 1.25rem;
     font-style: italic;
-    color: #cc5580;
+    color: var(--accent);
     line-height: 1.55;
     margin: 0 0 14px;
     padding-left: 14px;
@@ -243,7 +243,7 @@
     width: 58px;
     height: 58px;
     border-radius: 18px;
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -278,7 +278,7 @@
     padding: 3px 10px;
     font-size: 11px;
     font-weight: 700;
-    color: var(--accent-light);
+    color: var(--accent);
     margin-top: 6px;
   }
 
@@ -322,7 +322,7 @@
     width: 32px;
     height: 32px;
     border-radius: 10px;
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     color: var(--on-accent);
     display: flex;
     align-items: center;
@@ -360,7 +360,7 @@
     padding: 4px 12px;
     font-size: 11px;
     font-weight: 700;
-    color: var(--accent-light);
+    color: var(--accent);
   }
 
   .ab-footer-note {
@@ -401,7 +401,7 @@
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -443,7 +443,7 @@
     width: 64px;
     height: 64px;
     border-radius: 20px;
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -470,7 +470,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     color: var(--on-accent);
     border-radius: 999px;
     padding: 3px 10px;

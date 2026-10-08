@@ -1,3 +1,4 @@
+import ThemedIcon from '../components/ui/ThemedIcon';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -16,7 +17,6 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from '../theme/ThemeProvider';
 import Brand from '../components/layout/Brand';
-import { startDemo } from '../lib/demo';
 import Hamster from '../assets/Hamster.webp';
 const features = [
   {
@@ -94,7 +94,10 @@ function WorkspacePreview() {
             <div>
               <small>YOUR INTERNSHIP, A LITTLE LIGHTER</small>
               <h3>
-                Hey, future RMT. <span>✦</span>
+                Hey, future RMT.{' '}
+                <span>
+                  <ThemedIcon name="Sparkles" />
+                </span>
               </h3>
               <p>You’re doing better than you think.</p>
             </div>
@@ -167,7 +170,9 @@ function WorkspacePreview() {
               <br />
               <strong>And I’m cheering for all of them.</strong>
             </p>
-            <span>♡</span>
+            <span>
+              <ThemedIcon name="Heart" />
+            </span>
           </div>
         </div>
       </div>
@@ -208,7 +213,9 @@ export default function LandingPage() {
               Your internship,
               <br />
               <em>a little lighter.</em>
-              <span className="landing-star">✦</span>
+              <span className="landing-star">
+                <ThemedIcon name="Sparkles" />
+              </span>
             </h1>
             <p className="hero-description">
               Busy shifts. Big dreams. A hundred little things to remember. Meet your warm,
@@ -219,10 +226,6 @@ export default function LandingPage() {
                 Find your little workspace
                 <ArrowRight size={17} />
               </Link>
-              <button className="button text-button" onClick={startDemo}>
-                Take a look around
-                <ArrowUpRight size={17} />
-              </button>
             </div>
             <p className="hero-footnote">
               <Heart size={13} />
@@ -242,12 +245,16 @@ export default function LandingPage() {
           <WorkspacePreview />
         </section>
         <div className="landing-love-line">
-          <span>✦</span>
+          <span>
+            <ThemedIcon name="Sparkles" />
+          </span>
           <p>
             For the first-day nerves, the late-night reviews,
             <br className="mobile-break" /> and every <em>“I did it”</em> in between.
           </p>
-          <span>✦</span>
+          <span>
+            <ThemedIcon name="Sparkles" />
+          </span>
         </div>
         <section id="features" className="landing-features">
           <div className="landing-section-heading">
@@ -278,7 +285,9 @@ export default function LandingPage() {
         <section className="landing-personal">
           <div className="personal-pip">
             <img src={Hamster} alt="Pip, the MedTech Mate hamster" />
-            <span>Hi, I’m Pip. ♡</span>
+            <span>
+              Hi, I’m Pip. <ThemedIcon name="Heart" />
+            </span>
           </div>
           <div>
             <p className="eyebrow">
@@ -313,10 +322,6 @@ export default function LandingPage() {
               Make yourself at home
               <ArrowRight size={17} />
             </Link>
-            <button className="button secondary" onClick={startDemo}>
-              Explore the demo
-              <Plus size={16} />
-            </button>
           </div>
         </section>
       </main>

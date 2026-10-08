@@ -1,3 +1,7 @@
+import ThemedIcon from './ui/ThemedIcon';
+import ScheduleCalendar from './schedule/ScheduleCalendar';
+import BatchDates from './schedule/BatchDates';
+import { uniqueDates } from '../lib/calendar';
 import useQuickCreate from '../hooks/useQuickCreate';
 import Dialog from './ui/Dialog';
 import '../styles/features/ShiftPlanner.css';
@@ -92,68 +96,80 @@ const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const GOAL_PRESETS = [30, 60, 90, 120, 180, 240];
 
 const WELLNESS_TIPS = [
-  { emoji: '💧', tip: 'Drink a glass of water every 2 hours — dehydration kills focus.' },
-  { emoji: '🧠', tip: 'Take a 5-minute walk between procedures to reset your mind.' },
-  { emoji: '😴', tip: 'Aim for 7–8 hours of sleep; memory consolidation happens at night.' },
+  { icon: 'Droplets', tip: 'Drink a glass of water every 2 hours — dehydration kills focus.' },
+  { icon: 'Brain', tip: 'Take a 5-minute walk between procedures to reset your mind.' },
+  { icon: 'Moon', tip: 'Aim for 7–8 hours of sleep; memory consolidation happens at night.' },
   {
-    emoji: '🍎',
+    icon: 'Apple',
     tip: 'Eat a balanced meal before your shift — avoid heavy carbs before night duty.',
   },
-  { emoji: '👁️', tip: 'Follow the 20-20-20 rule: every 20 min, look 20 ft away for 20 sec.' },
+  { icon: 'Eye', tip: 'Follow the 20-20-20 rule: every 20 min, look 20 ft away for 20 sec.' },
   {
-    emoji: '🧘',
+    icon: 'HeartPulse',
     tip: 'Three deep breaths before a stressful procedure can lower your heart rate.',
   },
   {
-    emoji: '🤝',
+    icon: 'Handshake',
     tip: 'Ask your senior for feedback after every major procedure — it compounds fast.',
   },
-  { emoji: '📵', tip: 'Avoid phone use 30 min before sleep; blue light disrupts melatonin.' },
-  { emoji: '🍵', tip: 'Limit caffeine after 2 PM to protect your sleep quality.' },
-  { emoji: '✍️', tip: 'Write one thing you learned each shift — tiny logs become big knowledge.' },
+  {
+    icon: 'PhoneOff',
+    tip: 'Avoid phone use 30 min before sleep; blue light disrupts melatonin.',
+  },
+  { icon: 'Coffee', tip: 'Limit caffeine after 2 PM to protect your sleep quality.' },
+  {
+    icon: 'PenLine',
+    tip: 'Write one thing you learned each shift — tiny logs become big knowledge.',
+  },
 ];
 
 const STUDY_TIPS = [
   {
-    emoji: '📚',
+    icon: 'BookOpen',
     tip: 'Start reviewing 3–5 days before the exam. Cramming the night before rarely sticks.',
   },
   {
-    emoji: '🧠',
+    icon: 'Brain',
     tip: 'Use active recall: close your notes and retrieve key concepts from memory.',
   },
   {
-    emoji: '😴',
+    icon: 'Moon',
     tip: 'Get 8 hours of sleep the night before — memory consolidation happens while you sleep.',
   },
   {
-    emoji: '✍️',
+    icon: 'PenLine',
     tip: 'Write practice questions for yourself. If you can teach it, you truly know it.',
   },
   {
-    emoji: '🍳',
+    icon: 'Utensils',
     tip: 'Eat a protein-rich meal before your exam. Avoid heavy carbs that cause energy crashes.',
   },
-  { emoji: '⏰', tip: 'Arrive 15 minutes early to settle nerves and do a final calm review.' },
   {
-    emoji: '🎯',
+    icon: 'AlarmClock',
+    tip: 'Arrive 15 minutes early to settle nerves and do a final calm review.',
+  },
+  {
+    icon: 'Target',
     tip: 'Focus on understanding concepts, not memorizing. Lab values will follow naturally.',
   },
   {
-    emoji: '💧',
+    icon: 'Droplets',
     tip: 'Stay hydrated during study sessions — even mild dehydration cuts focus by 20%.',
   },
   {
-    emoji: '🔄',
+    icon: 'RefreshCw',
     tip: 'Space your review: 1 day, 3 days, and 7 days before the exam for best retention.',
   },
   {
-    emoji: '🧘',
+    icon: 'HeartPulse',
     tip: 'Take 5-minute breaks every 25 minutes (Pomodoro) to maintain peak concentration.',
   },
-  { emoji: '🖊️', tip: 'Rewrite your notes by hand — motor memory reinforces what your eyes read.' },
   {
-    emoji: '👥',
+    icon: 'PenLine',
+    tip: 'Rewrite your notes by hand — motor memory reinforces what your eyes read.',
+  },
+  {
+    icon: 'UsersRound',
     tip: 'Teach a concept to a classmate. The act of explaining reveals gaps in your knowledge.',
   },
 ];
@@ -263,7 +279,7 @@ function getUrgency(days) {
       borderColor: '#e0e0e0',
       badgeBg: 'var(--surface-subtle)',
       badgeColor: '#bbb',
-      icon: '✅',
+      icon: 'CircleCheck',
       label: `${Math.abs(days)}d ago`,
     };
   if (days === 0)
@@ -272,7 +288,7 @@ function getUrgency(days) {
       borderColor: '#e05555',
       badgeBg: 'var(--rose-soft)',
       badgeColor: '#e05555',
-      icon: '🔥',
+      icon: 'Flame',
       label: 'Today!',
     };
   if (days === 1)
@@ -281,7 +297,7 @@ function getUrgency(days) {
       borderColor: '#ff6f91',
       badgeBg: 'var(--rose-soft)',
       badgeColor: '#ff5d8f',
-      icon: '⚡',
+      icon: 'Zap',
       label: 'Tomorrow',
     };
   if (days <= 3)
@@ -290,7 +306,7 @@ function getUrgency(days) {
       borderColor: '#ff8c5a',
       badgeBg: 'var(--peach-soft)',
       badgeColor: '#ff8c5a',
-      icon: '⚠️',
+      icon: 'TriangleAlert',
       label: `In ${days} days`,
     };
   if (days <= 7)
@@ -299,7 +315,7 @@ function getUrgency(days) {
       borderColor: '#5f8dff',
       badgeBg: 'var(--lavender-soft)',
       badgeColor: '#5f8dff',
-      icon: '📅',
+      icon: 'CalendarDays',
       label: `In ${days} days`,
     };
   return {
@@ -307,7 +323,7 @@ function getUrgency(days) {
     borderColor: '#ffe0ea',
     badgeBg: 'var(--rose-soft)',
     badgeColor: '#ff8fb1',
-    icon: '📚',
+    icon: 'BookOpen',
     label: `In ${days} days`,
   };
 }
@@ -317,13 +333,6 @@ function getWeekStart(d) {
   s.setDate(d.getDate() - d.getDay());
   s.setHours(0, 0, 0, 0);
   return s;
-}
-
-function getWeekLabel(weekStart) {
-  const end = new Date(weekStart);
-  end.setDate(weekStart.getDate() + 6);
-  const opts = { month: 'short', day: 'numeric' };
-  return `${weekStart.toLocaleDateString(undefined, opts)} – ${end.toLocaleDateString(undefined, opts)}`;
 }
 
 function isMissingTableError(error) {
@@ -339,295 +348,7 @@ function isMissingTableError(error) {
 /* ─────────────────────────────────────────────
    SHARED MODAL STYLES (injected once)
 ───────────────────────────────────────────── */
-const MODAL_STYLES = `
-  /* ═══════════════════════════════════════════
-     SHARED BOTTOM-SHEET / CENTERED MODAL BASE
-  ═══════════════════════════════════════════ */
-
-  .m-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.30);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    z-index: 1100;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    padding: 0;
-  }
-
-  .m-sheet {
-    background: #fff;
-    width: 100%;
-    max-width: 620px;
-    border-radius: 28px 28px 0 0;
-    box-shadow: 0 -12px 60px rgba(0,0,0,0.16), 0 -2px 0 rgba(255,200,220,0.3);
-    max-height: 94vh;
-    display: flex;
-    flex-direction: column;
-    animation: m-rise 0.32s cubic-bezier(0.34, 1.18, 0.64, 1) both;
-    overflow: hidden;
-  }
-
-  @keyframes m-rise {
-    from { transform: translateY(72px); opacity: 0; }
-    to   { transform: translateY(0);   opacity: 1; }
-  }
-
-  @media (min-width: 640px) {
-    .m-overlay {
-      align-items: center;
-      padding: 24px;
-    }
-    .m-sheet {
-      border-radius: 28px;
-      max-height: 88vh;
-    }
-  }
-
-  .m-drag-pill {
-    width: 36px; height: 4px;
-    background: rgba(255,255,255,0.45);
-    border-radius: 999px;
-    margin: 0 auto;
-    flex-shrink: 0;
-    position: absolute;
-    top: 10px; left: 50%;
-    transform: translateX(-50%);
-  }
-  @media (min-width: 640px) { .m-drag-pill { display: none; } }
-
-  .m-header {
-    display: flex; align-items: center;
-    justify-content: space-between;
-    padding: 22px 22px 20px;
-    gap: 12px;
-    flex-shrink: 0;
-    position: relative;
-  }
-
-  .m-header-left {
-    display: flex; align-items: center; gap: 12px;
-  }
-
-  .m-header-icon {
-    width: 36px; height: 36px;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.22);
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .m-header-title {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 1.05rem; font-weight: 800;
-    color: white; margin: 0; line-height: 1.2;
-  }
-
-  .m-header-sub {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 11px; color: rgba(255,255,255,0.72);
-    margin: 2px 0 0; font-weight: 500;
-  }
-
-  .m-close-btn {
-    width: 34px; height: 34px;
-    border: none; border-radius: 11px;
-    background: rgba(255,255,255,0.18);
-    color: white; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.18s; flex-shrink: 0;
-  }
-  .m-close-btn:hover { background: rgba(255,255,255,0.30); }
-
-  .m-body {
-    flex: 1; overflow-y: auto;
-    padding: 22px;
-    display: flex; flex-direction: column; gap: 18px;
-    overscroll-behavior: contain;
-  }
-  .m-body::-webkit-scrollbar { width: 4px; }
-  .m-body::-webkit-scrollbar-track { background: transparent; }
-  .m-body::-webkit-scrollbar-thumb { background: #ffd6e1; border-radius: 4px; }
-
-  .m-label {
-    display: flex; flex-direction: column; gap: 8px;
-    font-size: 11px; font-weight: 800;
-    text-transform: uppercase; letter-spacing: 0.09em;
-    color: #c8b0a8; margin: 0;
-  }
-
-  .m-input {
-    border: 1.5px solid rgba(255,200,220,0.6);
-    background: #fff8fa; border-radius: 14px;
-    padding: 13px 15px; font-size: 15px;
-    outline: none; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-    color: #1c1412; font-family: 'DM Sans', sans-serif;
-    width: 100%; box-sizing: border-box;
-  }
-  .m-input:focus {
-    border-color: var(--m-accent, #ff8fb1);
-    background: white;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-accent, #ff8fb1) 18%, transparent);
-  }
-
-  .m-textarea {
-    border: 1.5px solid rgba(255,200,220,0.6);
-    background: #fff8fa; border-radius: 14px;
-    padding: 13px 15px; font-size: 14px;
-    outline: none; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-    color: #444; resize: vertical; min-height: 90px;
-    font-family: 'DM Sans', sans-serif; line-height: 1.7;
-    width: 100%; box-sizing: border-box;
-  }
-  .m-textarea:focus {
-    border-color: var(--m-accent, #ff8fb1);
-    background: white;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-accent, #ff8fb1) 18%, transparent);
-  }
-
-  .m-pills { display: flex; flex-wrap: wrap; gap: 8px; }
-
-  .m-pill {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 7px 14px; border-radius: 999px;
-    border: 1.5px solid; background: transparent;
-    font-size: 12px; font-weight: 700;
-    cursor: pointer; transition: all 0.18s;
-    font-family: 'DM Sans', sans-serif;
-    white-space: nowrap;
-  }
-  .m-pill.active {
-    box-shadow: 0 4px 14px color-mix(in srgb, var(--pill-color, #ff6f91) 30%, transparent);
-  }
-
-  .m-duration-chip {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 10px 16px; border-radius: 14px;
-    background: var(--m-bg, #fff5ee);
-    border: 1.5px solid color-mix(in srgb, var(--m-accent, #ff8c5a) 25%, transparent);
-    font-size: 13px; color: var(--m-accent, #ff8c5a); font-weight: 600;
-    align-self: flex-start;
-  }
-
-  .m-time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-  .m-err {
-    background: #fde8e8; color: #c0392b;
-    border-radius: 12px; padding: 10px 14px;
-    font-size: 13px; margin: 0;
-  }
-
-  .m-actions { display: flex; gap: 10px; padding-top: 4px; padding-bottom: 8px; }
-
-  .m-submit {
-    display: inline-flex; align-items: center; gap: 7px;
-    border: none; color: white; border-radius: 999px;
-    padding: 13px 24px; font-size: 14px; font-weight: 700;
-    cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
-    font-family: 'DM Sans', sans-serif; flex: 1;
-    justify-content: center;
-  }
-  .m-submit:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 24px rgba(255,111,145,0.32);
-  }
-  .m-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-
-  .m-cancel {
-    border: none; background: #f0ecea; color: #888;
-    border-radius: 999px; padding: 13px 20px;
-    font-size: 14px; font-weight: 600;
-    cursor: pointer; font-family: 'DM Sans', sans-serif;
-    transition: background 0.2s;
-  }
-  .m-cancel:hover { background: #e8e2e4; }
-
-  .m-select {
-    border: 1.5px solid rgba(255,200,220,0.6);
-    background: #fff8fa; border-radius: 14px;
-    padding: 13px 15px; font-size: 15px;
-    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
-    color: #444; font-family: 'DM Sans', sans-serif;
-    width: 100%; box-sizing: border-box; cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c8b0a8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    padding-right: 36px;
-  }
-  .m-select:focus {
-    border-color: var(--m-accent, #ff8fb1);
-    background-color: white;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-accent, #ff8fb1) 18%, transparent);
-  }
-
-  .m-divider {
-    height: 1px;
-    background: rgba(255,200,220,0.3);
-    margin: 2px 0;
-  }
-
-  .m-countdown {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 16px; border-radius: 16px;
-    border: 1.5px solid; flex-wrap: wrap;
-  }
-  .m-countdown-icon { font-size: 20px; line-height: 1; }
-
-  /* Manage Sections Modal */
-  .msm-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.30);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    z-index: 1100;
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px;
-  }
-  .msm-modal {
-    background: white; border-radius: 28px; padding: 26px;
-    width: 100%; max-width: 460px;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.14);
-    border: 1px solid rgba(255,200,220,0.4);
-    max-height: 90vh; overflow-y: auto;
-    display: flex; flex-direction: column; gap: 22px;
-    animation: m-rise 0.28s ease both;
-  }
-  .msm-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-  .msm-head-left { display: flex; align-items: center; gap: 12px; }
-  .msm-head-icon { width: 40px; height: 40px; border-radius: 14px; background: linear-gradient(135deg,#ff8fb1,#ff6f91); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
-  .msm-title  { margin: 0 0 3px; font-size: 1.05rem; font-weight: 700; color: #1c1412; }
-  .msm-sub    { margin: 0; font-size: 12px; color: #bbb; }
-  .msm-close  { border: none; background: #f4f0f2; border-radius: 10px; padding: 7px; cursor: pointer; display: flex; color: #888; transition: 0.2s; flex-shrink: 0; }
-  .msm-close:hover { background: #ffe4ec; color: #ff5d8f; }
-  .msm-box-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #c8b0a8; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-  .msm-count { display: inline-flex; align-items: center; justify-content: center; background: #fff0f4; color: #ff6f91; border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 700; }
-  .msm-add-box { background: #fff8fa; border: 1px solid rgba(255,200,220,0.4); border-radius: 18px; padding: 18px; }
-  .msm-add-row { display: flex; gap: 10px; align-items: center; }
-  .msm-input { flex: 1 1 auto; min-width: 0; border: 1.5px solid rgba(255,200,220,0.6); background: white; border-radius: 12px; padding: 11px 14px; font-size: 14px; outline: none; transition: 0.2s; color: #444; font-family: inherit; }
-  .msm-input:focus { border-color: #ff8fb1; box-shadow: 0 0 0 3px rgba(255,143,177,0.15); }
-  .msm-add-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; border: none; background: linear-gradient(135deg,#ff8fb1,#ff6f91); color: white; border-radius: 12px; padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; font-family: inherit; }
-  .msm-add-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(255,111,145,0.25); }
-  .msm-error { background: #fde8e8; color: #c0392b; border-radius: 10px; padding: 8px 12px; font-size: 12px; margin-top: 10px; }
-  .msm-empty { text-align: center; padding: 24px 16px; background: #fff8fa; border-radius: 16px; border: 1px dashed rgba(255,200,220,0.5); display: flex; flex-direction: column; align-items: center; gap: 6px; color: #bbb; font-size: 13px; }
-  .msm-list { display: flex; flex-direction: column; gap: 8px; }
-  .msm-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 16px; border: 1.5px solid rgba(255,200,220,0.4); background: #fff8fa; transition: 0.2s; }
-  .msm-row:hover { border-color: #ffb8ce; background: white; }
-  .msm-row-rem { border-color: #ffd0d0; background: #fff5f5; }
-  .msm-row-main { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
-  .msm-sec-pill { display: inline-flex; align-items: center; gap: 7px; min-width: 0; max-width: 100%; border: 1.5px solid; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .msm-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-  .msm-color-ctrl { width: 30px; height: 30px; border: 1.5px solid rgba(255,200,220,0.5); background: white; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; position: relative; overflow: hidden; }
-  .msm-color-ctrl input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-  .msm-color-swatch { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); }
-  .msm-rm-btn { display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid rgba(255,200,220,0.5); background: white; color: #aaa; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit; flex-shrink: 0; white-space: nowrap; }
-  .msm-rm-btn:hover { border-color: #ffd0d0; background: #fde8e8; color: #e05555; }
-  .msm-confirm { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #888; flex-shrink: 0; font-weight: 600; white-space: nowrap; }
-  .msm-yes { border: none; background: linear-gradient(135deg,#ff8f8f,#e05555); color: white; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
-  .msm-no  { border: none; background: #f0f0f0; color: #888; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
-  .msm-note { display: flex; align-items: flex-start; gap: 8px; background: #fff8fa; border: 1px solid rgba(255,200,220,0.4); border-radius: 14px; padding: 12px 14px; font-size: 12px; color: #bbb; line-height: 1.6; }
-`;
+import '../styles/features/ShiftModals.css';
 
 /* ─────────────────────────────────────────────
    SHIFT MODAL
@@ -636,12 +357,18 @@ function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
   const { user } = useAuth();
   const [form, setForm] = useState({
     section_name: editing?.section_name ?? sections[0]?.id ?? '',
-    shift_date: editing?.shift_date ?? defaultDate ?? toDateStr(new Date()),
+    shift_date:
+      editing?.shift_date ??
+      ((Array.isArray(defaultDate) ? defaultDate[0] : defaultDate) || toDateStr(new Date())),
     start_time: editing?.start_time ?? '07:00',
     end_time: editing?.end_time ?? '15:00',
     shift_type: editing?.shift_type ?? 'morning',
     notes: editing?.notes ?? '',
   });
+  const [extraDates, setExtraDates] = useState(() =>
+    Array.isArray(defaultDate) ? uniqueDates(defaultDate).slice(1) : [],
+  );
+  const dates = uniqueDates([form.shift_date, ...extraDates]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -653,35 +380,38 @@ function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
-    setError('');
-    let result;
-    if (editing) {
-      result = await supabase
-        .from('shifts')
-        .update({ ...form, updated_at: new Date().toISOString() })
-        .eq('id', editing.id)
-        .select()
-        .single();
-    } else {
-      result = await supabase
-        .from('shifts')
-        .insert([{ ...form, user_id: user.id }])
-        .select()
-        .single();
-    }
-    setSaving(false);
-    if (result.error) {
-      setError(result.error.message);
+    if (saving) return;
+    if (!dates.length || dates.length > 31) {
+      setError('Choose between 1 and 31 valid dates.');
       return;
     }
-    onSaved(result.data, Boolean(editing));
-    onClose();
+    setSaving(true);
+    setError('');
+    try {
+      const result = editing
+        ? await supabase
+            .from('shifts')
+            .update({ ...form, updated_at: new Date().toISOString() })
+            .eq('id', editing.id)
+            .eq('user_id', user.id)
+            .select()
+            .single()
+        : await supabase
+            .from('shifts')
+            .insert(dates.map((date) => ({ ...form, shift_date: date, user_id: user.id })))
+            .select();
+      if (result.error) throw result.error;
+      onSaved(result.data, Boolean(editing));
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Couldn’t save your plans. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <Dialog className="m-overlay" onClose={onClose}>
-      <style>{MODAL_STYLES}</style>
       <div
         className="m-sheet"
         style={{ '--m-accent': accentColor, '--m-bg': accentBg }}
@@ -689,13 +419,10 @@ function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
       >
         <div className="m-drag-pill" />
 
-        <div
-          className="m-header"
-          style={{ background: `linear-gradient(135deg, ${accentColor}d0, ${accentColor})` }}
-        >
+        <div className="m-header">
           <div className="m-header-left">
             <div className="m-header-icon">
-              <ShiftIcon size={17} color="white" />
+              <ShiftIcon size={17} color="currentColor" />
             </div>
             <div>
               <p className="m-header-title">{editing ? 'Edit Shift' : 'New Shift'}</p>
@@ -723,16 +450,8 @@ function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
                     key={key}
                     type="button"
                     className={`m-pill ${on ? 'active' : ''}`}
-                    style={
-                      on
-                        ? {
-                            background: val.color,
-                            borderColor: val.color,
-                            color: '#fff',
-                            '--pill-color': val.color,
-                          }
-                        : { borderColor: val.color + '66', color: val.color }
-                    }
+                    aria-pressed={on}
+
                     onClick={() => setForm({ ...form, shift_type: key })}
                   >
                     <TIcon size={13} />
@@ -761,17 +480,13 @@ function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
             </select>
           </label>
 
-          <label htmlFor="field-shiftplanner-2" className="m-label">
-            Date *
-            <input
-              id="field-shiftplanner-2"
-              type="date"
-              className="m-input"
-              value={form.shift_date}
-              onChange={(e) => setForm({ ...form, shift_date: e.target.value })}
-              required
-            />
-          </label>
+          <BatchDates
+            date={form.shift_date}
+            onChange={(date) => setForm({ ...form, shift_date: date })}
+            extras={extraDates}
+            onExtrasChange={setExtraDates}
+            editing={Boolean(editing)}
+          />
 
           <div className="m-time-row">
             <label htmlFor="field-shiftplanner-4" className="m-label">
@@ -825,11 +540,17 @@ function ShiftModal({ editing, defaultDate, onClose, onSaved, sections }) {
             <button
               type="submit"
               className="m-submit"
-              style={{ background: `linear-gradient(135deg, ${accentColor}cc, ${accentColor})` }}
+
               disabled={saving}
             >
               <Check size={15} />
-              {saving ? 'Saving…' : editing ? 'Update Shift' : 'Add Shift'}
+              {saving
+                ? 'Saving…'
+                : editing
+                  ? 'Update Shift'
+                  : dates.length > 1
+                    ? 'Add ' + dates.length + ' shifts'
+                    : 'Add Shift'}
             </button>
             <button type="button" className="m-cancel" onClick={onClose}>
               Cancel
@@ -848,10 +569,16 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
   const { user } = useAuth();
   const [form, setForm] = useState({
     exam_name: editing?.exam_name ?? '',
-    exam_date: editing?.exam_date ?? defaultDate ?? toDateStr(new Date()),
+    exam_date:
+      editing?.exam_date ??
+      ((Array.isArray(defaultDate) ? defaultDate[0] : defaultDate) || toDateStr(new Date())),
     section_name: editing?.section_name ?? sections[0]?.id ?? '',
     notes: editing?.notes ?? '',
   });
+  const [extraDates, setExtraDates] = useState(() =>
+    Array.isArray(defaultDate) ? uniqueDates(defaultDate).slice(1) : [],
+  );
+  const dates = uniqueDates([form.exam_date, ...extraDates]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -866,39 +593,38 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.exam_name.trim()) {
-      setError('Exam name is required.');
+    if (saving) return;
+    if (!dates.length || dates.length > 31) {
+      setError('Choose between 1 and 31 valid dates.');
       return;
     }
     setSaving(true);
     setError('');
-    let result;
-    if (editing) {
-      result = await supabase
-        .from('exams')
-        .update({ ...form, updated_at: new Date().toISOString() })
-        .eq('id', editing.id)
-        .select()
-        .single();
-    } else {
-      result = await supabase
-        .from('exams')
-        .insert([{ ...form, user_id: user.id }])
-        .select()
-        .single();
+    try {
+      const result = editing
+        ? await supabase
+            .from('exams')
+            .update({ ...form, updated_at: new Date().toISOString() })
+            .eq('id', editing.id)
+            .eq('user_id', user.id)
+            .select()
+            .single()
+        : await supabase
+            .from('exams')
+            .insert(dates.map((date) => ({ ...form, exam_date: date, user_id: user.id })))
+            .select();
+      if (result.error) throw result.error;
+      onSaved(result.data, Boolean(editing));
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Couldn’t save your plans. Please try again.');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    if (result.error) {
-      setError(result.error.message);
-      return;
-    }
-    onSaved(result.data, Boolean(editing));
-    onClose();
   };
 
   return (
     <Dialog className="m-overlay" onClose={onClose}>
-      <style>{MODAL_STYLES}</style>
       <div
         className="m-sheet"
         style={{ '--m-accent': accentColor, '--m-bg': accentBg }}
@@ -906,22 +632,25 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
       >
         <div className="m-drag-pill" />
 
-        <div
-          className="m-header"
-          style={{ background: `linear-gradient(135deg, ${accentColor}d0, ${accentColor})` }}
-        >
+        <div className="m-header">
           <div className="m-header-left">
             <div className="m-header-icon">
-              <GraduationCap size={17} color="white" />
+              <GraduationCap size={17} color="currentColor" />
             </div>
             <div>
               <p className="m-header-title">{editing ? 'Edit Exam' : 'Add Exam Date'}</p>
               <p className="m-header-sub">
-                {form.exam_date
-                  ? urgency
-                    ? `${urgency.icon} ${urgency.label}`
-                    : 'Pick a date'
-                  : 'Track your upcoming assessment'}
+                {form.exam_date ? (
+                  urgency ? (
+                    <>
+                      <ThemedIcon name={urgency.icon} size={14} /> {urgency.label}
+                    </>
+                  ) : (
+                    'Pick a date'
+                  )
+                ) : (
+                  'Track your upcoming assessment'
+                )}
               </p>
             </div>
           </div>
@@ -936,8 +665,10 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
               className="m-countdown"
               style={{ background: urgency.badgeBg, borderColor: urgency.borderColor + '55' }}
             >
-              <span className="m-countdown-icon">{urgency.icon}</span>
-              <span style={{ color: urgency.badgeColor, fontWeight: 700, fontSize: 13 }}>
+              <span className="m-countdown-icon">
+                <ThemedIcon name={urgency.icon} size={16} />
+              </span>
+              <span style={{ color: 'var(--ink)', fontWeight: 700, fontSize: 13 }}>
                 {urgency.label}
               </span>
               <span style={{ color: 'var(--muted)', fontSize: 12 }}>
@@ -950,6 +681,7 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
             Exam Name *
             <input
               id="field-shiftplanner-6"
+              type="text"
               className="m-input"
               required
               maxLength={120}
@@ -959,17 +691,13 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
             />
           </label>
 
-          <label htmlFor="field-shiftplanner-7" className="m-label">
-            Exam Date *
-            <input
-              id="field-shiftplanner-7"
-              type="date"
-              className="m-input"
-              value={form.exam_date}
-              required
-              onChange={(e) => setForm({ ...form, exam_date: e.target.value })}
-            />
-          </label>
+          <BatchDates
+            date={form.exam_date}
+            onChange={(date) => setForm({ ...form, exam_date: date })}
+            extras={extraDates}
+            onExtrasChange={setExtraDates}
+            editing={Boolean(editing)}
+          />
 
           <div className="m-divider" />
 
@@ -979,23 +707,13 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
             </p>
             <div className="m-pills">
               {sections.map((s) => {
-                const sm = sectionMap[s.id] ?? s;
                 const on = form.section_name === s.id;
                 return (
                   <button
                     key={s.id}
                     type="button"
                     className={`m-pill ${on ? 'active' : ''}`}
-                    style={
-                      on
-                        ? {
-                            background: sm.color,
-                            borderColor: sm.color,
-                            color: '#fff',
-                            '--pill-color': sm.color,
-                          }
-                        : { borderColor: sm.color + '66', color: sm.color }
-                    }
+
                     onClick={() => setForm({ ...form, section_name: s.id })}
                   >
                     {s.id}
@@ -1023,7 +741,7 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
             <button
               type="submit"
               className="m-submit"
-              style={{ background: `linear-gradient(135deg, ${accentColor}cc, ${accentColor})` }}
+
               disabled={saving}
             >
               <Check size={15} />
@@ -1064,7 +782,6 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
 
   return (
     <Dialog className="msm-overlay" onClose={onClose}>
-      <style>{MODAL_STYLES}</style>
       <div className="msm-modal" onClick={(e) => e.stopPropagation()}>
         <div className="msm-head">
           <div className="msm-head-left">
@@ -1110,7 +827,9 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
           </p>
           {sections.length === 0 ? (
             <div className="msm-empty">
-              <span style={{ fontSize: 28 }}>🗂️</span>
+              <span style={{ fontSize: 28 }}>
+                <ThemedIcon name="Layers" />
+              </span>
               <p>No sections yet.</p>
             </div>
           ) : (
@@ -1120,14 +839,7 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
                 return (
                   <div key={sec.id} className={`msm-row ${isRem ? 'msm-row-rem' : ''}`}>
                     <div className="msm-row-main">
-                      <div
-                        className="msm-sec-pill"
-                        style={{
-                          background: colorToSoftBg(sec.color),
-                          color: sec.color,
-                          borderColor: sec.color + '55',
-                        }}
-                      >
+                      <div className="msm-sec-pill">
                         <span className="msm-dot" style={{ background: sec.color }} />
                         {sec.id}
                       </div>
@@ -1174,7 +886,7 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
         </div>
 
         <div className="msm-note">
-          <Sparkles size={12} style={{ color: '#ff8fb1', flexShrink: 0 }} />
+          <Sparkles size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
           Removing a section hides it from new shifts, exams, and filters. Existing records keep
           their saved label.
         </div>
@@ -1186,136 +898,7 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
 /* ─────────────────────────────────────────────
    EXAM CALENDAR
 ───────────────────────────────────────────── */
-function ExamCalendar({ exams, onAdd, onEdit, currentMonth, onPrevMonth, onNextMonth }) {
-  const year = currentMonth.getFullYear();
-  const month = currentMonth.getMonth();
-  const todayStr = toDateStr(new Date());
-
-  const monthLabel = currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDayOfWk = new Date(year, month, 1).getDay();
-
-  const cells = [
-    ...Array.from({ length: firstDayOfWk }, () => null),
-    ...Array.from({ length: daysInMonth }, (_, i) => {
-      const d = i + 1;
-      return `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    }),
-  ];
-
-  const monthExams = useMemo(
-    () =>
-      exams.filter((e) => {
-        const [y, m] = e.exam_date.split('-').map(Number);
-        return y === year && m === month + 1;
-      }),
-    [exams, year, month],
-  );
-
-  const isCurrentMonth = year === new Date().getFullYear() && month === new Date().getMonth();
-
-  return (
-    <div className="sp-card sp-calendar-card">
-      <div className="sp-card-header">
-        <div
-          className="sp-icon-wrap"
-          style={{ background: 'linear-gradient(135deg,#7ab6ff,#5f8dff)' }}
-        >
-          <GraduationCap size={20} />
-        </div>
-        <div>
-          <h3>Exam Calendar</h3>
-          <p>
-            {monthExams.length} exam{monthExams.length !== 1 ? 's' : ''} this month
-          </p>
-        </div>
-        <button className="ec-add-month-btn" onClick={() => onAdd(null)}>
-          <Plus size={14} /> Add Exam
-        </button>
-      </div>
-
-      <div className="sp-week-nav">
-        <button aria-label="Previous" className="sp-nav-btn" onClick={onPrevMonth}>
-          <ChevronLeft size={16} />
-        </button>
-        <span className="sp-week-label">{monthLabel}</span>
-        <button aria-label="Next" className="sp-nav-btn" onClick={onNextMonth}>
-          <ChevronRight size={16} />
-        </button>
-        {!isCurrentMonth && (
-          <button className="sp-today-btn" onClick={() => onNextMonth('today')}>
-            Today
-          </button>
-        )}
-      </div>
-
-      <div className="ec-month-grid">
-        {DAYS_SHORT.map((d) => (
-          <div key={d} className="ec-dow-header">
-            {d}
-          </div>
-        ))}
-        {cells.map((dateStr, i) => {
-          if (!dateStr) return <div key={`blank-${i}`} className="ec-cell ec-cell-blank" />;
-          const dayExams = exams.filter((e) => e.exam_date === dateStr);
-          const today = dateStr === todayStr;
-          const dayNum = parseInt(dateStr.slice(-2), 10);
-          const isPast = dateStr < todayStr;
-          return (
-            <div
-              key={dateStr}
-              className={`ec-cell ${today ? 'ec-today' : ''} ${isPast ? 'ec-past' : ''} ${dayExams.length > 0 ? 'ec-has-exam' : ''}`}
-              onClick={() => onAdd(dateStr)}
-              title={`Add exam — ${formatDateFull(dateStr)}`}
-            >
-              <div className="ec-cell-top">
-                <span className={`ec-day-num ${today ? 'ec-today-num' : ''}`}>{dayNum}</span>
-              </div>
-              <div className="ec-cell-exams">
-                {dayExams.length === 0 && (
-                  <div className="ec-empty-hint">
-                    <Plus size={9} />
-                  </div>
-                )}
-                {dayExams.map((exam) => {
-                  const u = getUrgency(daysUntil(exam.exam_date));
-                  return (
-                    <div
-                      key={exam.id}
-                      className="ec-exam-pill"
-                      style={{
-                        background: u.badgeBg,
-                        borderColor: u.borderColor + '99',
-                        color: u.badgeColor,
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit(exam);
-                      }}
-                      title={exam.exam_name}
-                    >
-                      <GraduationCap size={8} />
-                      <span>
-                        {exam.exam_name.length > 9
-                          ? exam.exam_name.slice(0, 9) + '…'
-                          : exam.exam_name}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   EXAM HISTORY LIST
-───────────────────────────────────────────── */
-function ExamHistoryList({ allExams, onEdit, onDelete, sectionMap }) {
+function ExamHistoryList({ allExams, onEdit, onDelete }) {
   const [filterTab, setFilterTab] = useState('upcoming');
   const [search, setSearch] = useState('');
   const [confirmDel, setConfirmDel] = useState(null);
@@ -1409,7 +992,7 @@ function ExamHistoryList({ allExams, onEdit, onDelete, sectionMap }) {
               ? `No exams match "${search}"`
               : filterTab === 'past'
                 ? 'No past exams yet.'
-                : "No upcoming exams — you're clear! ✨"}
+                : "No upcoming exams — you're clear!"}
           </p>
         </div>
       ) : (
@@ -1428,10 +1011,6 @@ function ExamHistoryList({ allExams, onEdit, onDelete, sectionMap }) {
               {monthExams.map((exam) => {
                 const days = daysUntil(exam.exam_date);
                 const urgency = getUrgency(days);
-                const secMeta = sectionMap[exam.section_name] ?? {
-                  color: '#ff6f91',
-                  bg: 'var(--rose-soft)',
-                };
                 const isPast = days < 0;
                 const isConf = confirmDel === exam.id;
                 return (
@@ -1443,7 +1022,7 @@ function ExamHistoryList({ allExams, onEdit, onDelete, sectionMap }) {
                     <div className="ehl-row-left">
                       <div
                         className="ehl-row-icon"
-                        style={{ background: urgency.badgeBg, color: urgency.badgeColor }}
+                        style={{ background: urgency.badgeBg, color: 'var(--ink)' }}
                       >
                         <GraduationCap size={14} />
                       </div>
@@ -1452,11 +1031,8 @@ function ExamHistoryList({ allExams, onEdit, onDelete, sectionMap }) {
                           <span className={`ehl-row-name ${isPast ? 'past' : ''}`}>
                             {exam.exam_name}
                           </span>
-                          <span
-                            className="ehl-countdown"
-                            style={{ background: urgency.badgeBg, color: urgency.badgeColor }}
-                          >
-                            {urgency.icon} {urgency.label}
+                          <span className="ehl-countdown">
+                            <ThemedIcon name={urgency.icon} size={16} /> {urgency.label}
                           </span>
                         </div>
                         <div className="ehl-row-meta">
@@ -1468,12 +1044,7 @@ function ExamHistoryList({ allExams, onEdit, onDelete, sectionMap }) {
                             {formatDateFull(exam.exam_date)}
                           </span>
                           {exam.section_name && (
-                            <span
-                              className="ehl-row-sec"
-                              style={{ background: secMeta.bg, color: secMeta.color }}
-                            >
-                              {exam.section_name}
-                            </span>
+                            <span className="ehl-row-sec">{exam.section_name}</span>
                           )}
                         </div>
                         {exam.notes && (
@@ -1627,44 +1198,36 @@ function ExamStudyWellness({ exams }) {
         >
           <div className="esw-next-top">
             <span className="esw-next-label">Next Exam</span>
-            <span
-              className="esw-next-badge"
-              style={{ background: nextUrgency.borderColor, color: '#fff' }}
-            >
-              {nextUrgency.icon} {nextUrgency.label}
+            <span className="esw-next-badge">
+              <ThemedIcon name={nextUrgency.icon} size={16} /> {nextUrgency.label}
             </span>
           </div>
-          <p className="esw-next-name" style={{ color: nextUrgency.badgeColor }}>
-            {nextExam.exam_name}
-          </p>
+          <p className="esw-next-name">{nextExam.exam_name}</p>
           <p className="esw-next-date">{formatDateLong(nextExam.exam_date)}</p>
         </div>
       ) : (
         <div className="esw-no-exam">
-          <CheckCircle2 size={18} style={{ color: '#4abf95' }} />
+          <CheckCircle2 size={18} style={{ color: 'var(--sage)' }} />
           <span>No upcoming exams scheduled.</span>
         </div>
       )}
       <div className="esw-stats">
         <div className="esw-stat">
-          <span className="esw-stat-val" style={{ color: '#5f8dff' }}>
+          <span className="esw-stat-val" style={{ color: 'var(--lavender)' }}>
             {stats.upcoming}
           </span>
           <span className="esw-stat-label">Upcoming</span>
         </div>
         <div className="esw-stat-div" />
         <div className="esw-stat">
-          <span className="esw-stat-val" style={{ color: stats.week7 > 0 ? '#ff8c5a' : '#4abf95' }}>
+          <span className="esw-stat-val" style={{ color: 'var(--ink)' }}>
             {stats.week7}
           </span>
           <span className="esw-stat-label">This Week</span>
         </div>
         <div className="esw-stat-div" />
         <div className="esw-stat">
-          <span
-            className="esw-stat-val"
-            style={{ color: stats.urgent > 0 ? '#e05555' : '#4abf95' }}
-          >
+          <span className="esw-stat-val" style={{ color: 'var(--ink)' }}>
             {stats.urgent}
           </span>
           <span className="esw-stat-label">Urgent (≤3d)</span>
@@ -1716,7 +1279,7 @@ function ExamStudyWellness({ exams }) {
                 setGoalInput(String(studyGoal));
               }}
             >
-              <span style={{ color: timerOn ? '#ff5d8f' : '#888', fontWeight: 700, fontSize: 12 }}>
+              <span style={{ color: 'var(--ink)', fontWeight: 700, fontSize: 12 }}>
                 {studyMins}m / {studyGoal}m
               </span>
               <Edit3 size={10} style={{ color: 'var(--muted)', marginLeft: 4 }} />
@@ -1747,7 +1310,7 @@ function ExamStudyWellness({ exams }) {
               }}
             />
           </div>
-          <span className="esw-timer-pct" style={{ color: goalReached ? '#4abf95' : '#bbb' }}>
+          <span className="esw-timer-pct" style={{ color: 'var(--ink)' }}>
             {studyPct}%
           </span>
         </div>
@@ -1756,7 +1319,7 @@ function ExamStudyWellness({ exams }) {
             className={`esw-timer-toggle ${timerOn ? 'on' : ''}`}
             onClick={() => setTimerOn((v) => !v)}
           >
-            {timerOn ? '⏸ Pause' : '▶ Start'}
+            <ThemedIcon name={timerOn ? 'Pause' : 'Play'} size={16} /> {timerOn ? 'Pause' : 'Start'}
           </button>
           <button
             className="esw-timer-reset"
@@ -1769,11 +1332,16 @@ function ExamStudyWellness({ exams }) {
           </button>
         </div>
         {goalReached && (
-          <p className="esw-timer-done">✅ Daily study goal reached! Great work! 🎉</p>
+          <p className="esw-timer-done">
+            <ThemedIcon name="CircleCheck" /> Daily study goal reached! Great work!{' '}
+            <ThemedIcon name="PartyPopper" />
+          </p>
         )}
       </div>
       <div className="sp-tip-card">
-        <div className="sp-tip-emoji">{tip.emoji}</div>
+        <div className="sp-tip-icon">
+          <ThemedIcon name={tip.icon} size={24} />
+        </div>
         <div>
           <p className="sp-tip-label">Study Tip</p>
           <p className="sp-tip-text">{tip.tip}</p>
@@ -1801,8 +1369,7 @@ function ExamsPanel({
   onDelete,
   sectionMap,
   currentMonth,
-  onPrevMonth,
-  onNextMonth,
+  onCursorChange,
 }) {
   const stats = useMemo(
     () => ({
@@ -1831,16 +1398,18 @@ function ExamsPanel({
           <strong>
             {stats.urgent} exam{stats.urgent > 1 ? 's' : ''}
           </strong>
-          {stats.urgent > 1 ? ' are' : ' is'} happening within 3 days — study hard! 💪
+          {stats.urgent > 1 ? ' are' : ' is'} happening within 3 days — study hard!{' '}
+          <ThemedIcon name="HeartPulse" />
         </div>
       )}
-      <ExamCalendar
+      <ScheduleCalendar
+        kind="exam"
+        initialView="month"
         exams={exams}
         onAdd={onAdd}
         onEdit={onEdit}
-        currentMonth={currentMonth}
-        onPrevMonth={onPrevMonth}
-        onNextMonth={onNextMonth}
+        cursor={currentMonth}
+        onCursorChange={onCursorChange}
       />
       <div className="sp-grid">
         <ExamHistoryList
@@ -1857,198 +1426,6 @@ function ExamsPanel({
 
 /* ─────────────────────────────────────────────
    WEEKLY STATS
-───────────────────────────────────────────── */
-function WeeklyStats({ shifts }) {
-  const totalHours = useMemo(
-    () => shifts.reduce((sum, s) => sum + calcDurationHrs(s.start_time, s.end_time), 0),
-    [shifts],
-  );
-  const typeCounts = useMemo(() => {
-    const c = {};
-    shifts.forEach((s) => {
-      c[s.shift_type] = (c[s.shift_type] ?? 0) + 1;
-    });
-    return c;
-  }, [shifts]);
-  const nightCount = typeCounts['night'] ?? 0;
-  return (
-    <div className="sp-stats-bar">
-      <div className="sp-stat">
-        <CalendarDays size={15} />
-        <span>
-          <strong>{shifts.length}</strong> shifts
-        </span>
-      </div>
-      <div className="sp-stat-divider" />
-      <div className="sp-stat">
-        <Clock size={15} />
-        <span>
-          <strong>{totalHours.toFixed(1)}h</strong> total
-        </span>
-      </div>
-      <div className="sp-stat-divider" />
-      {nightCount >= 3 && (
-        <div className="sp-stat warn">
-          <AlertCircle size={14} />
-          <span>{nightCount} night shifts — rest well!</span>
-        </div>
-      )}
-      {Object.entries(typeCounts).map(([type, count]) => {
-        const meta = SHIFT_TYPES[type];
-        return (
-          <div
-            key={type}
-            className="sp-type-chip"
-            style={{
-              background: meta?.bg,
-              color: meta?.color,
-              border: `1px solid ${meta?.color}44`,
-            }}
-          >
-            {meta?.label} ×{count}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   SHIFT CALENDAR
-───────────────────────────────────────────── */
-function ShiftCalendar({
-  shifts,
-  exams,
-  onAdd,
-  onEdit,
-  onDelete,
-  currentWeek,
-  onPrevWeek,
-  onNextWeek,
-}) {
-  const weekStart = getWeekStart(currentWeek);
-  const weekDates = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date(weekStart);
-    d.setDate(weekStart.getDate() + i);
-    return d;
-  });
-  const todayStr = toDateStr(new Date());
-  return (
-    <div className="sp-card sp-calendar-card">
-      <div className="sp-card-header">
-        <div className="sp-icon-wrap pink">
-          <CalendarDays size={20} />
-        </div>
-        <div>
-          <h3>Weekly Schedule</h3>
-          <p>Shifts & exam markers</p>
-        </div>
-      </div>
-      <div className="sp-week-nav">
-        <button aria-label="Previous" className="sp-nav-btn" onClick={onPrevWeek}>
-          <ChevronLeft size={16} />
-        </button>
-        <span className="sp-week-label">{getWeekLabel(weekStart)}</span>
-        <button aria-label="Next" className="sp-nav-btn" onClick={onNextWeek}>
-          <ChevronRight size={16} />
-        </button>
-        {toDateStr(weekStart) !== toDateStr(getWeekStart(new Date())) && (
-          <button className="sp-today-btn" onClick={() => onNextWeek('today')}>
-            Today
-          </button>
-        )}
-      </div>
-      <WeeklyStats shifts={shifts} />
-      <div className="sp-cal-grid">
-        {weekDates.map((date, i) => {
-          const dateStr = toDateStr(date);
-          const dayShifts = shifts.filter((s) => s.shift_date === dateStr);
-          const dayExams = exams.filter((e) => e.exam_date === dateStr);
-          const today = dateStr === todayStr;
-          return (
-            <div
-              key={dateStr}
-              className={`sp-cal-day ${today ? 'today' : ''} ${dayShifts.length + dayExams.length > 0 ? 'has-shifts' : ''}`}
-              onClick={() => onAdd(dateStr)}
-              title={`Add shift on ${formatDateFull(dateStr)}`}
-            >
-              <div className="sp-cal-day-header">
-                <span className="sp-day-name">{DAYS_SHORT[i]}</span>
-                <span className={`sp-day-num ${today ? 'today-num' : ''}`}>{date.getDate()}</span>
-              </div>
-              <div className="sp-cal-day-shifts">
-                {dayShifts.length === 0 && dayExams.length === 0 && (
-                  <div className="sp-cal-empty-day">
-                    <Plus size={12} />
-                  </div>
-                )}
-                {dayShifts.map((shift) => {
-                  const meta = SHIFT_TYPES[shift.shift_type] ?? SHIFT_TYPES.other;
-                  const SIcon = meta.icon;
-                  return (
-                    <div
-                      key={shift.id}
-                      className="sp-shift-pill"
-                      style={{
-                        background: meta.bg,
-                        borderColor: meta.color + '55',
-                        color: meta.color,
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit(shift);
-                      }}
-                      title={`${meta.label} • ${formatTime(shift.start_time)}–${formatTime(shift.end_time)}`}
-                    >
-                      <SIcon size={10} />
-                      <span>{meta.label}</span>
-                      <button
-                        aria-label="Close"
-                        className="sp-pill-delete"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(shift.id);
-                        }}
-                      >
-                        <X size={9} />
-                      </button>
-                    </div>
-                  );
-                })}
-                {dayExams.map((exam) => {
-                  const u = getUrgency(daysUntil(exam.exam_date));
-                  return (
-                    <div
-                      key={exam.id}
-                      className="sp-exam-marker"
-                      style={{
-                        background: u.badgeBg,
-                        borderColor: u.borderColor + '88',
-                        color: u.badgeColor,
-                      }}
-                      title={`📚 ${exam.exam_name}`}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <GraduationCap size={9} />
-                      <span>
-                        {exam.exam_name.length > 8
-                          ? exam.exam_name.slice(0, 8) + '…'
-                          : exam.exam_name}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   ALL SHIFTS LIST
 ───────────────────────────────────────────── */
 function AllShiftsList({ allShifts, onEdit, onDelete }) {
   const [filterType, setFilterType] = useState('');
@@ -2112,7 +1489,7 @@ function AllShiftsList({ allShifts, onEdit, onDelete }) {
                 <button
                   key={key}
                   className={`sp-filter-opt ${filterType === key ? 'active' : ''}`}
-                  style={{ color: val.color }}
+
                   onClick={() => {
                     setFilterType(key);
                     setShowFilter(false);
@@ -2132,7 +1509,9 @@ function AllShiftsList({ allShifts, onEdit, onDelete }) {
       </div>
       {grouped.length === 0 ? (
         <div className="sp-empty">
-          <p>No shifts logged yet ✨</p>
+          <p>
+            No shifts logged yet <ThemedIcon name="Sparkles" />
+          </p>
         </div>
       ) : (
         <div className="sp-shift-list">
@@ -2153,10 +1532,7 @@ function AllShiftsList({ allShifts, onEdit, onDelete }) {
                 return (
                   <div key={shift.id} className={`sp-shift-row ${today ? 'today-row' : ''}`}>
                     <div className="sp-shift-left">
-                      <div
-                        className="sp-type-icon"
-                        style={{ background: meta.bg, color: meta.color }}
-                      >
+                      <div className="sp-type-icon">
                         <SIcon size={14} />
                       </div>
                       <div>
@@ -2165,12 +1541,7 @@ function AllShiftsList({ allShifts, onEdit, onDelete }) {
                           {today && <span className="sp-today-badge">Today</span>}
                         </div>
                         <div className="sp-shift-sub">
-                          <span
-                            className="sp-type-tag"
-                            style={{ background: meta.bg, color: meta.color }}
-                          >
-                            {meta.label}
-                          </span>
+                          <span className="sp-type-tag">{meta.label}</span>
                           <span className="sp-time-range">
                             {formatTime(shift.start_time)} – {formatTime(shift.end_time)}
                           </span>
@@ -2187,7 +1558,11 @@ function AllShiftsList({ allShifts, onEdit, onDelete }) {
                       </div>
                     </div>
                     <div className="sp-shift-row-actions">
-                      <button className="sp-icon-btn" onClick={() => onEdit(shift)}>
+                      <button
+                        aria-label="Edit shift"
+                        className="sp-icon-btn"
+                        onClick={() => onEdit(shift)}
+                      >
                         <Edit3 size={13} />
                       </button>
                       <button
@@ -2237,7 +1612,7 @@ function WellnessPanel({ weekShifts }) {
     low: {
       color: '#4abf95',
       bg: 'var(--sage-soft)',
-      text: 'Manageable schedule. Keep the great momentum! ✨',
+      text: 'Manageable schedule. Keep the great momentum!',
     },
   };
   const tip = WELLNESS_TIPS[tipIndex];
@@ -2259,9 +1634,9 @@ function WellnessPanel({ weekShifts }) {
           borderColor: fatigueInfo[fatigue].color + '44',
         }}
       >
-        <AlertCircle size={14} style={{ color: fatigueInfo[fatigue].color, flexShrink: 0 }} />
+        <AlertCircle size={14} style={{ color: 'var(--ink)', flexShrink: 0 }} />
         <div>
-          <p className="sp-fatigue-label" style={{ color: fatigueInfo[fatigue].color }}>
+          <p className="sp-fatigue-label">
             {fatigue.charAt(0).toUpperCase() + fatigue.slice(1)} Fatigue Risk
           </p>
           <p className="sp-fatigue-text">{fatigueInfo[fatigue].text}</p>
@@ -2281,23 +1656,40 @@ function WellnessPanel({ weekShifts }) {
             {hydration}/{HYDRATION_GOAL} glasses
           </span>
         </div>
-        <div className="sp-hydration-cups">
+        <p className="sp-hydration-help">Tap the number of glasses you’ve had today.</p>
+        <div className="sp-hydration-cups" role="group" aria-label="Water intake today">
           {Array.from({ length: HYDRATION_GOAL }).map((_, i) => (
             <button
               key={i}
               className={`sp-cup ${i < hydration ? 'filled' : ''}`}
-              onClick={() => setHydration(i < hydration ? i : i + 1)}
+              aria-label={'Set water intake to ' + (i + 1) + (i === 0 ? ' glass' : ' glasses')}
+              aria-pressed={i + 1 === hydration}
+              onClick={() => setHydration(i + 1)}
             >
-              💧
+              <span aria-hidden="true">
+                <ThemedIcon name="Droplets" />
+              </span>
+              <span className="sp-cup-label">
+                {i + 1} {i === 0 ? 'glass' : 'glasses'}
+              </span>
             </button>
           ))}
         </div>
+        {hydration > 0 && (
+          <button className="sp-water-reset" onClick={() => setHydration(0)}>
+            Reset water count
+          </button>
+        )}
         {hydration >= HYDRATION_GOAL && (
-          <p className="sp-hydration-done">✅ Hydration goal reached today!</p>
+          <p className="sp-hydration-done">
+            <ThemedIcon name="CircleCheck" /> Hydration goal reached today!
+          </p>
         )}
       </div>
       <div className="sp-tip-card">
-        <div className="sp-tip-emoji">{tip.emoji}</div>
+        <div className="sp-tip-icon">
+          <ThemedIcon name={tip.icon} size={24} />
+        </div>
         <div>
           <p className="sp-tip-label">Wellness Tip</p>
           <p className="sp-tip-text">{tip.tip}</p>
@@ -2324,6 +1716,7 @@ export default function ShiftPlanner() {
   const [weekShifts, setWeekShifts] = useState([]);
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [loadingShifts, setLoadingShifts] = useState(true);
+  const [shiftError, setShiftError] = useState('');
   const [showShiftModal, setShowShiftModal] = useState(
     () => new URLSearchParams(window.location.search).get('new') === '1',
   );
@@ -2419,12 +1812,16 @@ export default function ShiftPlanner() {
   useEffect(() => {
     const fetchAll = async () => {
       setLoadingShifts(true);
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('shifts')
         .select('*')
         .eq('user_id', user.id)
         .order('shift_date', { ascending: false });
-      setAllShifts(data || []);
+      if (error) setShiftError('Couldn’t load your shifts. Please refresh and try again.');
+      else {
+        setAllShifts(data || []);
+        setShiftError('');
+      }
       setLoadingShifts(false);
     };
     fetchAll();
@@ -2452,7 +1849,7 @@ export default function ShiftPlanner() {
       if (error) {
         if (isMissingTableError(error))
           setExamError('Exams table not found. Run supabase/schema.sql in your project.');
-        else console.error(error);
+        else setExamError('Couldn’t load your exams. Please refresh and try again.');
       } else {
         setAllExams(data || []);
         setExamError(null);
@@ -2466,7 +1863,7 @@ export default function ShiftPlanner() {
   const handleShiftSaved = (saved, isEdit) =>
     isEdit
       ? setAllShifts((prev) => prev.map((s) => (s.id === saved.id ? saved : s)))
-      : setAllShifts((prev) => [saved, ...prev]);
+      : setAllShifts((prev) => [...saved, ...prev]);
 
   const handleShiftDelete = useCallback(async (id) => {
     await supabase.from('shifts').delete().eq('id', id);
@@ -2477,7 +1874,7 @@ export default function ShiftPlanner() {
     isEdit
       ? setAllExams((prev) => prev.map((e) => (e.id === saved.id ? saved : e)))
       : setAllExams((prev) =>
-          [...prev, saved].sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date)),
+          [...prev, ...saved].sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date)),
         );
 
   const handleExamDelete = useCallback(async (id) => {
@@ -2517,33 +1914,6 @@ export default function ShiftPlanner() {
     setSections((prev) =>
       prev.map((s) => (s.id === id ? { ...s, color, bg: colorToSoftBg(color) } : s)),
     );
-  };
-
-  const prevWeek = () =>
-    setCurrentWeek((d) => {
-      const n = new Date(d);
-      n.setDate(d.getDate() - 7);
-      return n;
-    });
-  const nextWeek = (cmd) => {
-    if (cmd === 'today') {
-      setCurrentWeek(new Date());
-      return;
-    }
-    setCurrentWeek((d) => {
-      const n = new Date(d);
-      n.setDate(d.getDate() + 7);
-      return n;
-    });
-  };
-  const prevExamMonth = () =>
-    setCurrentExamMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
-  const nextExamMonth = (cmd) => {
-    if (cmd === 'today') {
-      setCurrentExamMonth(new Date());
-      return;
-    }
-    setCurrentExamMonth((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
   };
 
   return (
@@ -2588,16 +1958,25 @@ export default function ShiftPlanner() {
 
         {activeTab === 'shifts' && (
           <>
+            {shiftError && (
+              <p className="inline-error" role="alert">
+                {shiftError}
+              </p>
+            )}
+            {loadingShifts && (
+              <p className="schedule-instruction" role="status">
+                Loading your schedule…
+              </p>
+            )}
             {!loadingShifts && (
-              <ShiftCalendar
-                shifts={weekShifts}
+              <ScheduleCalendar
+                shifts={allShifts}
                 exams={allExams}
                 onAdd={openAddShift}
                 onEdit={openEditShift}
                 onDelete={handleShiftDelete}
-                currentWeek={currentWeek}
-                onPrevWeek={prevWeek}
-                onNextWeek={nextWeek}
+                cursor={currentWeek}
+                onCursorChange={setCurrentWeek}
               />
             )}
             <div className="sp-grid">
@@ -2623,8 +2002,7 @@ export default function ShiftPlanner() {
             sectionMap={sectionMap}
             onManageSections={() => setShowSectionManage(true)}
             currentMonth={currentExamMonth}
-            onPrevMonth={prevExamMonth}
-            onNextMonth={nextExamMonth}
+            onCursorChange={setCurrentExamMonth}
           />
         )}
       </div>

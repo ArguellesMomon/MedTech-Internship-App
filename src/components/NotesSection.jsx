@@ -1,3 +1,4 @@
+import ThemedIcon from './ui/ThemedIcon';
 import { useLocation } from 'react-router-dom';
 import useQuickCreate from '../hooks/useQuickCreate';
 import Dialog from './ui/Dialog';
@@ -179,7 +180,9 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
           </p>
           {sections.length === 0 ? (
             <div className="ms-empty">
-              <span style={{ fontSize: 28 }}>🗂️</span>
+              <span style={{ fontSize: 28 }}>
+                <ThemedIcon name="Layers" />
+              </span>
               <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>No sections yet.</p>
             </div>
           ) : (
@@ -190,14 +193,7 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
                 return (
                   <div key={sec.id} className={`ms-row ${isRem ? 'ms-row-rem' : ''}`}>
                     <div className="ms-row-main">
-                      <div
-                        className="ms-sec-pill"
-                        style={{
-                          background: colorToSoftBg(meta.color),
-                          color: meta.color,
-                          borderColor: meta.color + '44',
-                        }}
-                      >
+                      <div className="ms-sec-pill">
                         {' '}
                         <span className="ms-dot" style={{ background: meta.color }} />
                         {sec.id}
@@ -245,7 +241,7 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
         </div>
 
         <div className="ms-note">
-          <Sparkles size={12} style={{ color: '#ff8fb1', flexShrink: 0 }} />
+          <Sparkles size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
           Removing a section hides it from new notes and filters; existing notes keep their label.
         </div>
       </div>
@@ -310,13 +306,14 @@ function NoteModal({ editing, defaultSection, onClose, onSaved, allSections, sec
   return (
     <Dialog className="nm-overlay" onClose={onClose}>
       <div className="nm-sheet" onClick={(e) => e.stopPropagation()}>
-        <div
-          className="nm-header"
-          style={{ background: `linear-gradient(135deg, ${accentColor}e0, ${accentColor})` }}
-        >
+        <div className="nm-header">
           <div className="nm-header-left">
             <div className="nm-header-icon">
-              {editing ? <Edit3 size={16} color="white" /> : <Plus size={16} color="white" />}
+              {editing ? (
+                <Edit3 size={16} color="currentColor" />
+              ) : (
+                <Plus size={16} color="currentColor" />
+              )}
             </div>
             <span className="nm-header-title">{editing ? 'Edit Note' : 'New Note'}</span>
           </div>
@@ -330,23 +327,14 @@ function NoteModal({ editing, defaultSection, onClose, onSaved, allSections, sec
             <p className="nm-label">Section</p>
             <div className="nm-sec-pills">
               {allSections.map((s) => {
-                const sm = sectionMap[s.id] ?? generateSectionMeta(s.id);
                 const on = form.section_name === s.id;
                 return (
                   <button
                     key={s.id}
                     type="button"
                     className="nm-sec-pill"
-                    style={
-                      on
-                        ? {
-                            background: sm.color,
-                            borderColor: sm.color,
-                            color: '#fff',
-                            boxShadow: `0 4px 12px ${sm.color}44`,
-                          }
-                        : { borderColor: sm.color + '55', color: sm.color }
-                    }
+                    aria-pressed={on}
+
                     onClick={() => setForm({ ...form, section_name: s.id })}
                   >
                     {s.id}
@@ -401,7 +389,7 @@ function NoteModal({ editing, defaultSection, onClose, onSaved, allSections, sec
                   display: 'inline',
                   marginRight: 5,
                   verticalAlign: -2,
-                  color: form.is_staff_tip ? '#f59e0b' : '#ccc',
+                  color: 'var(--ink)',
                 }}
               />
               Mark as Staff Tip
@@ -414,7 +402,7 @@ function NoteModal({ editing, defaultSection, onClose, onSaved, allSections, sec
             <button
               type="submit"
               className="nm-submit"
-              style={{ background: `linear-gradient(135deg, ${accentColor}cc, ${accentColor})` }}
+
               disabled={saving}
             >
               <Check size={15} />
@@ -477,12 +465,10 @@ function NoteCard({ note, onOpen, onEdit, onDelete, sectionMap, style }) {
 
       <div className="nc-content">
         <div className="nc-top-row">
-          <span className="nc-section-badge" style={{ background: meta?.bg, color: meta?.color }}>
-            {note.section_name}
-          </span>
+          <span className="nc-section-badge">{note.section_name}</span>
           <div className="nc-btns">
             <button className="nc-btn" onClick={copyNote} title="Copy">
-              {copied ? <Check size={12} style={{ color: '#4abf95' }} /> : <Copy size={12} />}
+              {copied ? <Check size={12} style={{ color: 'var(--sage)' }} /> : <Copy size={12} />}
             </button>
             <button
               className="nc-btn"
@@ -522,9 +508,7 @@ function NoteCard({ note, onOpen, onEdit, onDelete, sectionMap, style }) {
         <h4 className="nc-title">{note.title}</h4>
         <p className="nc-body">{preview}</p>
 
-        <span className="nc-open-hint" style={{ color: meta?.color }}>
-          Open note
-        </span>
+        <span className="nc-open-hint">Open note</span>
       </div>
 
       <div className="nc-footer">
@@ -559,7 +543,7 @@ function NoteViewModal({ note, onClose, onEdit, sectionMap }) {
         onClick={(e) => e.stopPropagation()}
         style={{ '--c': meta?.color ?? '#ff6f91', '--b': meta?.bg ?? '#fff0f4' }}
       >
-        <div className="nv-top" style={{ background: meta?.color }}>
+        <div className="nv-top">
           <div className="nv-top-left">
             <FileText size={16} />
             <span>{isTip ? 'Staff Tip' : 'Note'}</span>
@@ -571,9 +555,7 @@ function NoteViewModal({ note, onClose, onEdit, sectionMap }) {
 
         <div className="nv-body">
           <div className="nv-meta-row">
-            <span className="nv-section" style={{ background: meta?.bg, color: meta?.color }}>
-              {note.section_name}
-            </span>
+            <span className="nv-section">{note.section_name}</span>
             <span className="nv-time">
               {note.updated_at && note.updated_at !== note.created_at
                 ? `Edited ${timeAgo(note.updated_at)}`
@@ -859,13 +841,13 @@ export default function NotesSection() {
           </button>
 
           <button
-            className="ns-new-btn"
+            className="button primary ns-new-btn"
             onClick={() => {
               setEditingNote(null);
               setShowNoteModal(true);
             }}
           >
-            <Plus size={15} /> New Note
+            <Plus size={16} aria-hidden="true" /> <span>Add Note</span>
           </button>
         </div>
 
@@ -880,14 +862,14 @@ export default function NotesSection() {
                   {[
                     { id: 'all', label: `All (${notes.length})` },
                     { id: 'notes', label: `Notes (${totalNotes})` },
-                    { id: 'tips', label: `⭐ Tips (${totalTips})` },
+                    { id: 'tips', label: `Tips (${totalTips})`, icon: true },
                   ].map((t) => (
                     <button
                       key={t.id}
                       className={`ns-type-seg-btn ${filterType === t.id ? 'on' : ''}`}
                       onClick={() => setFilterType(t.id)}
                     >
-                      {t.label}
+                      {t.icon && <ThemedIcon name="Star" size={14} />} {t.label}
                     </button>
                   ))}
                 </div>
@@ -908,17 +890,13 @@ export default function NotesSection() {
                     All
                   </button>
                   {allSections.map((s) => {
-                    const meta = sectionMap[s.id] ?? generateSectionMeta(s.id);
                     const on = filterSection === s.id;
                     return (
                       <button
                         key={s.id}
                         className="ns-sec-pill"
-                        style={{
-                          borderColor: meta.color + '88',
-                          color: on ? '#fff' : meta.color,
-                          background: on ? meta.color : 'transparent',
-                        }}
+                        aria-pressed={on}
+
                         onClick={() => setFilterSection(on ? '' : s.id)}
                       >
                         {s.id}
@@ -965,7 +943,13 @@ export default function NotesSection() {
             {filtered.length === 0 ? (
               <div className="ns-empty">
                 <div className="ns-empty-blob">
-                  {search ? '🔍' : notes.length === 0 ? '📓' : '🗂️'}
+                  {search ? (
+                    <ThemedIcon name="Search" />
+                  ) : notes.length === 0 ? (
+                    <ThemedIcon name="NotebookPen" />
+                  ) : (
+                    <ThemedIcon name="Layers" />
+                  )}
                 </div>
                 <p className="ns-empty-title">
                   {search
@@ -981,14 +965,13 @@ export default function NotesSection() {
                 </p>
                 {notes.length === 0 && (
                   <button
-                    className="ns-new-btn"
-                    style={{ marginTop: 6 }}
+                    className="button primary ns-new-btn"
                     onClick={() => {
                       setEditingNote(null);
                       setShowNoteModal(true);
                     }}
                   >
-                    <Plus size={15} /> Add First Note
+                    <Plus size={16} aria-hidden="true" /> <span>Add First Note</span>
                   </button>
                 )}
               </div>
@@ -1011,17 +994,6 @@ export default function NotesSection() {
           </div>
         )}
       </div>
-
-      <button
-        aria-label="Add"
-        className="ns-fab"
-        onClick={() => {
-          setEditingNote(null);
-          setShowNoteModal(true);
-        }}
-      >
-        <Plus size={22} />
-      </button>
 
       {viewingNote && (
         <NoteViewModal

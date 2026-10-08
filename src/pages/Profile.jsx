@@ -238,7 +238,7 @@ export default function Profile() {
       await upsertProfile({ id: user.id, email: user.email, ...form });
 
       setSaveStatus('success');
-      setSaveMsg('Profile updated successfully ✨');
+      setSaveMsg('Profile updated successfully');
       setIsEditing(false);
     } catch (err) {
       setSaveStatus('error');
@@ -286,7 +286,7 @@ export default function Profile() {
       const { error } = await supabase.auth.updateUser({ password: pwForm.new_password });
       if (error) throw error;
       setPwStatus('success');
-      setPwMsg('Password updated! ✨');
+      setPwMsg('Password updated!');
       setPwForm({ new_password: '', confirm_password: '' });
       setTimeout(() => {
         setPwStatus('');
@@ -552,7 +552,7 @@ export default function Profile() {
                     margin: '-8px 0 0',
                     paddingLeft: 2,
                     fontWeight: 600,
-                    color: pwForm.new_password === pwForm.confirm_password ? '#4abf95' : '#e05555',
+                    color: 'var(--ink)',
                   }}
                 >
                   {pwForm.new_password === pwForm.confirm_password

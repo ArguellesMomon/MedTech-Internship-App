@@ -1,3 +1,4 @@
+import ThemedIcon from '../ui/ThemedIcon';
 import { useState } from 'react';
 import { Heart, ArrowUpRight, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -11,10 +12,10 @@ const words = [
   'Someone out there is cheering for you. Always.',
 ];
 const moods = [
-  ['great', '☺', 'Feeling good'],
-  ['okay', '◡', 'Doing okay'],
-  ['tired', '☾', 'A little tired'],
-  ['overwhelmed', '♡', 'Need a hug'],
+  ['great', 'Smile', 'Feeling good'],
+  ['okay', 'Meh', 'Doing okay'],
+  ['tired', 'Moon', 'A little tired'],
+  ['overwhelmed', 'Heart', 'Need a hug'],
 ];
 export default function CareCard() {
   const { user } = useAuth();
@@ -68,7 +69,7 @@ export default function CareCard() {
                 title={label}
                 aria-label={label}
               >
-                <span>{symbol}</span>
+                <ThemedIcon name={symbol} size={20} />
                 <small>{label}</small>
               </button>
             ))}

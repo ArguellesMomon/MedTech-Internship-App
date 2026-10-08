@@ -17,8 +17,7 @@ Public routes are /landing, /login, /signup, and /about. The protected workspace
 | src/hooks/useQuickCreate.js           | Consumes quick-action query parameters and opens the correct form            |
 | src/components/dashboard              | Rotation, agenda, quota, notebook, and encouragement cards                   |
 | src/components/GlobalSearch.jsx       | Debounced search with stale-result protection and safe text rendering        |
-| src/components/ProfilePreferences.jsx | Appearance, local JSON backup, and demo reset                                |
-| src/lib/demo.js                       | Opt-in local client with independent sample records                          |
+| src/components/ProfilePreferences.jsx | Appearance preferences                                                       |
 | src/lib/dates.js                      | Calendar dates that retain the user’s local day                              |
 | src/lib/progress.js                   | Shared manual/logged quota calculations                                      |
 | api/chat.js                           | Authenticated provider proxy; secrets remain on the server                   |
@@ -48,3 +47,13 @@ The browser sends conversation messages and the Supabase access token to the sam
 ## Extending the tools
 
 The existing large feature tools retain their original workflows, while their styling and dialogs are shared. Further extraction should move one cohesive feature at a time into a subfolder. Keep state and mutations in the owning tool, keep date/progress rules in shared helpers, and preserve Supabase row-level security. The existing procedure library remains shared under its existing schema; introducing private procedure ownership needs an explicit database migration.
+
+## Calendar and shared dialogs
+
+`components/schedule/ScheduleCalendar.jsx` provides week/month navigation, a focused-day agenda, expansion, and date selection for both shifts and exams. `BatchDates.jsx` reviews and adjusts repeated dates; `lib/calendar.js` handles local date grids, month boundaries, and deduplication. New batches use one insert with a record per date; editing updates only the selected record. No schema migration is needed.
+
+`Dialog.jsx` tracks the visible viewport for mobile keyboards and shares themed styling from `dialogs.css`. Feature headers and controls use theme variables instead of inline section colors. Custom section colors remain on decorative swatches and progress bars. `consistency.css` supplies shared cards, badges, and controls; `pip.css` controls the compact chat layout and mobile history dialog.
+
+## Account access and wellness labels
+
+The app uses Supabase for account access and user data. Export and demo features have been removed. Mock workspace records now live only in `tests/fixtures`, wired through the UI test runner’s Supabase alias. Mood check-in labels remain visible on small screens in a two-column layout; hydration controls show the number of glasses and explain how to use the tracker.

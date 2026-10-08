@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 const focusables =
   'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex="0"]';
@@ -9,6 +9,22 @@ export default function Dialog({
   label = 'Dialog',
 }) {
   const ref = useRef(null);
+  const [viewport, setViewport] = useState(() => ({
+    height: window.visualViewport?.height || window.innerHeight,
+    top: window.visualViewport?.offsetTop || 0,
+  }));
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const update = () =>
+      setViewport({ height: vv?.height || window.innerHeight, top: vv?.offsetTop || 0 });
+    const target = vv || window;
+    target.addEventListener('resize', update);
+    vv?.addEventListener('scroll', update);
+    return () => {
+      target.removeEventListener('resize', update);
+      vv?.removeEventListener('scroll', update);
+    };
+  }, []);
   const id = useId();
   const close = useRef(onClose);
   close.current = onClose;
@@ -59,6 +75,8 @@ export default function Dialog({
   return createPortal(
     <div
       ref={ref}
+      data-app-dialog="true"
+      style={{ '--dialog-height': viewport.height + 'px', '--dialog-top': viewport.top + 'px' }}
       className={className}
       role="dialog"
       aria-modal="true"

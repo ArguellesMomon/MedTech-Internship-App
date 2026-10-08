@@ -1,0 +1,421 @@
+/* Common readable surfaces and controls, including the original feature tools. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
+  font-weight: 400;
+}
+input,
+select,
+textarea {
+  text-transform: none;
+  letter-spacing: normal;
+  min-width: 0;
+}
+input[type='date'],
+input[type='time'] {
+  min-height: 44px;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+}
+input[type='date']::-webkit-date-and-time-value,
+input[type='time']::-webkit-date-and-time-value {
+  text-align: left;
+}
+.workspace-main > .page-enter {
+  min-width: 0;
+}
+:is(.pf-info-card, .sp-tip-card, .esw-tip-card) {
+  border-color: var(--border);
+  background: var(--surface-subtle);
+}
+:is(.pf-info-label, .pf-info-empty, .sp-tip-label, .sp-tip-text, .esw-tip-text) {
+  color: var(--muted);
+}
+.pf-info-value {
+  color: var(--ink);
+}
+.pf-info-card {
+  align-items: center;
+}
+.pf-info-icon-wrap {
+  background: var(--rose-soft);
+  color: var(--accent);
+  box-shadow: none;
+}
+:is(
+  .pf-program-chip,
+  .pf-save-btn,
+  .pf-pw-submit,
+  .dl-empty-btn,
+  .ec-add-month-btn,
+  .ms-add-btn,
+  .msm-add-btn,
+  .sg-add-btn,
+  .sg-save-btn,
+  .dc-type-chip,
+  .dc-view-btn,
+  .obj-num
+) {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: none;
+}
+:is(
+  .nc-section-badge,
+  .nv-section,
+  .dl-tag,
+  .ehl-row-sec,
+  .ehl-countdown,
+  .rc-duration-chip,
+  .rc-upcoming-tag,
+  .rc-status-badge,
+  .ms-sec-pill,
+  .msm-sec-pill,
+  .sp-type-tag,
+  .sp-type-chip,
+  .dv-type-badge,
+  .ab-ai-tag
+) {
+  background: var(--surface-subtle);
+  color: var(--ink);
+  border-color: var(--border);
+}
+:is(
+  .rc-section-name,
+  .rc-days-remaining,
+  .qb-sec-label,
+  .qb-proc-name,
+  .esw-next-name,
+  .ab-ai-role-chip,
+  .nc-open-hint
+) {
+  color: var(--ink);
+}
+:is(.sp-type-icon, .sp-icon-wrap) {
+  background: var(--rose-soft);
+  color: var(--accent);
+  box-shadow: none;
+}
+:is(.ns-sec-pill, .dl-fpill, .nm-sec-pill, .lm-sec-pill, .m-pill) {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  box-shadow: none;
+  white-space: normal;
+  text-align: center;
+}
+:is(.ns-sec-pill, .dl-fpill, .nm-sec-pill, .lm-sec-pill, .m-pill):is(
+  .active,
+  [aria-pressed='true']
+) {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+  box-shadow: none;
+}
+:is(.qb-sec-btn, .section-tab) {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--border);
+}
+:is(.qb-sec-btn, .section-tab).active {
+  background: var(--rose-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.sub-tab {
+  color: var(--muted);
+}
+.sub-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.panel-header {
+  background: var(--rose-soft);
+  color: var(--ink);
+}
+:is(.sp-empty, .dl-empty-hero, .ns-empty-hero, .ex-empty, .rt-empty-hero) {
+  background: var(--surface-subtle);
+  color: var(--muted);
+  border-color: var(--border);
+}
+.sp-fatigue-label {
+  color: var(--ink);
+}
+.sp-fatigue-text {
+  color: var(--muted);
+}
+.sp-cup {
+  opacity: 1;
+  background: var(--surface-subtle);
+  border-color: var(--border);
+  min-height: 40px;
+}
+.sp-cup.filled {
+  background: var(--lavender-soft);
+  border-color: var(--lavender);
+}
+.sp-stats-bar {
+  background: var(--surface-subtle);
+}
+.sp-tip-text {
+  font-size: 13px;
+  line-height: 1.7;
+}
+.sp-manage-sec-btn {
+  background: var(--rose-soft);
+  color: var(--accent);
+  border-color: var(--border);
+  min-height: 44px;
+  box-shadow: none;
+}
+.sp-sections-toolbar {
+  justify-content: flex-end;
+  margin-block: 14px 20px;
+}
+.pf-cancel-btn {
+  background: var(--surface-subtle);
+  color: var(--ink);
+  border-color: var(--border);
+}
+@media (max-width: 767px) {
+  .sp-hydration-cups {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .sp-cup {
+    width: 100%;
+    padding: 3px;
+  }
+  .sp-shift-row {
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .sp-shift-left {
+    min-width: 0;
+  }
+  .sp-shift-row-actions {
+    flex-shrink: 0;
+  }
+  .sp-shift-main strong,
+  .sp-shift-notes {
+    overflow-wrap: anywhere;
+  }
+  .sp-shift-sub {
+    flex-wrap: wrap;
+  }
+}
+
+:is(.qb-add-btn, .qb-save-btn, .qb-default-add-btn) {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--border);
+}
+:is(.dc-card-icon-wrap, .ab-feature-icon, .ab-ai-avatar) {
+  background: var(--rose-soft);
+  color: var(--accent);
+}
+
+/* Wellness choices describe their actions at every viewport size. */
+.sp-hydration-header {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sp-hydration-help {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.sp-hydration-cups {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.sp-cup {
+  width: 100%;
+  height: auto;
+  min-height: 60px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 4px;
+  filter: none;
+  color: var(--ink);
+}
+.sp-cup-label {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: normal;
+}
+.sp-cup.filled {
+  color: var(--lavender);
+}
+@media (max-width: 767px) {
+  .care-mood > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .care-mood button {
+    justify-content: flex-start;
+    min-height: 48px;
+  }
+  .care-mood small {
+    display: inline;
+    font-size: 12px;
+  }
+}
+
+.sp-cup[aria-pressed='true'] {
+  outline: 2px solid var(--lavender);
+  outline-offset: -2px;
+}
+.sp-water-reset {
+  align-self: flex-start;
+  background: none;
+  border: 0;
+  padding: 6px 0;
+  min-height: 40px;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Shared SVG ornaments inherit the surrounding light/dark theme. */
+.themed-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: -0.18em;
+}
+:is(.heading-spark, .landing-star, .empty-spark, .sp-tip-icon, .safety-icon) {
+  color: var(--accent);
+}
+:is(.ns-empty-blob, .dp-empty-icon, .dl-empty-hero-icon, .qb-empty-hero-icon, .rg-empty-hero-icon) {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+:is(.ns-empty-blob, .dp-empty-icon, .dl-empty-hero-icon, .qb-empty-hero-icon, .rg-empty-hero-icon)
+  .themed-icon {
+  width: 32px;
+  height: 32px;
+}
+.safety-icon-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 180px;
+  min-width: 0;
+  color: var(--accent);
+}
+.safety-icon-picker select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+.ns-new-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 18px;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+}
+.ns-new-btn > svg {
+  display: block;
+  flex: 0 0 16px;
+}
+.ns-new-btn > span {
+  display: block;
+}
+.ns-toolbar .ns-new-btn {
+  margin-left: auto;
+}
+.ns-empty {
+  gap: 12px;
+  padding: 36px 24px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+}
+.ns-empty-blob {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 4px;
+  border-radius: 18px;
+  background: var(--rose-soft);
+}
+.ns-empty-title {
+  line-height: 1.4;
+}
+.ns-empty .ns-new-btn {
+  margin-top: 4px;
+}
+@media (max-width: 767px) {
+  .ns-toolbar .ns-search-wrap {
+    flex-basis: 100%;
+  }
+  .ns-toolbar .ns-sort-wrap {
+    flex: 1;
+  }
+  .ns-toolbar .ns-sort-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .ns-toolbar .ns-filter-btn {
+    flex: 1;
+    justify-content: center;
+  }
+  .ns-toolbar .ns-new-btn {
+    width: 100%;
+    margin-left: 0;
+    flex-basis: 100%;
+    font-size: 14px;
+  }
+  .ns-empty {
+    padding: 28px 20px;
+  }
+  .ns-empty-title {
+    font-size: 18px;
+  }
+  .ns-empty-hint {
+    font-size: 14px;
+    max-width: 280px;
+  }
+  .ns-empty .ns-new-btn {
+    width: 100%;
+    max-width: 240px;
+  }
+  .safety-icon-picker {
+    flex-basis: 100%;
+  }
+}

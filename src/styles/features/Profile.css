@@ -23,7 +23,7 @@
   }
   .pf-toast.success {
     background: var(--sage-soft);
-    color: #2d8a61;
+    color: var(--sage);
     border: 1px solid #b8f0da;
   }
   .pf-toast.error {
@@ -54,13 +54,7 @@
   /* Gradient banner */
   .pf-hero-banner {
     height: 110px;
-    background: linear-gradient(
-      135deg,
-      #ffb3cb 0%,
-      var(--accent-light) 40%,
-      var(--accent) 80%,
-      #ff9a72 100%
-    );
+    background: var(--accent);
     position: relative;
   }
   .pf-hero-banner::after {
@@ -133,7 +127,7 @@
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -220,7 +214,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     color: var(--on-accent);
     border-radius: 999px;
     padding: 6px 14px;
@@ -233,7 +227,7 @@
     align-items: center;
     gap: 6px;
     background: var(--lavender-soft);
-    color: #5f8dff;
+    color: var(--lavender);
     border: 1px solid #c5d9ff;
     border-radius: 999px;
     padding: 6px 14px;
@@ -289,7 +283,7 @@
     width: 34px;
     height: 34px;
     border-radius: 10px;
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -309,7 +303,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--border);
+    color: var(--muted);
     margin: 0;
   }
 
@@ -323,7 +317,7 @@
   }
 
   .pf-info-empty {
-    color: var(--border);
+    color: var(--muted);
     font-weight: 400;
   }
 
@@ -353,7 +347,7 @@
 
   .pf-input {
     border: 1.5px solid var(--border);
-    background: #fff8fa;
+    background: var(--surface-subtle);
     border-radius: 14px;
     padding: 12px 14px;
     font-size: 14px;
@@ -380,7 +374,7 @@
     align-items: center;
     gap: 8px;
     border: none;
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     color: var(--on-accent);
     border-radius: 999px;
     padding: 12px 24px;
@@ -400,7 +394,7 @@
 
   .pf-cancel-btn {
     border: none;
-    background: #f0f0f0;
+    background: var(--surface-subtle);
     color: var(--muted);
     border-radius: 999px;
     padding: 12px 20px;
@@ -410,7 +404,7 @@
     transition: 0.2s;
   }
   .pf-cancel-btn:hover {
-    background: #e8e8e8;
+    background: var(--border);
   }
 
   /* ── Password section ── */
@@ -435,7 +429,7 @@
     width: 32px;
     height: 32px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #8b6fff, #7b5ce0);
+    background: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -447,7 +441,7 @@
     text-align: left;
   }
   .pf-pw-toggle-chevron {
-    color: var(--border);
+    color: var(--muted);
     margin-left: auto;
   }
 
@@ -474,7 +468,7 @@
     transform: translateY(-50%);
     background: none;
     border: none;
-    color: var(--border);
+    color: var(--muted);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -482,12 +476,12 @@
     padding: 0;
   }
   .pf-pw-eye:hover {
-    color: var(--accent-light);
+    color: var(--accent);
   }
 
   .pf-pw-hint {
     font-size: 11px;
-    color: var(--border);
+    color: var(--muted);
     margin: -8px 0 0;
     padding-left: 2px;
   }
@@ -497,7 +491,7 @@
     align-items: center;
     gap: 8px;
     border: none;
-    background: linear-gradient(135deg, #a78bfa, #8b6fff);
+    background: var(--accent);
     color: var(--on-accent);
     border-radius: 999px;
     padding: 12px 24px;

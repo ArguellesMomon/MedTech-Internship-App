@@ -513,7 +513,7 @@
   background: var(--surface);
 }
 .care-mood small {
-  font-size: 8px;
+  font-size: 12px;
   color: var(--muted);
 }
 .care-mood > p {
@@ -568,5 +568,26 @@
 @keyframes skeleton {
   50% {
     opacity: 0.4;
+  }
+}
+
+@media (max-width: 1199px) {
+  .care-mood > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .care-mood button {
+    min-height: 48px;
+    justify-content: flex-start;
+    padding: 9px 10px;
+  }
+  .care-mood small {
+    display: inline;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .care-mood button > span {
+    font-size: 22px;
   }
 }

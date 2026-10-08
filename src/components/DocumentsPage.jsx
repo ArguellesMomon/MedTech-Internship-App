@@ -1,3 +1,4 @@
+import ThemedIcon from './ui/ThemedIcon';
 import Dialog from './ui/Dialog';
 import '../styles/features/DocumentsPage.css';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
@@ -96,7 +97,7 @@ function StorageBar({ usedBytes }) {
     <div className="sb-card">
       <div className="sb-top">
         <div className="sb-left">
-          <HardDrive size={16} style={{ color: colors.icon, flexShrink: 0 }} />
+          <HardDrive size={16} style={{ color: 'var(--ink)', flexShrink: 0 }} />
           <span className="sb-label">Storage</span>
         </div>
         <span className="sb-numbers">
@@ -113,17 +114,23 @@ function StorageBar({ usedBytes }) {
         <span
           className="sb-pct"
           style={{
-            color: level === 'ok' ? '#bbb' : colors.text,
+            color: 'var(--ink)',
             fontWeight: level !== 'ok' ? 600 : 400,
           }}
         >
-          {level === 'full'
-            ? '🚫 Storage full — delete files to upload more'
-            : level === 'critical'
-              ? `⚠️ ${pct}% used — almost full!`
-              : level === 'warn'
-                ? `${pct}% used`
-                : `${pct}% used`}
+          {level === 'full' ? (
+            <>
+              <ThemedIcon name="Ban" /> Storage full — delete files to upload more
+            </>
+          ) : level === 'critical' ? (
+            <>
+              <ThemedIcon name="TriangleAlert" /> {pct}% used — almost full!
+            </>
+          ) : level === 'warn' ? (
+            `${pct}% used`
+          ) : (
+            `${pct}% used`
+          )}
         </span>
         {level !== 'full' && <span className="sb-free">{fmtSize(freeBytes)} free</span>}
       </div>
@@ -145,9 +152,7 @@ function FileViewer({ doc, onClose }) {
       <div className="dv-modal" onClick={(e) => e.stopPropagation()}>
         <div className="dv-header">
           <div className="dv-header-left">
-            <span className="dv-type-badge" style={{ background: meta.bg, color: meta.color }}>
-              {meta.label}
-            </span>
+            <span className="dv-type-badge">{meta.label}</span>
             <h3 className="dv-filename">{doc.file_name}</h3>
           </div>
           <div className="dv-header-right">
@@ -158,7 +163,7 @@ function FileViewer({ doc, onClose }) {
               className="dv-open-btn"
               download={doc.file_name}
             >
-              ↗ Open original
+              <ThemedIcon name="ArrowUpRight" /> Open original
             </a>
             <button aria-label="Close" className="dv-close-btn" onClick={onClose}>
               <X size={18} />
@@ -175,7 +180,7 @@ function FileViewer({ doc, onClose }) {
           )}
           {failed ? (
             <div className="dv-failed">
-              <AlertCircle size={32} style={{ color: '#ff8c5a', marginBottom: 12 }} />
+              <AlertCircle size={32} style={{ color: 'var(--peach)', marginBottom: 12 }} />
               <p className="dv-failed-title">Preview unavailable</p>
               <p className="dv-failed-hint">This file can't be previewed here.</p>
               <a
@@ -184,7 +189,7 @@ function FileViewer({ doc, onClose }) {
                 rel="noopener noreferrer"
                 className="dv-download-btn"
               >
-                ↗ Open file in new tab
+                <ThemedIcon name="ArrowUpRight" /> Open file in new tab
               </a>
             </div>
           ) : (
@@ -215,11 +220,9 @@ function FileCard({ doc, onView, onDelete, deleting }) {
 
   return (
     <div className="dc-card">
-      <div className="dc-card-icon-wrap" style={{ background: meta.bg }}>
-        <Icon size={28} style={{ color: meta.color }} />
-        <span className="dc-type-chip" style={{ background: meta.color }}>
-          {meta.label}
-        </span>
+      <div className="dc-card-icon-wrap">
+        <Icon size={28} style={{ color: 'var(--ink)' }} />
+        <span className="dc-type-chip">{meta.label}</span>
       </div>
       <div className="dc-card-info">
         <p className="dc-card-name" title={doc.file_name}>
@@ -240,7 +243,7 @@ function FileCard({ doc, onView, onDelete, deleting }) {
         </a>
         <button
           className="dc-view-btn"
-          style={{ background: meta.color }}
+
           onClick={() => onView(doc)}
         >
           <Eye size={14} /> View
@@ -297,7 +300,7 @@ function UploadZone({ onUpload, uploading, progress, isFull, usedBytes }) {
     return (
       <div className="uz-zone uz-full">
         <div className="uz-full-icon">
-          <HardDrive size={24} style={{ color: '#e05555' }} />
+          <HardDrive size={24} style={{ color: 'var(--danger)' }} />
         </div>
         <p className="uz-full-title">Storage full</p>
         <p className="uz-full-hint">
@@ -313,7 +316,7 @@ function UploadZone({ onUpload, uploading, progress, isFull, usedBytes }) {
   if (uploading) {
     return (
       <div className="uz-zone uz-uploading-state">
-        <Loader2 size={26} className="spin" style={{ color: '#ff6f91' }} />
+        <Loader2 size={26} className="spin" style={{ color: 'var(--accent)' }} />
         <p className="uz-uploading-text">Uploading… {progress}%</p>
         <div className="uz-progress-track">
           <div className="uz-progress-fill" style={{ width: `${progress}%` }} />
@@ -342,7 +345,7 @@ function UploadZone({ onUpload, uploading, progress, isFull, usedBytes }) {
         onChange={(e) => handleFiles(e.target.files)}
       />
       <div className="uz-icon-wrap">
-        <Upload size={22} style={{ color: '#ff6f91' }} />
+        <Upload size={22} style={{ color: 'var(--accent)' }} />
       </div>
       <p className="uz-title">{dragging ? 'Drop file here' : 'Upload a document'}</p>
       <p className="uz-hint">PDF, DOCX, or PPTX · Max {MAX_FILE_MB} MB per file</p>
@@ -501,8 +504,11 @@ export default function DocumentsPage() {
           Note: preview rendering may differ from the uploaded PPTX. Use “Open original” to verify
           the exact file.
           <br />
-          <strong>📦 Storage limit:</strong> Each user has a total of 10 MB for all uploaded
-          documents. Please delete old files if you need more space.
+          <strong>
+            <ThemedIcon name="Package" /> Storage limit:
+          </strong>{' '}
+          Each user has a total of 10 MB for all uploaded documents. Please delete old files if you
+          need more space.
         </p>
         {/* Upload zone — locked when full */}
         <UploadZone
@@ -572,7 +578,9 @@ export default function DocumentsPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="dp-empty">
-            <div className="dp-empty-icon">{docs.length === 0 ? '📂' : '🔍'}</div>
+            <div className="dp-empty-icon">
+              {docs.length === 0 ? <ThemedIcon name="FolderOpen" /> : <ThemedIcon name="Search" />}
+            </div>
             <p className="dp-empty-title">
               {docs.length === 0 ? 'No files uploaded yet' : 'No files match your search'}
             </p>

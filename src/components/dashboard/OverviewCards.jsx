@@ -1,3 +1,4 @@
+import ThemedIcon from '../ui/ThemedIcon';
 import { Link } from 'react-router-dom';
 import {
   ArrowUpRight,
@@ -30,7 +31,9 @@ export function SectionHeading({ eyebrow, title, to, action = 'View all' }) {
 export function EmptyCard({ text, to, action }) {
   return (
     <div className="overview-empty">
-      <span className="empty-spark">✦</span>
+      <span className="empty-spark">
+        <ThemedIcon name="Sparkles" />
+      </span>
       <p>{text}</p>
       <Link to={to}>
         {action}
@@ -90,7 +93,10 @@ export function RotationCard({ rotation }) {
           </div>
         </div>
         <span className="rotation-day">
-          Day {elapsed} of {days} <span>✦</span>
+          Day {elapsed} of {days}{' '}
+          <span>
+            <ThemedIcon name="Sparkles" />
+          </span>
         </span>
       </div>
     </section>

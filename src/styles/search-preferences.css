@@ -182,16 +182,6 @@
   border-color: var(--border);
   color: var(--accent);
 }
-.preferences-message {
-  font-size: 11px;
-  color: var(--muted);
-}
-.reset-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-top: 24px;
-}
 .keyboard-open .mobile-bottom-nav {
   display: none;
 }
@@ -238,9 +228,6 @@
   .preference-row .button {
     font-size: 10px;
     min-height: 40px;
-  }
-  .reset-actions {
-    flex-wrap: wrap;
   }
   .workspace-search-dialog {
     max-height: calc(100dvh - 32px);

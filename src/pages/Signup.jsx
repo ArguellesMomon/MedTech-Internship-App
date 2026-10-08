@@ -1,3 +1,4 @@
+import ThemedIcon from '../components/ui/ThemedIcon';
 import '../styles/features/Signup.css';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -167,7 +168,9 @@ export default function Signup() {
             <h1 className="su-title">
               Start your journey, <em>intern</em>.
             </h1>
-            <p className="su-subtitle">Your medtech internship companion ✨</p>
+            <p className="su-subtitle">
+              Your medtech internship companion <ThemedIcon name="Sparkles" />
+            </p>
           </div>
 
           {/* Step indicators */}
@@ -202,7 +205,9 @@ export default function Signup() {
               {/* ── STEP 0: Personal ── */}
               {step === 0 && (
                 <>
-                  <p className="su-step-heading">👋 What's your name?</p>
+                  <p className="su-step-heading">
+                    <ThemedIcon name="Hand" /> What's your name?
+                  </p>
                   <p className="su-step-desc">Let's start with the basics.</p>
                   <div className="su-group">
                     <label className="su-label" htmlFor="su-fullname">
@@ -230,7 +235,9 @@ export default function Signup() {
               {/* ── STEP 1: Education ── */}
               {step === 1 && (
                 <>
-                  <p className="su-step-heading">🎓 Education details</p>
+                  <p className="su-step-heading">
+                    <ThemedIcon name="GraduationCap" /> Education details
+                  </p>
                   <p className="su-step-desc">Tell us about your academic background.</p>
                   <div className="su-group">
                     <label className="su-label" htmlFor="su-school">
@@ -293,7 +300,9 @@ export default function Signup() {
               {/* ── STEP 2: Account ── */}
               {step === 2 && (
                 <>
-                  <p className="su-step-heading">🔐 Set up your account</p>
+                  <p className="su-step-heading">
+                    <ThemedIcon name="LockKeyhole" /> Set up your account
+                  </p>
                   <p className="su-step-desc">Your login credentials — keep them safe!</p>
                   <div className="su-group">
                     <label className="su-label" htmlFor="su-email">
@@ -385,7 +394,11 @@ export default function Signup() {
               )}
 
               {/* Messages */}
-              {error && <div className="su-error">⚠️ {error}</div>}
+              {error && (
+                <div className="su-error">
+                  <ThemedIcon name="TriangleAlert" /> {error}
+                </div>
+              )}
               {message && <div className="su-success">{message}</div>}
 
               {/* Navigation */}

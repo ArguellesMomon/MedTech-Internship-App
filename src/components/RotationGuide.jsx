@@ -1,3 +1,4 @@
+import ThemedIcon, { SafetyIconPicker } from './ui/ThemedIcon';
 import useQuickCreate from '../hooks/useQuickCreate';
 import Dialog from './ui/Dialog';
 import '../styles/features/RotationGuide.css';
@@ -71,12 +72,15 @@ const DEFAULT_SECTIONS = [
       'Identify normal and abnormal blood cells',
     ],
     safety: [
-      { icon: '🧤', text: 'Wear gloves at all times when handling blood specimens' },
-      { icon: '⚠️', text: 'Treat all blood as potentially infectious (Universal Precautions)' },
-      { icon: '🗑️', text: 'Dispose of sharps immediately in designated sharps containers' },
-      { icon: '🧴', text: 'Decontaminate surfaces with 10% bleach after any spill' },
-      { icon: '🏷️', text: 'Label specimens immediately after collection — never rely on memory' },
-      { icon: '⚖️', text: 'Always balance the centrifuge with opposite tubes before spinning' },
+      { icon: 'Hand', text: 'Wear gloves at all times when handling blood specimens' },
+      {
+        icon: 'TriangleAlert',
+        text: 'Treat all blood as potentially infectious (Universal Precautions)',
+      },
+      { icon: 'Trash2', text: 'Dispose of sharps immediately in designated sharps containers' },
+      { icon: 'SprayCan', text: 'Decontaminate surfaces with 10% bleach after any spill' },
+      { icon: 'Tag', text: 'Label specimens immediately after collection — never rely on memory' },
+      { icon: 'Scale', text: 'Always balance the centrifuge with opposite tubes before spinning' },
     ],
   },
   {
@@ -96,12 +100,12 @@ const DEFAULT_SECTIONS = [
       'Conduct urinalysis and special chemistry tests',
     ],
     safety: [
-      { icon: '🥽', text: 'Wear goggles, gloves, and lab coat when handling reagents' },
-      { icon: '🚫', text: 'Never pipette by mouth under any circumstances' },
-      { icon: '♻️', text: 'Segregate and dispose of chemical waste in designated containers' },
-      { icon: '🚿', text: 'Know the location of eyewash stations and emergency showers' },
-      { icon: '🌬️', text: 'Handle concentrated acids and bases only inside a fume hood' },
-      { icon: '📅', text: 'Check reagent expiration dates before every use' },
+      { icon: 'Glasses', text: 'Wear goggles, gloves, and lab coat when handling reagents' },
+      { icon: 'Ban', text: 'Never pipette by mouth under any circumstances' },
+      { icon: 'Recycle', text: 'Segregate and dispose of chemical waste in designated containers' },
+      { icon: 'ShowerHead', text: 'Know the location of eyewash stations and emergency showers' },
+      { icon: 'Wind', text: 'Handle concentrated acids and bases only inside a fume hood' },
+      { icon: 'CalendarDays', text: 'Check reagent expiration dates before every use' },
     ],
   },
   {
@@ -121,12 +125,21 @@ const DEFAULT_SECTIONS = [
       'Identify common pathogens from various specimens',
     ],
     safety: [
-      { icon: '🗄️', text: 'Perform aerosol-generating procedures only inside a biosafety cabinet' },
-      { icon: '🔥', text: 'Autoclave all cultures and contaminated materials before disposal' },
-      { icon: '🔒', text: 'Never leave active cultures unattended, unsecured, or unlabeled' },
-      { icon: '😷', text: 'Wear N95 mask when processing respiratory specimens' },
-      { icon: '🌡️', text: 'Flame inoculating loops before AND after each use' },
-      { icon: '📢', text: 'Report all accidental exposures or spills immediately to supervisor' },
+      {
+        icon: 'Archive',
+        text: 'Perform aerosol-generating procedures only inside a biosafety cabinet',
+      },
+      { icon: 'Flame', text: 'Autoclave all cultures and contaminated materials before disposal' },
+      {
+        icon: 'LockKeyhole',
+        text: 'Never leave active cultures unattended, unsecured, or unlabeled',
+      },
+      { icon: 'ShieldCheck', text: 'Wear N95 mask when processing respiratory specimens' },
+      { icon: 'Thermometer', text: 'Flame inoculating loops before AND after each use' },
+      {
+        icon: 'Megaphone',
+        text: 'Report all accidental exposures or spills immediately to supervisor',
+      },
     ],
   },
   {
@@ -147,18 +160,18 @@ const DEFAULT_SECTIONS = [
     ],
     safety: [
       {
-        icon: '🪪',
+        icon: 'IdCard',
         text: 'Verify patient ID and blood type with two staff members before any release',
       },
-      { icon: '🌡️', text: 'Store RBCs at 2–6°C; never allow temperature excursions' },
+      { icon: 'Thermometer', text: 'Store RBCs at 2–6°C; never allow temperature excursions' },
       {
-        icon: '✅',
+        icon: 'CircleCheck',
         text: 'Complete full crossmatch before releasing blood products — no shortcuts',
       },
-      { icon: '🧤', text: 'Handle all blood products as potentially infectious' },
-      { icon: '📝', text: 'Document all discrepancies immediately, no matter how minor' },
+      { icon: 'Hand', text: 'Handle all blood products as potentially infectious' },
+      { icon: 'NotebookPen', text: 'Document all discrepancies immediately, no matter how minor' },
       {
-        icon: '👥',
+        icon: 'UsersRound',
         text: 'Two-person verification is mandatory for all critical transfusion steps',
       },
     ],
@@ -181,21 +194,24 @@ const DEFAULT_SECTIONS = [
     ],
     safety: [
       {
-        icon: '🌬️',
+        icon: 'Wind',
         text: 'Always use a fume hood when working with formalin or xylene — both are toxic',
       },
-      { icon: '🧤', text: 'Use chemical-resistant nitrile gloves when handling fixatives' },
-      { icon: '🔪', text: 'Change microtome blades using a blade holder — never touch directly' },
+      { icon: 'Hand', text: 'Use chemical-resistant nitrile gloves when handling fixatives' },
       {
-        icon: '☠️',
+        icon: 'Scissors',
+        text: 'Change microtome blades using a blade holder — never touch directly',
+      },
+      {
+        icon: 'TriangleAlert',
         text: 'Formalin is a known carcinogen; minimize exposure and wear respiratory protection',
       },
       {
-        icon: '🏷️',
+        icon: 'Tag',
         text: 'Label every cassette and slide immediately — mix-ups have serious diagnostic consequences',
       },
       {
-        icon: '🗑️',
+        icon: 'Trash2',
         text: 'Dispose of xylene and formalin waste in labeled chemical waste containers only',
       },
     ],
@@ -354,7 +370,9 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
 
           {sections.length === 0 ? (
             <div className="msm-empty">
-              <span style={{ fontSize: 28 }}>🗂️</span>
+              <span style={{ fontSize: 28 }}>
+                <ThemedIcon name="Layers" />
+              </span>
               <p>No sections yet.</p>
             </div>
           ) : (
@@ -364,14 +382,7 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
                 return (
                   <div key={sec.id} className={`msm-row ${isRem ? 'msm-row-rem' : ''}`}>
                     <div className="msm-row-main">
-                      <div
-                        className="msm-sec-pill"
-                        style={{
-                          background: sec.cardBg || colorToSoftBg(sec.color),
-                          color: sec.color,
-                          borderColor: sec.color + '55',
-                        }}
-                      >
+                      <div className="msm-sec-pill">
                         <span className="msm-dot" style={{ background: sec.color }} />
                         {sec.id}
                       </div>
@@ -418,7 +429,7 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
         </div>
 
         <div className="msm-note">
-          <Sparkles size={12} style={{ color: '#ff8fb1', flexShrink: 0 }} />
+          <Sparkles size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
           Removing a section hides it from new rotations and the procedure guide. Existing records
           keep their saved label.
         </div>
@@ -452,7 +463,6 @@ function RotationModal({ editing, existingRotations, sections, onClose, onSaved 
 
   const secMeta = sections?.find((s) => s.id === selectedSection);
   const accentColor = secMeta?.color ?? '#ff6f91';
-  const accentGrad = secMeta?.bg ?? 'linear-gradient(135deg,#ff8fb1,#ff6f91)';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -505,10 +515,10 @@ function RotationModal({ editing, existingRotations, sections, onClose, onSaved 
   return (
     <Dialog className="rm-overlay" onClose={onClose}>
       <div className="rm-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="rm-header" style={{ background: accentGrad }}>
+        <div className="rm-header">
           <div className="rm-header-left">
             <div className="rm-header-icon">
-              <RotateCcw size={16} color="white" />
+              <RotateCcw size={16} color="currentColor" />
             </div>
             <span className="rm-header-title">{editing ? 'Edit Rotation' : 'Add Rotation'}</span>
           </div>
@@ -594,14 +604,7 @@ function RotationModal({ editing, existingRotations, sections, onClose, onSaved 
           {form.start_date &&
             form.end_date &&
             new Date(form.start_date) < new Date(form.end_date) && (
-              <div
-                className="rm-duration-preview"
-                style={{
-                  background: colorToSoftBg(accentColor),
-                  color: accentColor,
-                  borderColor: accentColor + '44',
-                }}
-              >
+              <div className="rm-duration-preview">
                 <Clock size={13} /> Duration:{' '}
                 <strong>{getDuration(form.start_date, form.end_date)}</strong>
               </div>
@@ -643,7 +646,7 @@ function RotationModal({ editing, existingRotations, sections, onClose, onSaved 
             <button
               type="submit"
               className="rm-primary"
-              style={{ background: accentGrad }}
+
               disabled={saving}
             >
               <CheckCircle2 size={15} />
@@ -715,7 +718,7 @@ function RotationCard({ rotation, sections, onEdit, onDelete }) {
       <div className="rc-strip" style={{ background: grad }} />
       <div className="rc-body">
         <div className="rc-top-row">
-          <div className="rc-status-badge" style={{ background: sc.bgColor, color: sc.textColor }}>
+          <div className="rc-status-badge">
             <span className="rc-badge-dot" style={{ background: sc.dotColor }}>
               {sc.pulse && <span className="rc-pulse-ring" />}
             </span>
@@ -747,32 +750,25 @@ function RotationCard({ rotation, sections, onEdit, onDelete }) {
           </div>
         </div>
 
-        <h4 className="rc-section-name" style={{ color }}>
-          {rotation.section_name}
-        </h4>
+        <h4 className="rc-section-name">{rotation.section_name}</h4>
 
         <div className="rc-info-stack">
           {rotation.hospital_site && (
             <div className="rc-info-row">
-              <MapPin size={13} style={{ color, opacity: 0.7, flexShrink: 0 }} />
+              <MapPin size={13} style={{ color: 'var(--ink)', opacity: 0.7, flexShrink: 0 }} />
               <span>{rotation.hospital_site}</span>
             </div>
           )}
           <div className="rc-info-row">
-            <Calendar size={13} style={{ color, opacity: 0.7, flexShrink: 0 }} />
+            <Calendar size={13} style={{ color: 'var(--ink)', opacity: 0.7, flexShrink: 0 }} />
             <span>
               {formatDateShort(rotation.start_date)} → {formatDateShort(rotation.end_date)}
             </span>
-            <span
-              className="rc-duration-chip"
-              style={{ background: cardBg, color, borderColor: color + '33' }}
-            >
-              {duration}
-            </span>
+            <span className="rc-duration-chip">{duration}</span>
           </div>
           {rotation.supervisor_name && (
             <div className="rc-info-row">
-              <User size={13} style={{ color, opacity: 0.7, flexShrink: 0 }} />
+              <User size={13} style={{ color: 'var(--ink)', opacity: 0.7, flexShrink: 0 }} />
               <span>{rotation.supervisor_name}</span>
             </div>
           )}
@@ -782,7 +778,7 @@ function RotationCard({ rotation, sections, onEdit, onDelete }) {
           <div className="rc-progress-block">
             <div className="rc-progress-header">
               <span>Rotation Progress</span>
-              <span style={{ color, fontWeight: 700 }}>{progressPct}%</span>
+              <span style={{ color: 'var(--ink)', fontWeight: 700 }}>{progressPct}%</span>
             </div>
             <div className="rc-progress-track">
               <div
@@ -790,24 +786,29 @@ function RotationCard({ rotation, sections, onEdit, onDelete }) {
                 style={{ width: `${progressPct}%`, background: grad }}
               />
             </div>
-            <p className="rc-days-remaining" style={{ color }}>
-              {daysLeft === 0
-                ? '🎉 Last day!'
-                : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining`}
+            <p className="rc-days-remaining">
+              {daysLeft === 0 ? (
+                <>
+                  <ThemedIcon name="PartyPopper" size={14} /> Last day!
+                </>
+              ) : (
+                `${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining`
+              )}
             </p>
           </div>
         )}
 
         {status === 'upcoming' && (
-          <div
-            className="rc-upcoming-tag"
-            style={{ background: 'var(--lavender-soft)', color: '#5f8dff', borderColor: '#c5d9ff' }}
-          >
+          <div className="rc-upcoming-tag">
             <Clock size={12} /> Starts in {daysUntil} day{daysUntil !== 1 ? 's' : ''}
           </div>
         )}
 
-        {rotation.notes && <p className="rc-notes-text">📝 {rotation.notes}</p>}
+        {rotation.notes && (
+          <p className="rc-notes-text">
+            <ThemedIcon name="NotebookPen" /> {rotation.notes}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -824,13 +825,13 @@ function RotationsStats({ rotations }) {
   return (
     <div className="rs-stats">
       <div className="rs-stat">
-        <span className="rs-stat-n" style={{ color: '#4abf95' }}>
+        <span className="rs-stat-n" style={{ color: 'var(--sage)' }}>
           {active}
         </span>
         <span className="rs-stat-l">Active</span>
       </div>
       <div className="rs-stat">
-        <span className="rs-stat-n" style={{ color: '#5f8dff' }}>
+        <span className="rs-stat-n" style={{ color: 'var(--lavender)' }}>
           {upcoming}
         </span>
         <span className="rs-stat-l">Upcoming</span>
@@ -842,7 +843,7 @@ function RotationsStats({ rotations }) {
         <span className="rs-stat-l">Completed</span>
       </div>
       <div className="rs-stat">
-        <span className="rs-stat-n" style={{ color: '#ff5d8f' }}>
+        <span className="rs-stat-n" style={{ color: 'var(--accent)' }}>
           {rotations.length}
         </span>
         <span className="rs-stat-l">Total</span>
@@ -889,7 +890,9 @@ function RotationsTab({
         </div>
       ) : rotations.length === 0 ? (
         <div className="rg-empty-hero">
-          <div className="rg-empty-hero-icon">🏥</div>
+          <div className="rg-empty-hero-icon">
+            <ThemedIcon name="Hospital" />
+          </div>
           <h3>No rotations yet</h3>
           <p>Add your first rotation to start tracking your clinical internship journey.</p>
           <button className="rg-primary-btn" onClick={onAddRotation}>
@@ -905,7 +908,7 @@ function RotationsTab({
                   className="rt-group-dot"
                   style={{ background: '#4abf95', boxShadow: '0 0 0 3px rgba(74,191,149,0.22)' }}
                 />
-                <span style={{ color: '#4abf95' }}>Active Rotation</span>
+                <span style={{ color: 'var(--sage)' }}>Active Rotation</span>
               </div>
               <div className="rt-cards-grid">
                 {active.map((r) => (
@@ -925,7 +928,7 @@ function RotationsTab({
             <div className="rt-group">
               <div className="rt-group-label">
                 <span className="rt-group-dot" style={{ background: '#5f8dff' }} />
-                <span style={{ color: '#5f8dff' }}>Upcoming ({upcoming.length})</span>
+                <span style={{ color: 'var(--lavender)' }}>Upcoming ({upcoming.length})</span>
               </div>
               <div className="rt-cards-grid">
                 {upcoming.map((r) => (
@@ -1009,13 +1012,10 @@ function ProcedureModal({ section, editing, onClose, onSaved }) {
   return (
     <Dialog className="rm-overlay" onClose={onClose}>
       <div className="rm-sheet" onClick={(e) => e.stopPropagation()}>
-        <div
-          className="rm-header"
-          style={{ background: 'linear-gradient(135deg,#ff8fb1,#ff6f91)' }}
-        >
+        <div className="rm-header">
           <div className="rm-header-left">
             <div className="rm-header-icon">
-              <Layers size={16} color="white" />
+              <Layers size={16} color="currentColor" />
             </div>
             <span className="rm-header-title">{editing ? 'Edit Procedure' : 'Add Procedure'}</span>
           </div>
@@ -1135,12 +1135,12 @@ function ProcedureCard({ procedure, accentColor, onEdit, onDelete }) {
 /* ─────────────────────────────────────────────
    EDITABLE SAFETY REMINDERS
 ───────────────────────────────────────────── */
-function SafetyReminders({ sectionId, defaultSafety, color }) {
+function SafetyReminders({ sectionId, defaultSafety }) {
   const { user } = useAuth();
   const storageKey = `rotation_guide.safety.${sectionId}`;
   const [items, setItems] = useState(defaultSafety);
   const [loaded, setLoaded] = useState(false);
-  const [addingIcon, setAddingIcon] = useState('🛡️');
+  const [addingIcon, setAddingIcon] = useState('ShieldCheck');
   const [addingText, setAddingText] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [editIdx, setEditIdx] = useState(null);
@@ -1190,7 +1190,7 @@ function SafetyReminders({ sectionId, defaultSafety, color }) {
     if (!addingText.trim()) return;
     setItems((prev) => [...prev, { icon: addingIcon, text: addingText.trim() }]);
     setAddingText('');
-    setAddingIcon('🛡️');
+    setAddingIcon('ShieldCheck');
     setShowAdd(false);
   };
 
@@ -1218,7 +1218,7 @@ function SafetyReminders({ sectionId, defaultSafety, color }) {
         </p>
         <button
           className="sg-add-btn"
-          style={{ background: color }}
+
           onClick={() => setShowAdd((v) => !v)}
         >
           <Plus size={13} /> Add Reminder
@@ -1227,12 +1227,10 @@ function SafetyReminders({ sectionId, defaultSafety, color }) {
       {showAdd && (
         <div className="sg-add-form">
           <div className="sg-add-row">
-            <input
-              className="sg-icon-input"
+            <SafetyIconPicker
               value={addingIcon}
-              onChange={(e) => setAddingIcon(e.target.value)}
-              placeholder="🛡️"
-              maxLength={4}
+              onChange={setAddingIcon}
+              label="New reminder icon"
             />
             <input
               className="sg-text-input"
@@ -1244,7 +1242,7 @@ function SafetyReminders({ sectionId, defaultSafety, color }) {
             <button
               aria-label="Confirm"
               className="sg-save-btn"
-              style={{ background: color }}
+
               onClick={addItem}
             >
               <Check size={13} />
@@ -1267,12 +1265,7 @@ function SafetyReminders({ sectionId, defaultSafety, color }) {
           <div key={i} className="safety-card">
             {editIdx === i ? (
               <div className="sg-edit-row">
-                <input
-                  className="sg-icon-input small"
-                  value={editIcon}
-                  onChange={(e) => setEditIcon(e.target.value)}
-                  maxLength={4}
-                />
+                <SafetyIconPicker value={editIcon} onChange={setEditIcon} label="Reminder icon" />
                 <input
                   className="sg-text-input small"
                   value={editText}
@@ -1283,7 +1276,7 @@ function SafetyReminders({ sectionId, defaultSafety, color }) {
                 <button
                   aria-label="Confirm"
                   className="sg-save-btn"
-                  style={{ background: color }}
+
                   onClick={saveEdit}
                 >
                   <Check size={12} />
@@ -1298,7 +1291,9 @@ function SafetyReminders({ sectionId, defaultSafety, color }) {
               </div>
             ) : (
               <>
-                <span className="safety-emoji">{item.icon}</span>
+                <span className="safety-icon">
+                  <ThemedIcon name={item.icon} size={22} />
+                </span>
                 <p style={{ flex: 1 }}>{item.text}</p>
                 <div className="sg-item-actions">
                   <button className="sg-item-btn" onClick={() => startEdit(i)}>
@@ -1324,7 +1319,7 @@ function SafetyReminders({ sectionId, defaultSafety, color }) {
 /* ─────────────────────────────────────────────
    EDITABLE LEARNING OBJECTIVES
 ───────────────────────────────────────────── */
-function LearningObjectives({ sectionId, defaultObjectives, color, grad }) {
+function LearningObjectives({ sectionId, defaultObjectives }) {
   const { user } = useAuth();
   const storageKey = `rotation_guide.objectives.${sectionId}`;
   const [items, setItems] = useState(defaultObjectives);
@@ -1396,7 +1391,7 @@ function LearningObjectives({ sectionId, defaultObjectives, color, grad }) {
         </p>
         <button
           className="sg-add-btn"
-          style={{ background: color }}
+
           onClick={() => setShowAdd((v) => !v)}
         >
           <Plus size={13} /> Add Objective
@@ -1416,7 +1411,7 @@ function LearningObjectives({ sectionId, defaultObjectives, color, grad }) {
             <button
               aria-label="Confirm"
               className="sg-save-btn"
-              style={{ background: color }}
+
               onClick={addItem}
             >
               <Check size={13} />
@@ -1437,9 +1432,7 @@ function LearningObjectives({ sectionId, defaultObjectives, color, grad }) {
       <ul className="objective-list">
         {items.map((obj, i) => (
           <li key={i} className="objective-item">
-            <span className="obj-num" style={{ background: grad }}>
-              {i + 1}
-            </span>
+            <span className="obj-num">{i + 1}</span>
             {editIdx === i ? (
               <div className="sg-add-row" style={{ flex: 1 }}>
                 <input
@@ -1452,7 +1445,7 @@ function LearningObjectives({ sectionId, defaultObjectives, color, grad }) {
                 <button
                   aria-label="Confirm"
                   className="sg-save-btn"
-                  style={{ background: color }}
+
                   onClick={saveEdit}
                 >
                   <Check size={12} />
@@ -1534,9 +1527,9 @@ function SectionPanel({ meta, onOpenProcedureModal }) {
 
   return (
     <div className="section-panel">
-      <div className="panel-header" style={{ background: meta.bg }}>
+      <div className="panel-header">
         <div className="panel-icon-wrap">
-          <Icon size={22} color="white" />
+          <Icon size={22} color="currentColor" />
         </div>
         <div>
           <h3>{meta.id}</h3>
@@ -1553,7 +1546,7 @@ function SectionPanel({ meta, onOpenProcedureModal }) {
           <button
             key={t.id}
             className={`sub-tab ${activeTab === t.id ? 'active' : ''}`}
-            style={activeTab === t.id ? { borderBottomColor: meta.color, color: meta.color } : {}}
+
             onClick={() => setActiveTab(t.id)}
           >
             <t.Icon size={13} /> {t.label}
@@ -1591,7 +1584,7 @@ function SectionPanel({ meta, onOpenProcedureModal }) {
             </div>
           ) : filtered.length === 0 ? (
             <div className="rg-empty">
-              <p>{search ? `No match for "${search}"` : 'No procedures yet ✨'}</p>
+              <p>{search ? `No match for "${search}"` : 'No procedures yet'}</p>
               {!search && (
                 <button
                   className="rg-primary-btn small"
@@ -1666,7 +1659,7 @@ function ProceduresTab({ sections, onOpenProcedureModal, onManageSections }) {
             <button
               key={s.id}
               className={`section-tab ${isActive ? 'active' : ''}`}
-              style={isActive ? { background: s.bg } : {}}
+
               onClick={() => setActiveSection(s.id)}
             >
               <SIcon size={15} /> {s.label ?? s.id}

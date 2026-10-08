@@ -1,3 +1,4 @@
+import ThemedIcon from '../ui/ThemedIcon';
 import Brand from './Brand';
 import { navigation } from './navigation';
 import { useEffect, useState } from 'react';
@@ -5,7 +6,6 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Heart, Settings2, LogOut, Menu, X, ArrowUpRight, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../auth/useAuth';
 import { ThemeToggle } from '../../theme/ThemeProvider';
-import { isDemoMode, exitDemo } from '../../lib/demo';
 import GlobalSearch from '../GlobalSearch';
 import Dialog from '../ui/Dialog';
 import Hamster from '../../assets/Hamster.webp';
@@ -34,9 +34,11 @@ export default function AppLayout({ children }) {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(
+    () => window.visualViewport?.height || window.innerHeight,
+  );
   const [error, setError] = useState('');
   const shellFree = ['/landing', '/login', '/signup'].includes(location.pathname);
-  const demo = isDemoMode();
   const name = profile?.full_name?.trim() || 'Your profile';
   const initial = name[0].toUpperCase();
   const page =
@@ -52,11 +54,20 @@ export default function AppLayout({ children }) {
   }, [location.pathname]);
   useEffect(() => {
     const viewport = window.visualViewport;
-    if (!viewport) return;
-    const update = () => setKeyboardOpen(viewport.height / window.innerHeight < 0.75);
-    viewport.addEventListener('resize', update);
-    return () => viewport.removeEventListener('resize', update);
+    const update = () => {
+      const height = viewport?.height || window.innerHeight;
+      setKeyboardOpen(height / window.innerHeight < 0.8);
+      setViewportHeight(height);
+    };
+    update();
+    window.addEventListener('resize', update);
+    viewport?.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      viewport?.removeEventListener('resize', update);
+    };
   }, []);
+
   async function logout() {
     try {
       await signOut();
@@ -66,7 +77,14 @@ export default function AppLayout({ children }) {
   }
   if (shellFree) return <>{children}</>;
   return (
-    <div className={'workspace-shell' + (keyboardOpen ? ' keyboard-open' : '')}>
+    <div
+      className={
+        'workspace-shell' +
+        (keyboardOpen ? ' keyboard-open' : '') +
+        (location.pathname === '/ai-chat' ? ' pip-workspace' : '')
+      }
+      style={{ '--viewport-height': viewportHeight + 'px' }}
+    >
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
@@ -102,7 +120,7 @@ export default function AppLayout({ children }) {
           {user && (
             <button className="workspace-nav-link" onClick={logout}>
               <LogOut size={18} />
-              {demo ? 'Leave demo' : 'Log out'}
+              Log out
             </button>
           )}
         </div>
@@ -134,17 +152,6 @@ export default function AppLayout({ children }) {
             </button>
           </div>
         </header>
-        {demo && (
-          <div className="demo-notice">
-            <span>
-              <span className="status-dot" />
-              Demo workspace · Sample data, saved on this device
-            </span>
-            <button onClick={exitDemo}>
-              Exit demo <ArrowUpRight size={13} />
-            </button>
-          </div>
-        )}
         {error && (
           <p className="inline-error" role="alert">
             {error}
@@ -227,11 +234,13 @@ export default function AppLayout({ children }) {
               {user && (
                 <button onClick={logout}>
                   <LogOut size={16} />
-                  {demo ? 'Leave demo' : 'Log out'}
+                  Log out
                 </button>
               )}
             </div>
-            <p className="sheet-footnote">You belong here. Keep going. ♡</p>
+            <p className="sheet-footnote">
+              You belong here. Keep going. <ThemedIcon name="Heart" />
+            </p>
           </div>
         </Dialog>
       )}

@@ -15,7 +15,7 @@
     position: absolute;
     inset: 0;
     z-index: 0;
-    background: linear-gradient(135deg, #fff5f8 0%, #fdf4ff 40%, #f0f9ff 100%);
+    background: var(--accent);
     overflow: hidden;
     pointer-events: none;
   }
@@ -123,7 +123,7 @@
     padding: 20px 16px 16px;
     flex-shrink: 0;
     border-bottom: 1px solid rgba(255, 182, 210, 0.25);
-    background: linear-gradient(180deg, rgba(255, 240, 248, 0.9) 0%, var(--surface) 100%);
+    background: var(--surface-subtle);
     min-width: 275px;
   }
   .pip-brand {
@@ -136,7 +136,7 @@
     height: 46px;
     flex-shrink: 0;
     border-radius: 16px;
-    background: linear-gradient(135deg, #ffd6e8, #ffe8f0);
+    background: var(--surface-subtle);
     border: 2px solid rgba(255, 143, 177, 0.3);
     overflow: hidden;
     display: flex;
@@ -175,7 +175,7 @@
     height: 28px;
     border: none;
     border-radius: 9px;
-    background: rgba(255, 111, 145, 0.08);
+    background: var(--surface-subtle);
     color: var(--muted);
     display: flex;
     align-items: center;
@@ -208,7 +208,7 @@
     width: 3px;
   }
   .pip-sb-body::-webkit-scrollbar-thumb {
-    background: rgba(255, 150, 190, 0.3);
+    background: var(--surface-subtle);
     border-radius: 3px;
   }
 
@@ -219,7 +219,7 @@
     padding: 11px 14px;
     border-radius: 14px;
     border: none;
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     color: var(--on-accent);
     font-size: 13px;
     font-weight: 700;
@@ -232,7 +232,7 @@
   .pip-new-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 24px rgba(255, 100, 145, 0.4);
-    background: linear-gradient(135deg, #ff9fbf, #ff7fa1);
+    background: var(--accent);
   }
   .pip-new-btn:active {
     transform: scale(0.98);
@@ -247,7 +247,7 @@
     left: 10px;
     top: 50%;
     transform: translateY(-50%);
-    color: var(--border);
+    color: var(--muted);
     pointer-events: none;
   }
   .pip-search {
@@ -278,7 +278,7 @@
     transform: translateY(-50%);
     border: none;
     background: none;
-    color: var(--border);
+    color: var(--muted);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -326,11 +326,11 @@
     white-space: nowrap;
   }
   .pip-citem:hover {
-    background: rgba(255, 111, 145, 0.07);
+    background: var(--surface-subtle);
     color: var(--accent);
   }
   .pip-citem.active {
-    background: linear-gradient(135deg, rgba(255, 143, 177, 0.15), rgba(255, 111, 145, 0.08));
+    background: var(--accent);
     color: var(--accent);
     font-weight: 600;
     border: 1px solid rgba(255, 143, 177, 0.25);
@@ -343,14 +343,14 @@
     bottom: 18%;
     width: 3px;
     border-radius: 0 3px 3px 0;
-    background: linear-gradient(180deg, var(--accent-light), var(--accent));
+    background: var(--accent);
   }
   .pip-citem-ico {
     color: var(--muted);
     flex-shrink: 0;
   }
   .pip-citem.active .pip-citem-ico {
-    color: var(--accent-light);
+    color: var(--accent);
   }
   .pip-citem-title {
     flex: 1;
@@ -363,7 +363,7 @@
     background: none;
     border: none;
     padding: 4px;
-    color: var(--border);
+    color: var(--muted);
     cursor: pointer;
     border-radius: 7px;
     display: flex;
@@ -397,13 +397,13 @@
     flex-shrink: 0;
     min-width: 275px;
     border-top: 1px solid rgba(255, 182, 210, 0.2);
-    background: linear-gradient(0deg, rgba(255, 248, 252, 0.9) 0%, transparent 100%);
+    background: var(--accent);
   }
   .pip-model-pill {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    background: rgba(255, 240, 248, 0.9);
+    background: var(--surface-subtle);
     border: 1px solid rgba(255, 182, 210, 0.4);
     border-radius: 999px;
     padding: 6px 14px;
@@ -446,7 +446,7 @@
     height: 34px;
     border-radius: 11px;
     border: none;
-    background: rgba(255, 111, 145, 0.08);
+    background: var(--surface-subtle);
     color: var(--accent);
     display: flex;
     align-items: center;
@@ -456,7 +456,7 @@
     flex-shrink: 0;
   }
   .pip-toggle-btn:hover {
-    background: rgba(255, 111, 145, 0.15);
+    background: var(--surface-subtle);
   }
   .pip-topbar-title {
     flex: 1;
@@ -470,7 +470,7 @@
     height: 32px;
     border-radius: 10px;
     object-fit: contain;
-    background: linear-gradient(135deg, #ffd6e8, #ffe8f0);
+    background: var(--surface-subtle);
     border: 1.5px solid rgba(255, 143, 177, 0.25);
     flex-shrink: 0;
   }
@@ -496,8 +496,8 @@
     height: 32px;
     border-radius: 10px;
     border: none;
-    background: rgba(255, 111, 145, 0.08);
-    color: var(--accent-light);
+    background: var(--surface-subtle);
+    color: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -506,7 +506,7 @@
     flex-shrink: 0;
   }
   .pip-clear-btn:hover {
-    background: rgba(255, 111, 145, 0.15);
+    background: var(--surface-subtle);
     color: var(--accent);
   }
 
@@ -525,7 +525,7 @@
     width: 4px;
   }
   .pip-msgs::-webkit-scrollbar-thumb {
-    background: rgba(255, 182, 210, 0.4);
+    background: var(--surface-subtle);
     border-radius: 4px;
   }
   .pip-msgs-inner {
@@ -634,7 +634,7 @@
     line-height: 1.15;
   }
   .pip-name-accent {
-    background: linear-gradient(135deg, #ff6b9d, #c84b97);
+    background: var(--accent);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -716,7 +716,7 @@
     overflow: hidden;
     flex-shrink: 0;
     margin-top: 2px;
-    background: linear-gradient(135deg, #ffe4f0, #ffd6e8);
+    background: var(--surface-subtle);
     border: 1.5px solid rgba(255, 143, 177, 0.2);
     box-shadow: 0 2px 10px rgba(255, 100, 150, 0.12);
   }
@@ -728,7 +728,7 @@
     border-radius: 12px;
     flex-shrink: 0;
     margin-top: 2px;
-    background: linear-gradient(135deg, #818cf8, #6366f1);
+    background: var(--accent);
     color: var(--on-accent);
     display: flex;
     align-items: center;
@@ -765,7 +765,7 @@
     backdrop-filter: blur(10px);
   }
   .pip-bubble.user {
-    background: linear-gradient(135deg, var(--accent-light), #ff6b9d);
+    background: var(--accent);
     border-radius: 20px 4px 20px 20px;
     color: var(--on-accent);
     box-shadow: 0 6px 24px rgba(255, 100, 150, 0.35);
@@ -805,7 +805,7 @@
     transition: all 0.15s;
   }
   .pip-act:hover {
-    background: rgba(255, 111, 145, 0.1);
+    background: var(--surface-subtle);
     color: var(--accent);
   }
   .pip-act.regen {
@@ -813,7 +813,7 @@
   }
   .pip-act.regen:hover {
     background: rgba(74, 191, 149, 0.1);
-    color: #4abf95;
+    color: var(--sage);
   }
 
   /* Typing bubble */
@@ -840,7 +840,7 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     animation: typeBounce 1.4s ease-in-out infinite;
     flex-shrink: 0;
   }
@@ -870,7 +870,7 @@
     gap: 8px;
     padding: 12px 16px;
     border-radius: 16px;
-    background: rgba(254, 242, 242, 0.95);
+    background: var(--surface-subtle);
     border: 1px solid rgba(252, 165, 165, 0.5);
     color: var(--danger);
     font-size: 12.5px;
@@ -1000,7 +1000,7 @@
     height: 6px;
   }
   .pip-ic {
-    background: rgba(255, 111, 145, 0.1);
+    background: var(--surface-subtle);
     color: #c84b7a;
     border-radius: 6px;
     padding: 1px 7px;
@@ -1047,7 +1047,7 @@
     gap: 6px;
     padding: 7px 20px;
     flex-shrink: 0;
-    background: rgba(255, 251, 235, 0.88);
+    background: var(--surface-subtle);
     backdrop-filter: blur(10px);
     border-top: 1px solid rgba(253, 224, 71, 0.3);
     font-size: 10.5px;
@@ -1111,7 +1111,7 @@
     height: 40px;
     border-radius: 14px;
     border: none;
-    background: rgba(255, 182, 210, 0.25);
+    background: var(--surface-subtle);
     color: var(--muted);
     display: flex;
     align-items: center;
@@ -1121,7 +1121,7 @@
     transition: all 0.22s;
   }
   .pip-send.active {
-    background: linear-gradient(135deg, var(--accent-light), #ff6b9d);
+    background: var(--accent);
     color: var(--on-accent);
     cursor: pointer;
     box-shadow: 0 4px 16px rgba(255, 100, 150, 0.4);
@@ -1129,7 +1129,7 @@
   .pip-send.active:hover {
     transform: scale(1.08);
     box-shadow: 0 6px 24px rgba(255, 100, 150, 0.5);
-    background: linear-gradient(135deg, #ff9fbf, #ff7ba9);
+    background: var(--accent);
   }
   .pip-send.active:active {
     transform: scale(0.95);
@@ -1156,7 +1156,7 @@
     font-weight: 500;
   }
   .pip-hint kbd {
-    background: rgba(255, 182, 210, 0.2);
+    background: var(--surface-subtle);
     border: 1px solid rgba(255, 182, 210, 0.4);
     border-radius: 5px;
     padding: 1px 5px;

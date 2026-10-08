@@ -207,9 +207,6 @@
   font-size: 11px;
   letter-spacing: 0.2px;
 }
-:is(.ns-fab) {
-  display: none;
-}
 .nc-title {
   color: var(--ink);
 }

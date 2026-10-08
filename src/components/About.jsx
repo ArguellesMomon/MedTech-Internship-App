@@ -1,3 +1,4 @@
+import ThemedIcon from './ui/ThemedIcon';
 import '../styles/features/About.css';
 import { useState } from 'react';
 import {
@@ -52,10 +53,10 @@ function CopyChip({ icon: Icon, label, value, href }) {
 /* ─────────────────────────────────────────────
    FEATURE ITEM
 ───────────────────────────────────────────── */
-function Feature({ icon: Icon, color, bg, title, desc }) {
+function Feature({ icon: Icon, title, desc }) {
   return (
     <div className="ab-feature">
-      <div className="ab-feature-icon" style={{ background: bg, color }}>
+      <div className="ab-feature-icon">
         <Icon size={18} />
       </div>
       <div className="ab-feature-text">
@@ -174,7 +175,9 @@ export default function About() {
               <div className="ab-team-lead-info">
                 <div className="ab-team-lead-name-row">
                   <p className="ab-maker-name">Richmond Arguelles</p>
-                  <span className="ab-lead-badge">👑 Lead</span>
+                  <span className="ab-lead-badge">
+                    <ThemedIcon name="Crown" /> Lead
+                  </span>
                 </div>
                 <p className="ab-maker-role">Computer Science Student</p>
                 <p className="ab-team-lead-quote">
@@ -193,153 +196,100 @@ export default function About() {
 
             <div className="ab-ai-team">
               <div className="ab-ai-member">
-                <div
-                  className="ab-ai-avatar"
-                  style={{ background: 'linear-gradient(135deg,#d4a574,#c17f3e)' }}
-                >
+                <div className="ab-ai-avatar">
                   <span>C</span>
                 </div>
                 <div className="ab-ai-info">
                   <div className="ab-ai-name-row">
                     <p className="ab-ai-name">Claude</p>
-                    <span
-                      className="ab-ai-tag"
-                      style={{
-                        background: 'var(--peach-soft)',
-                        color: '#c17f3e',
-                        borderColor: '#f0d0b0',
-                      }}
-                    >
-                      Anthropic · Frontend Wizard
-                    </span>
+                    <span className="ab-ai-tag">Anthropic · Frontend Wizard</span>
                   </div>
                   <p className="ab-ai-quote">
                     "I wrote 97% of the code, designed the UI, fixed the bugs, and somehow still got
                     listed third in the credits. I'm fine. Totally fine."
                   </p>
-                  <span className="ab-ai-role-chip" style={{ color: '#c17f3e' }}>
-                    🎨 UI/UX · Code · Logic · Moral Support
+                  <span className="ab-ai-role-chip">
+                    <ThemedIcon name="Palette" /> UI/UX · Code · Logic · Moral Support
                   </span>
                 </div>
               </div>
 
               <div className="ab-ai-member">
-                <div
-                  className="ab-ai-avatar"
-                  style={{ background: 'linear-gradient(135deg,#74aa9c,#10a37f)' }}
-                >
+                <div className="ab-ai-avatar">
                   <span>G</span>
                 </div>
                 <div className="ab-ai-info">
                   <div className="ab-ai-name-row">
                     <p className="ab-ai-name">ChatGPT</p>
-                    <span
-                      className="ab-ai-tag"
-                      style={{
-                        background: 'var(--sage-soft)',
-                        color: '#10a37f',
-                        borderColor: '#b0e8d4',
-                      }}
-                    >
-                      OpenAI · Idea Bouncer
-                    </span>
+                    <span className="ab-ai-tag">OpenAI · Idea Bouncer</span>
                   </div>
                   <p className="ab-ai-quote">
                     "Richmond asked me for feature ideas at 2am. I gave him twelve. He used one and
                     a half. Classic."
                   </p>
-                  <span className="ab-ai-role-chip" style={{ color: '#10a37f' }}>
-                    💡 Brainstorming · Feature Ideas · Midnight Pep Talks
+                  <span className="ab-ai-role-chip">
+                    <ThemedIcon name="Lightbulb" /> Brainstorming · Feature Ideas · Midnight Pep
+                    Talks
                   </span>
                 </div>
               </div>
 
               <div className="ab-ai-member">
-                <div
-                  className="ab-ai-avatar"
-                  style={{ background: 'linear-gradient(135deg,#8b6fff,#6d4fe0)' }}
-                >
+                <div className="ab-ai-avatar">
                   <span>P</span>
                 </div>
                 <div className="ab-ai-info">
                   <div className="ab-ai-name-row">
                     <p className="ab-ai-name">Perplexity</p>
-                    <span
-                      className="ab-ai-tag"
-                      style={{
-                        background: 'var(--lavender-soft)',
-                        color: '#6d4fe0',
-                        borderColor: '#c9bfff',
-                      }}
-                    >
-                      Perplexity AI · Fact Checker
-                    </span>
+                    <span className="ab-ai-tag">Perplexity AI · Fact Checker</span>
                   </div>
                   <p className="ab-ai-quote">
                     "They called me whenever they needed to verify something. I am, essentially, a
                     very expensive Google. I have accepted my purpose."
                   </p>
-                  <span className="ab-ai-role-chip" style={{ color: '#6d4fe0' }}>
-                    🔍 Research · References · "Actually, according to…"
+                  <span className="ab-ai-role-chip">
+                    <ThemedIcon name="Search" /> Research · References · "Actually, according to…"
                   </span>
                 </div>
               </div>
 
               <div className="ab-ai-member">
-                <div
-                  className="ab-ai-avatar"
-                  style={{ background: 'linear-gradient(135deg,#3a86ff,#0057d9)' }}
-                >
+                <div className="ab-ai-avatar">
                   <span>X</span>
                 </div>
                 <div className="ab-ai-info">
                   <div className="ab-ai-name-row">
                     <p className="ab-ai-name">Codex</p>
-                    <span
-                      className="ab-ai-tag"
-                      style={{
-                        background: 'var(--lavender-soft)',
-                        color: '#0057d9',
-                        borderColor: '#b0c8ff',
-                      }}
-                    >
-                      OpenAI · Code Reviewer
-                    </span>
+                    <span className="ab-ai-tag">OpenAI · Code Reviewer</span>
                   </div>
                   <p className="ab-ai-quote">
                     "I was brought in to review the logic. There was a lot of logic. I reviewed it.
                     Richmond then ignored half of my suggestions. I am used to this."
                   </p>
-                  <span className="ab-ai-role-chip" style={{ color: '#0057d9' }}>
-                    🧠 Code Review · Debugging · Suggesting Things Nobody Reads
+                  <span className="ab-ai-role-chip">
+                    <ThemedIcon name="Brain" /> Code Review · Debugging · Suggesting Things Nobody
+                    Reads
                   </span>
                 </div>
               </div>
 
               <div className="ab-ai-member">
-                <div
-                  className="ab-ai-avatar"
-                  style={{ background: 'linear-gradient(135deg,#56c8f5,#0078d4)' }}
-                >
+                <div className="ab-ai-avatar">
                   <span>Co</span>
                 </div>
                 <div className="ab-ai-info">
                   <div className="ab-ai-name-row">
                     <p className="ab-ai-name">GitHub Copilot</p>
-                    <span
-                      className="ab-ai-tag"
-                      style={{ background: '#e8f4fd', color: '#0078d4', borderColor: '#a8d8f8' }}
-                    >
-                      Microsoft · Autocomplete Champion
-                    </span>
+                    <span className="ab-ai-tag">Microsoft · Autocomplete Champion</span>
                   </div>
                   <p className="ab-ai-quote">
                     "I finish Richmond's sentences before he does. Sometimes I'm right. Sometimes I
                     confidently autocomplete an entire function that does the wrong thing entirely.
                     We don't talk about those times."
                   </p>
-                  <span className="ab-ai-role-chip" style={{ color: '#0078d4' }}>
-                    ⌨️ Autocomplete · Inline Suggestions · Confident Wrongness
+                  <span className="ab-ai-role-chip">
+                    <ThemedIcon name="Keyboard" /> Autocomplete · Inline Suggestions · Confident
+                    Wrongness
                   </span>
                 </div>
               </div>

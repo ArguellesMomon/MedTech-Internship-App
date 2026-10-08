@@ -28,8 +28,7 @@
   .workspace-main {
     padding: 30px 28px 24px;
   }
-  .workspace-footer,
-  .demo-notice {
+  .workspace-footer {
     padding-inline: 28px;
   }
   .overview-card {
@@ -41,9 +40,6 @@
   }
   .rotation-main h2 {
     font-size: 28px;
-  }
-  .care-mood small {
-    display: none;
   }
   .landing-hero {
     gap: 40px;
@@ -228,15 +224,6 @@
     padding: 20px 18px 105px;
     font-size: 8px;
   }
-  .demo-notice {
-    padding: 7px 18px;
-    font-size: 8px;
-    line-height: 1.6;
-  }
-  .demo-notice button {
-    font-size: 8px;
-    flex-shrink: 0;
-  }
   .overview-heading {
     margin-bottom: 24px;
     align-items: flex-start;
@@ -407,9 +394,6 @@
     min-height: 40px;
     font-size: 23px;
   }
-  .care-mood small {
-    display: none;
-  }
   .overview-skeleton {
     grid-template-columns: 1fr;
   }
@@ -521,9 +505,7 @@
   .dl-add-btn {
     min-height: 44px;
   }
-  .ns-new-btn {
-    font-size: 11px;
-  }
+
   .ns-sort-btn {
     min-height: 44px;
   }

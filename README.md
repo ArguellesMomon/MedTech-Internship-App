@@ -7,9 +7,9 @@ A personal internship workspace for medical technology students, built with Reac
 - Install dependencies with npm install.
 - Copy .env.example to .env and configure Supabase for real accounts.
 - Run npm run dev and open the URL printed by Vite.
-- Choose “Take a look around” or “Explore the demo” on the landing page to explore without an account or backend setup.
+- Create an account or sign in from the landing page to open your workspace.
 
-The demo uses a separate local client. Sample records and edits stay in this browser’s localStorage. Uploads and password changes require a real account. Demo chat returns an explicitly labeled sample response. Use the profile’s Reset demo control to restore the sample records.
+Workspace records belong to the signed-in user and are stored in Supabase.
 
 ## Checks
 
@@ -19,7 +19,7 @@ The demo uses a separate local client. Sample records and edits stay in this bro
 - npm run format
 - npm run optimize:assets
 
-The tests cover local data persistence, date handling, quota calculations, authenticated chat, note and report creation, search safety, theme persistence, dialog focus, document confirmation, demo chat, and route loading. DOM tests use jsdom; they do not measure visual layout or simulate an actual phone browser.
+The tests cover record persistence, date handling, quota calculations, authenticated chat, note and report creation, search safety, theme persistence, dialog focus, document confirmation, study chat, and route loading. DOM tests use jsdom; they do not measure visual layout or simulate an actual phone browser.
 
 ## Deploy
 
@@ -28,3 +28,5 @@ The existing Vercel configuration supports SPA routes and the /api/chat function
 Real sign-in, uploads, and live chat depend on the configured Supabase project, its tables and storage policies, and the provider service. The bootstrap in supabase/schema.sql now preserves existing tables and records, recreates named policies, and skips duplicate seed entries. It is not a migration tool and does not add columns to existing tables. No database changes are automatically applied by this app.
 
 See docs/architecture.md for the module map and docs/redesign.md for the audit, changes, and visual testing checklist.
+
+UI regression tests use a local test fixture through a Vite test alias. The fixture lives under tests/fixtures and is excluded from the production app.

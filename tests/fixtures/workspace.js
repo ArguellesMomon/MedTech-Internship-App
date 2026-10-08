@@ -1,24 +1,9 @@
-import { dateOffset } from './dates.js';
-export const DEMO_USER = { id: 'demo-intern', email: 'intern@example.com' };
-const KEY = 'medtech-demo-data-v1';
-export function isDemoMode() {
-  try {
-    return localStorage.getItem('medtech-demo') === 'true';
-  } catch {
-    return false;
-  }
-}
-export function startDemo() {
-  localStorage.setItem('medtech-demo', 'true');
-  window.location.assign('/');
-}
-export function exitDemo() {
-  localStorage.removeItem('medtech-demo');
-  window.location.assign('/landing');
-}
+import { dateOffset } from '../../src/lib/dates.js';
+export const FIXTURE_USER = { id: 'test-intern', email: 'intern@example.com' };
+const KEY = 'test-workspace-data';
 const owned = (rows) =>
   rows.map((row) => ({
-    user_id: DEMO_USER.id,
+    user_id: FIXTURE_USER.id,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     ...row,
@@ -27,8 +12,8 @@ function seed() {
   return {
     profiles: [
       {
-        id: DEMO_USER.id,
-        email: DEMO_USER.email,
+        id: FIXTURE_USER.id,
+        email: FIXTURE_USER.email,
         full_name: 'Alex Reyes',
         school: 'Your university',
         program: 'BS Medical Technology',
@@ -156,7 +141,7 @@ function read() {
     const saved = JSON.parse(localStorage.getItem(KEY));
     if (saved && Array.isArray(saved.profiles)) return saved;
   } catch {
-    /* recover an invalid demo */
+    /* recover invalid test records */
   }
   const data = seed();
   localStorage.setItem(KEY, JSON.stringify(data));
@@ -165,11 +150,7 @@ function read() {
 function persist(data) {
   localStorage.setItem(KEY, JSON.stringify(data));
 }
-export function resetDemo() {
-  localStorage.removeItem(KEY);
-  window.location.reload();
-}
-class DemoQuery {
+class FixtureQuery {
   constructor(table) {
     this.table = table;
     this.filters = [];
@@ -337,32 +318,33 @@ class DemoQuery {
     return this.execute().then(resolve, reject);
   }
 }
-export const demoClient = {
-  from: (table) => new DemoQuery(table),
+export const fixtureClient = {
+  from: (table) => new FixtureQuery(table),
   auth: {
-    getSession: async () => ({ data: { session: { user: DEMO_USER } }, error: null }),
-    getUser: async () => ({ data: { user: DEMO_USER }, error: null }),
+    getSession: async () => ({
+      data: { session: { user: FIXTURE_USER, access_token: 'fixture-access-token' } },
+      error: null,
+    }),
+    getUser: async () => ({ data: { user: FIXTURE_USER }, error: null }),
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
     signOut: async () => {
-      exitDemo();
       return { error: null };
     },
     updateUser: async () => ({
       error: {
-        message: 'Password changes are available with a real account. Exit the demo to sign in.',
+        message: 'Password changes are disabled in tests.',
       },
     }),
     signInWithPassword: async () => ({
-      error: { message: 'Exit the demo to sign in to your account.' },
+      error: { message: 'Sign-in is disabled in tests.' },
     }),
-    signUp: async () => ({ error: { message: 'Exit the demo to create an account.' } }),
+    signUp: async () => ({ error: { message: 'Signup is disabled in tests.' } }),
   },
   storage: {
     from: () => ({
       upload: async () => ({
         error: {
-          message:
-            'File uploads are available with a real account. Your demo stays on this device.',
+          message: 'File uploads are disabled in tests.',
         },
       }),
       remove: async () => ({ error: null }),

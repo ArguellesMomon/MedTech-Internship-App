@@ -72,7 +72,7 @@
   }
   .sb-track {
     height: 8px;
-    background: #f3dbe3;
+    background: var(--rose-soft);
     border-radius: 999px;
     overflow: hidden;
   }
@@ -129,7 +129,7 @@
   .uz-zone:hover,
   .uz-zone.dragging {
     border-color: var(--accent-light);
-    background: rgba(255, 240, 247, 0.9);
+    background: var(--surface-subtle);
     transform: translateY(-1px);
     box-shadow: 0 8px 28px rgba(255, 111, 145, 0.12);
   }
@@ -137,7 +137,7 @@
     width: 52px;
     height: 52px;
     border-radius: 18px;
-    background: linear-gradient(135deg, var(--rose-soft), var(--border));
+    background: var(--surface-subtle);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -154,7 +154,7 @@
     margin: 0;
   }
   .uz-browse-btn {
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     color: var(--on-accent);
     border: none;
     border-radius: 999px;
@@ -232,7 +232,7 @@
   .uz-progress-fill {
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     transition: width 0.3s ease;
   }
 
@@ -266,7 +266,7 @@
   .dp-search-icon {
     position: absolute;
     left: 13px;
-    color: var(--border);
+    color: var(--muted);
     pointer-events: none;
   }
   .dp-search {
@@ -326,7 +326,7 @@
     color: var(--accent);
   }
   .dp-tab.active {
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     border-color: transparent;
     color: var(--on-accent);
     box-shadow: 0 4px 12px rgba(255, 111, 145, 0.25);
@@ -347,7 +347,7 @@
   }
   .dp-tab:not(.active) .dp-tab-count {
     background: var(--rose-soft);
-    color: var(--accent-light);
+    color: var(--accent);
   }
 
   /* ── File grid ── */
@@ -438,7 +438,7 @@
     color: var(--accent);
   }
   .dc-original-btn:hover {
-    background: rgba(255, 143, 177, 0.12);
+    background: var(--surface-subtle);
     border-color: var(--accent-light);
     color: var(--accent);
     transform: translateY(-1px);
@@ -446,7 +446,7 @@
   .dc-view-btn {
     border: none;
     color: var(--on-accent);
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     cursor: pointer;
   }
   .dc-view-btn:hover {
@@ -458,17 +458,17 @@
     height: 38px;
     flex-shrink: 0;
     border: 1.5px solid var(--border);
-    background: #fff8fa;
+    background: var(--surface-subtle);
     border-radius: 12px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--border);
+    color: var(--muted);
     transition: 0.2s;
   }
   .dc-delete-btn:hover:not(:disabled) {
-    background: #fde8e8;
+    background: var(--rose-soft);
     border-color: #ffd0d0;
     color: var(--danger);
   }
@@ -523,7 +523,7 @@
   .dp-skeleton-card {
     height: 200px;
     border-radius: 22px;
-    background: linear-gradient(90deg, #f8f0f4 25%, #fde8ef 50%, #f8f0f4 75%);
+    background: var(--surface-subtle);
     background-size: 200% 100%;
     animation: shimmer 1.6s ease-in-out infinite;
   }
@@ -686,7 +686,7 @@
     margin: 0;
   }
   .dv-loading .spin {
-    color: var(--accent-light);
+    color: var(--accent);
   }
   .dv-failed-title {
     font-size: 16px;
@@ -703,7 +703,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: linear-gradient(135deg, var(--accent-light), var(--accent));
+    background: var(--accent);
     color: var(--on-accent);
     border-radius: 999px;
     padding: 10px 20px;

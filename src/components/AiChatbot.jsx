@@ -1,4 +1,6 @@
-import { isDemoMode } from '../lib/demo';
+import ThemedIcon from './ui/ThemedIcon';
+import Dialog from './ui/Dialog';
+import '../styles/pip.css';
 import '../styles/features/AiChatbot.css';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
@@ -203,10 +205,11 @@ function EmptyState({ onSend }) {
 
       <div className="pip-empty-text">
         <h2 className="pip-empty-h">
-          Hi! I'm <span className="pip-name-accent">Pip</span> 👋
+          Hi! I'm <span className="pip-name-accent">Pip</span> <ThemedIcon name="Hand" />
         </h2>
         <p className="pip-empty-sub">
-          Your little study companion for lab rotations, revision, and a bit of encouragement.
+          A little help with study plans, lab rotations, or a tough day. One small step at a time.{' '}
+          <ThemedIcon name="Heart" />
         </p>
       </div>
 
@@ -270,7 +273,7 @@ export default function AIChatbot() {
   const [sbOpen, setSbOpen] = useState(false);
   const [sbCollapsed, setSbCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 900);
-  const [kbHeight, setKbHeight] = useState(0);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
 
   const endRef = useRef(null);
@@ -374,11 +377,12 @@ export default function AIChatbot() {
       e?.stopPropagation();
       try {
         const userId = await getUserId();
-        await supabase
+        const { error: deleteError } = await supabase
           .from('chat_messages')
           .delete()
           .eq('user_id', userId)
           .eq('conversation_id', id);
+        if (deleteError) throw deleteError;
         setConvs((prev) => {
           const next = prev.filter((c) => c.id !== id);
           if (id === activeId) setActiveId(next[0]?.id || null);
@@ -417,8 +421,6 @@ export default function AIChatbot() {
 
   /* ── Groq API call ── */
   const callGroq = useCallback(async (history) => {
-    if (isDemoMode())
-      return '♡ **A little hello from Pip**\n\nThis is a sample response in the demo, so you can explore the conversation interface.\n\nFor a gentler study week, choose one topic at a time, jot down questions for your instructor, and leave room for breaks. You don’t need to figure everything out today.\n\nSign in to a real account to use live study chat when it is configured.';
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -638,24 +640,6 @@ export default function AIChatbot() {
     if (!showScrollBtn) endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeMessageCount, loading, showScrollBtn]);
 
-  useEffect(() => {
-    if (!window.visualViewport) return;
-    const fn = () => {
-      const kb = Math.max(
-        0,
-        window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop,
-      );
-      setKbHeight(kb);
-      if (kb > 50) setTimeout(scrollToBottom, 100);
-    };
-    window.visualViewport.addEventListener('resize', fn);
-    window.visualViewport.addEventListener('scroll', fn);
-    return () => {
-      window.visualViewport.removeEventListener('resize', fn);
-      window.visualViewport.removeEventListener('scroll', fn);
-    };
-  }, [scrollToBottom]);
-
   /* ── Derived values ── */
   const activeConv = convs.find((c) => c.id === activeId);
   const msgs = activeConv?.messages || [];
@@ -674,9 +658,153 @@ export default function AIChatbot() {
     .filter(Boolean)
     .join(' ');
 
+  const historyContent = (
+    <>
+      {/* Brand header */}
+      <div className="pip-sb-head">
+        <div className="pip-brand">
+          <div className="pip-brand-img">
+            <img src={hamsterLogo} alt="Pip" />
+          </div>
+          <div className="pip-brand-text">
+            <span className="pip-brand-name">Pip</span>
+            <span className="pip-brand-tagline">MedTech Companion</span>
+          </div>
+        </div>
+        <button
+          className="pip-sb-close"
+          onClick={() => setSbOpen(false)}
+          aria-label="Close sidebar"
+        >
+          <X size={15} />
+        </button>
+      </div>
+
+      {/* Scrollable content */}
+      <div className="pip-sb-body">
+        <button className="pip-new-btn" onClick={newChat}>
+          <Plus size={14} strokeWidth={2.5} />
+          <span>New Conversation</span>
+        </button>
+
+        {/* Search */}
+        <div className="pip-search-wrap">
+          <Search size={12} className="pip-search-ico" />
+          <input
+            className="pip-search"
+            aria-label="Search conversations"
+            placeholder="Search conversations…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button aria-label="Close" className="pip-search-x" onClick={() => setSearch('')}>
+              <X size={10} />
+            </button>
+          )}
+        </div>
+
+        {/* Conversation list */}
+        <div className="pip-conv-list">
+          {['today', 'yesterday', 'week', 'older'].map((g) => {
+            const items = groups[g];
+            if (!items?.length) return null;
+            return (
+              <div key={g} className="pip-cgroup">
+                <div className="pip-cgroup-label">{GROUP_LABELS[g]}</div>
+                {items.map((c) => (
+                  <div key={c.id} className={`pip-citem ${c.id === activeId ? 'active' : ''}`}>
+                    <button
+                      className="pip-cselect"
+                      onClick={() => selectConv(c.id)}
+                      aria-pressed={c.id === activeId}
+                    >
+                      <MessageSquare size={11} className="pip-citem-ico" />
+                      <span className="pip-citem-title">{c.title}</span>
+                    </button>
+                    <button
+                      className="pip-cdel"
+                      onClick={() => {
+                        setSbOpen(false);
+                        setDeleteTarget(c.id);
+                      }}
+                      aria-label={'Delete conversation ' + c.title}
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+          {filtered.length === 0 && (
+            <div className="pip-conv-empty">
+              {search ? (
+                <>
+                  <Search size={18} />
+                  <span>No results for "{search}"</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={18} />
+                  <span>
+                    No conversations yet.
+                    <br />
+                    Start a new one!
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="pip-sb-foot">
+        <div className="pip-model-pill">
+          <span className="pip-model-dot" />
+          <span>Your saved study chats</span>
+        </div>
+      </div>
+    </>
+  );
   return (
     <>
-      <div className="pip-root" style={{ paddingBottom: kbHeight > 0 ? kbHeight : undefined }}>
+      {deleteTarget && (
+        <Dialog label="Delete conversation" onClose={() => setDeleteTarget(null)}>
+          <div className="quick-add-sheet">
+            <div className="sheet-heading">
+              <h2>Delete this chat?</h2>
+              <button
+                className="icon-button"
+                aria-label="Close delete confirmation"
+                onClick={() => setDeleteTarget(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p className="pip-delete-copy">
+              This removes the conversation and its messages from your saved history.
+            </p>
+            <div className="pip-delete-actions">
+              <button className="button secondary" onClick={() => setDeleteTarget(null)}>
+                Keep chat
+              </button>
+              <button
+                className="button primary"
+                onClick={async () => {
+                  const id = deleteTarget;
+                  setDeleteTarget(null);
+                  await deleteConv(id);
+                }}
+              >
+                Delete chat
+              </button>
+            </div>
+          </div>
+        </Dialog>
+      )}
+      <div className="pip-root">
         {/* Animated mesh background */}
         <div className="pip-bg" aria-hidden="true">
           <div className="pip-bg-blob pip-bg-blob-1" />
@@ -684,115 +812,23 @@ export default function AIChatbot() {
           <div className="pip-bg-blob pip-bg-blob-3" />
         </div>
 
+        {error && msgs.length === 0 && (
+          <p className="pip-err" role="alert">
+            {error}
+          </p>
+        )}
         <div className="pip-layout">
           {/* ── Sidebar ── */}
-          <aside className={sidebarCls}>
-            {/* Brand header */}
-            <div className="pip-sb-head">
-              <div className="pip-brand">
-                <div className="pip-brand-img">
-                  <img src={hamsterLogo} alt="Pip" />
-                </div>
-                <div className="pip-brand-text">
-                  <span className="pip-brand-name">Pip</span>
-                  <span className="pip-brand-tagline">MedTech Companion</span>
-                </div>
-              </div>
-              <button
-                className="pip-sb-close"
-                onClick={() => setSbOpen(false)}
-                aria-label="Close sidebar"
-              >
-                <X size={15} />
-              </button>
-            </div>
-
-            {/* Scrollable content */}
-            <div className="pip-sb-body">
-              <button className="pip-new-btn" onClick={newChat}>
-                <Plus size={14} strokeWidth={2.5} />
-                <span>New Conversation</span>
-              </button>
-
-              {/* Search */}
-              <div className="pip-search-wrap">
-                <Search size={12} className="pip-search-ico" />
-                <input
-                  className="pip-search"
-                  placeholder="Search conversations…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                {search && (
-                  <button aria-label="Close" className="pip-search-x" onClick={() => setSearch('')}>
-                    <X size={10} />
-                  </button>
-                )}
-              </div>
-
-              {/* Conversation list */}
-              <div className="pip-conv-list">
-                {['today', 'yesterday', 'week', 'older'].map((g) => {
-                  const items = groups[g];
-                  if (!items?.length) return null;
-                  return (
-                    <div key={g} className="pip-cgroup">
-                      <div className="pip-cgroup-label">{GROUP_LABELS[g]}</div>
-                      {items.map((c) => (
-                        <div
-                          key={c.id}
-                          className={`pip-citem ${c.id === activeId ? 'active' : ''}`}
-                        >
-                          <button
-                            className="pip-cselect"
-                            onClick={() => selectConv(c.id)}
-                            aria-pressed={c.id === activeId}
-                          >
-                            <MessageSquare size={11} className="pip-citem-ico" />
-                            <span className="pip-citem-title">{c.title}</span>
-                          </button>
-                          <button
-                            className="pip-cdel"
-                            onClick={(e) => deleteConv(c.id, e)}
-                            title="Delete conversation"
-                          >
-                            <Trash2 size={11} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })}
-                {filtered.length === 0 && (
-                  <div className="pip-conv-empty">
-                    {search ? (
-                      <>
-                        <Search size={18} />
-                        <span>No results for "{search}"</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles size={18} />
-                        <span>
-                          No conversations yet.
-                          <br />
-                          Start a new one!
-                        </span>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="pip-sb-foot">
-              <div className="pip-model-pill">
-                <span className="pip-model-dot" />
-                <span>Llama 3.3 70B · Groq</span>
-              </div>
-            </div>
-          </aside>
+          {!isMobile && !sbCollapsed && (
+            <aside className={sidebarCls} aria-label="Conversation history">
+              {historyContent}
+            </aside>
+          )}
+          {isMobile && sbOpen && (
+            <Dialog onClose={() => setSbOpen(false)} label="Conversation history">
+              <div className="pip-history-panel">{historyContent}</div>
+            </Dialog>
+          )}
 
           {/* ── Main chat area ── */}
           <main className="pip-main">
@@ -801,7 +837,8 @@ export default function AIChatbot() {
               <button
                 className="pip-toggle-btn"
                 onClick={toggleSidebar}
-                aria-label="Toggle sidebar"
+                aria-label="Conversation history"
+                aria-expanded={isMobile ? sbOpen : !sbCollapsed}
               >
                 <PanelLeft size={16} />
               </button>
@@ -872,9 +909,7 @@ export default function AIChatbot() {
             {/* Disclaimer */}
             <div className="pip-disclaimer">
               <AlertCircle size={10} />
-              <span>
-                For educational reference only — always verify with your resident or consultant.
-              </span>
+              <span>Study support · Verify lab work with your instructor and local SOPs.</span>
             </div>
 
             {/* Input */}
@@ -883,6 +918,8 @@ export default function AIChatbot() {
                 <textarea
                   ref={taRef}
                   className="pip-ta"
+                  aria-label="Message Pip"
+                  maxLength={6000}
                   placeholder="Ask Pip a study question…"
                   value={input}
                   rows={1}
@@ -890,7 +927,7 @@ export default function AIChatbot() {
                     setInput(e.target.value);
                     resizeTA();
                   }}
-                  onKeyDown={handleKey}
+                  onKeyDown={isMobile ? undefined : handleKey}
                   onFocus={() => setTimeout(scrollToBottom, 300)}
                 />
                 <button
@@ -906,7 +943,7 @@ export default function AIChatbot() {
                   )}
                 </button>
               </div>
-              <p className="pip-hint">
+              <p className="pip-hint" aria-hidden={isMobile}>
                 <kbd>Enter</kbd> to send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> for new line
               </p>
             </div>

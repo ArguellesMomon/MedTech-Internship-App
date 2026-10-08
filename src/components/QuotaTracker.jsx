@@ -1,3 +1,4 @@
+import ThemedIcon from './ui/ThemedIcon';
 import { countLoggedProcedures, quotaKey, withLoggedProgress } from '../lib/progress';
 import { localDate } from '../lib/dates';
 import useQuickCreate from '../hooks/useQuickCreate';
@@ -197,7 +198,12 @@ function isYesterday(dateStr) {
 }
 
 function getDayLabel(dateStr) {
-  if (isToday(dateStr)) return '📅 Today';
+  if (isToday(dateStr))
+    return (
+      <>
+        <ThemedIcon name="CalendarDays" size={14} /> Today
+      </>
+    );
   if (isYesterday(dateStr)) return 'Yesterday';
   return fmt(dateStr);
 }
@@ -283,14 +289,7 @@ function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose
               return (
                 <div key={sec.id} className={`ms-row ${isRem ? 'ms-row-rem' : ''}`}>
                   <div className="ms-row-main">
-                    <div
-                      className="ms-sec-pill"
-                      style={{
-                        background: colorToSoftBg(meta.color),
-                        color: meta.color,
-                        borderColor: meta.color + '44',
-                      }}
-                    >
+                    <div className="ms-sec-pill">
                       <span className="ms-dot" style={{ background: meta.color }} />
                       {sec.id}
                     </div>
@@ -360,19 +359,19 @@ function HeroStats({ logs }) {
   return (
     <div className="hs-stats">
       <div className="hs-stat">
-        <span className="hs-stat-n" style={{ color: '#ff6f91' }}>
+        <span className="hs-stat-n" style={{ color: 'var(--accent)' }}>
           {todayCount}
         </span>
         <span className="hs-stat-l">Today</span>
       </div>
       <div className="hs-stat">
-        <span className="hs-stat-n" style={{ color: '#ff8c5a' }}>
+        <span className="hs-stat-n" style={{ color: 'var(--peach)' }}>
           {weekCount}
         </span>
         <span className="hs-stat-l">This Week</span>
       </div>
       <div className="hs-stat">
-        <span className="hs-stat-n" style={{ color: '#5f8dff' }}>
+        <span className="hs-stat-n" style={{ color: 'var(--lavender)' }}>
           {totalProcs}
         </span>
         <span className="hs-stat-l">Total Done</span>
@@ -401,7 +400,6 @@ function LogModal({
 
   const meta = sectionMap[sectionId] ?? generateSectionMeta(sectionId);
   const accentColor = meta?.color ?? '#ff6f91';
-  const accentGrad = meta?.grad ?? `linear-gradient(135deg,${accentColor}cc,${accentColor})`;
 
   const procedureOptions = useMemo(() => {
     const defaults = DEFAULT_PROCEDURES[sectionId] ?? [];
@@ -471,10 +469,14 @@ function LogModal({
   return (
     <Dialog className="lm-overlay" onClose={onClose}>
       <div className="lm-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="lm-header" style={{ background: accentGrad }}>
+        <div className="lm-header">
           <div className="lm-header-left">
             <div className="lm-header-icon">
-              {editing ? <Edit3 size={16} color="white" /> : <Plus size={16} color="white" />}
+              {editing ? (
+                <Edit3 size={16} color="currentColor" />
+              ) : (
+                <Plus size={16} color="currentColor" />
+              )}
             </div>
             <span className="lm-header-title">{editing ? 'Edit Entry' : 'Log Procedure'}</span>
           </div>
@@ -488,23 +490,14 @@ function LogModal({
             <p className="lm-flabel">Section</p>
             <div className="lm-sec-pills">
               {sections.map((s) => {
-                const sm = sectionMap[s.id] ?? generateSectionMeta(s.id);
                 const on = sectionId === s.id;
                 return (
                   <button
                     key={s.id}
                     type="button"
                     className="lm-sec-pill"
-                    style={
-                      on
-                        ? {
-                            background: sm.color,
-                            borderColor: sm.color,
-                            color: '#fff',
-                            boxShadow: `0 4px 12px ${sm.color}44`,
-                          }
-                        : { borderColor: sm.color + '55', color: sm.color }
-                    }
+                    aria-pressed={on}
+
                     onClick={() => handleSectionChange(s.id)}
                   >
                     {s.id}
@@ -592,7 +585,7 @@ function LogModal({
             <button
               type="submit"
               className="lm-primary"
-              style={{ background: accentGrad }}
+
               disabled={saving}
             >
               <Check size={15} />
@@ -697,16 +690,11 @@ function DailyLogTab({ logs, sections, sectionMap, onAdd, onEdit, onDelete, onMa
                   All
                 </button>
                 {sections.map((s) => {
-                  const sm = sectionMap[s.id] ?? generateSectionMeta(s.id);
                   return (
                     <button
                       key={s.id}
                       className="dl-fpill"
-                      style={
-                        filterSection === s.id
-                          ? { background: sm.color, borderColor: sm.color, color: '#fff' }
-                          : { borderColor: sm.color + '55', color: sm.color }
-                      }
+
                       onClick={() => setFilterSection(filterSection === s.id ? '' : s.id)}
                     >
                       {s.id}
@@ -741,7 +729,9 @@ function DailyLogTab({ logs, sections, sectionMap, onAdd, onEdit, onDelete, onMa
 
       {grouped.length === 0 && (
         <div className="dl-empty-hero">
-          <div className="dl-empty-hero-icon">{logs.length === 0 ? '📓' : '🔍'}</div>
+          <div className="dl-empty-hero-icon">
+            {logs.length === 0 ? <ThemedIcon name="NotebookPen" /> : <ThemedIcon name="Search" />}
+          </div>
           <h3>{logs.length === 0 ? 'No log entries yet' : 'No matching entries'}</h3>
           <p>
             {logs.length === 0
@@ -784,18 +774,8 @@ function DailyLogTab({ logs, sections, sectionMap, onAdd, onEdit, onDelete, onMa
                     <div className="dl-entry-main">
                       <h4 className="dl-entry-proc">{log.procedure_name}</h4>
                       <div className="dl-entry-tags">
-                        <span
-                          className="dl-tag"
-                          style={{ background: secMeta?.bg, color: secMeta?.color }}
-                        >
-                          {log.section_name}
-                        </span>
-                        <span
-                          className="dl-tag count"
-                          style={{ background: secMeta?.bg, color: secMeta?.color }}
-                        >
-                          ×{log.count_done}
-                        </span>
+                        <span className="dl-tag">{log.section_name}</span>
+                        <span className="dl-tag count">×{log.count_done}</span>
                       </div>
                     </div>
                     <div className="dl-entry-actions">
@@ -831,7 +811,11 @@ function DailyLogTab({ logs, sections, sectionMap, onAdd, onEdit, onDelete, onMa
                       )}
                     </div>
                   </div>
-                  {log.supervisor && <p className="dl-entry-sup">👤 {log.supervisor}</p>}
+                  {log.supervisor && (
+                    <p className="dl-entry-sup">
+                      <ThemedIcon name="UserRound" /> {log.supervisor}
+                    </p>
+                  )}
                   {log.notes && <p className="dl-entry-notes">"{log.notes}"</p>}
                 </div>
               );
@@ -1024,26 +1008,15 @@ function QuotaBoardTab({
             <button
               key={sec.id}
               className={`qb-sec-btn ${expandedSection === sec.id ? 'active' : ''}`}
-              style={
-                expandedSection === sec.id
-                  ? {
-                      borderColor: sec.color,
-                      background: colorToSoftBg(sec.color),
-                      boxShadow: `0 0 0 2.5px ${sec.color}44`,
-                    }
-                  : { borderColor: sec.color + '33' }
-              }
+
               onClick={() => setExpandedSection(expandedSection === sec.id ? null : sec.id)}
             >
               <div className="qb-sec-top">
-                <span className="qb-sec-name" style={{ color: sec.color }}>
+                <span className="qb-sec-name" style={{ color: 'var(--ink)' }}>
                   {sec.id}
                 </span>
-                <span
-                  className="qb-sec-pct"
-                  style={{ color: sec.pct >= 100 ? '#4abf95' : sec.color }}
-                >
-                  {sec.pct >= 100 ? '✅' : `${sec.pct}%`}
+                <span className="qb-sec-pct">
+                  {sec.pct >= 100 ? <ThemedIcon name="CircleCheck" /> : `${sec.pct}%`}
                 </span>
               </div>
               <div className="qb-sec-bar">
@@ -1104,14 +1077,14 @@ function QuotaBoardTab({
             <div className="qb-detail" style={{ borderColor: secMeta.color + '44' }}>
               <div className="qb-detail-header">
                 <div>
-                  <h3 className="qb-detail-title" style={{ color: secMeta.color }}>
+                  <h3 className="qb-detail-title" style={{ color: 'var(--ink)' }}>
                     {expandedSection}
                   </h3>
                   <p className="qb-detail-sub">{quotas.length} tracked procedures</p>
                 </div>
                 <button
                   className="qb-add-btn"
-                  style={{ background: secMeta.grad }}
+
                   onClick={() => startNew(expandedSection)}
                   disabled={isAddingNew}
                 >
@@ -1161,7 +1134,7 @@ function QuotaBoardTab({
                   <div className="qb-edit-btns">
                     <button
                       className="qb-save-btn"
-                      style={{ background: secMeta.grad }}
+
                       onClick={() => saveEdit(expandedSection)}
                       disabled={saving}
                     >
@@ -1176,7 +1149,9 @@ function QuotaBoardTab({
 
               {quotas.length === 0 && !isAddingNew && (
                 <div className="qb-empty-hero">
-                  <div className="qb-empty-hero-icon">🎯</div>
+                  <div className="qb-empty-hero-icon">
+                    <ThemedIcon name="Target" />
+                  </div>
                   <h3>No quota items yet</h3>
                   <p>Add your first procedure target to start tracking this section.</p>
                 </div>
@@ -1234,7 +1209,7 @@ function QuotaBoardTab({
                       <div className="qb-edit-btns">
                         <button
                           className="qb-save-btn"
-                          style={{ background: secMeta.grad }}
+
                           onClick={() => saveEdit(expandedSection)}
                           disabled={saving}
                         >
@@ -1256,16 +1231,13 @@ function QuotaBoardTab({
                         {logCount > 0 && logCount !== manCount && (
                           <span className="qb-log-hint" title="Counted from your daily logs"></span>
                         )}
-                        <span
-                          className="qb-count"
-                          style={{ color: complete ? '#4abf95' : secMeta.color }}
-                        >
+                        <span className="qb-count">
                           {effective}/{q.target_count}
-                          {complete ? ' ✅' : ''}
+                          {complete && <ThemedIcon name="CircleCheck" size={16} />}
                         </span>
                         <button
                           className="qb-plus-btn"
-                          style={{ color: secMeta.color, borderColor: secMeta.color + '44' }}
+                          style={{ color: 'var(--ink)', borderColor: secMeta.color + '44' }}
                           onClick={() => quickIncrement(expandedSection, q)}
                           title="Quick +1"
                         >
@@ -1317,9 +1289,9 @@ function QuotaBoardTab({
                 >
                   <p
                     className="qb-detail-sub"
-                    style={{ marginBottom: '10px', color: secMeta.color, fontWeight: 600 }}
+                    style={{ marginBottom: '10px', color: 'var(--ink)', fontWeight: 600 }}
                   >
-                    📚 Suggested Procedures
+                    <ThemedIcon name="BookOpen" /> Suggested Procedures
                   </p>
                   {untrackedDefaults.map((proc) => (
                     <div key={proc} className="qb-default-proc">
@@ -1327,7 +1299,7 @@ function QuotaBoardTab({
                       <div className="qb-default-btns">
                         <button
                           className="qb-default-add-btn"
-                          style={{ background: secMeta.grad, color: 'white' }}
+
                           onClick={() => addDefaultAsQuota(proc)}
                           disabled={saving}
                           title="Add to quota tracking"

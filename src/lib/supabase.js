@@ -1,4 +1,3 @@
-import { demoClient, isDemoMode } from './demo';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -10,7 +9,7 @@ export const hasSupabaseCredentials =
   !supabaseUrl.includes('your-project-id') &&
   !supabaseAnonKey.includes('your-anon-key');
 
-export const isSupabaseConfigured = hasSupabaseCredentials || isDemoMode();
+export const isSupabaseConfigured = hasSupabaseCredentials;
 
 if (!isSupabaseConfigured) {
   console.warn(
@@ -21,9 +20,7 @@ if (!isSupabaseConfigured) {
 const fallbackUrl = 'https://placeholder.supabase.co';
 const fallbackAnonKey = 'placeholder-anon-key';
 
-export const supabase = isDemoMode()
-  ? demoClient
-  : createClient(
-      hasSupabaseCredentials ? supabaseUrl : fallbackUrl,
-      hasSupabaseCredentials ? supabaseAnonKey : fallbackAnonKey,
-    );
+export const supabase = createClient(
+  hasSupabaseCredentials ? supabaseUrl : fallbackUrl,
+  hasSupabaseCredentials ? supabaseAnonKey : fallbackAnonKey,
+);
