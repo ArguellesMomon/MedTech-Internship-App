@@ -9,6 +9,7 @@ import { ThemeToggle } from '../../theme/ThemeProvider';
 import GlobalSearch from '../GlobalSearch';
 import Dialog from '../ui/Dialog';
 import ChamiAvatar from '../ui/ChamiAvatar';
+import useChatViewport from '../../hooks/useChatViewport';
 
 function Navigation({ onNavigate }) {
   return (
@@ -33,10 +34,7 @@ export default function AppLayout({ children }) {
   const { user, profile, signOut } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
-  const [viewportHeight, setViewportHeight] = useState(
-    () => window.visualViewport?.height || window.innerHeight,
-  );
+  const { height: viewportHeight, top: viewportTop, keyboardOpen } = useChatViewport();
   const [error, setError] = useState('');
   const shellFree = ['/landing', '/login', '/signup'].includes(location.pathname);
   const name = profile?.full_name?.trim() || 'Your profile';
@@ -52,21 +50,6 @@ export default function AppLayout({ children }) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [location.pathname]);
-  useEffect(() => {
-    const viewport = window.visualViewport;
-    const update = () => {
-      const height = viewport?.height || window.innerHeight;
-      setKeyboardOpen(height / window.innerHeight < 0.8);
-      setViewportHeight(height);
-    };
-    update();
-    window.addEventListener('resize', update);
-    viewport?.addEventListener('resize', update);
-    return () => {
-      window.removeEventListener('resize', update);
-      viewport?.removeEventListener('resize', update);
-    };
-  }, []);
 
   async function logout() {
     try {
@@ -83,7 +66,7 @@ export default function AppLayout({ children }) {
         (keyboardOpen ? ' keyboard-open' : '') +
         (location.pathname === '/ai-chat' ? ' pip-workspace' : '')
       }
-      style={{ '--viewport-height': viewportHeight + 'px' }}
+      style={{ '--viewport-height': viewportHeight + 'px', '--viewport-top': viewportTop + 'px' }}
     >
       <a className="skip-link" href="#main-content">
         Skip to content

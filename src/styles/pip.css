@@ -3,6 +3,7 @@
   height: var(--viewport-height, 100dvh);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 .pip-workspace .workspace-topbar {
   flex-shrink: 0;
@@ -319,11 +320,42 @@
   background: var(--surface);
 }
 @media (max-width: 1023px) {
+  .pip-workspace {
+    position: fixed;
+    top: var(--viewport-top, 0px);
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+  }
   .pip-workspace .workspace-body {
     padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   }
   .pip-workspace.keyboard-open .workspace-body {
     padding-bottom: 0;
+  }
+  .pip-workspace.keyboard-open .mobile-bottom-nav,
+  .pip-workspace.keyboard-open .workspace-topbar,
+  .pip-workspace.keyboard-open .pip-hint {
+    display: none;
+  }
+  .pip-workspace.keyboard-open .chat-page {
+    padding: 4px 8px 0;
+  }
+  .pip-workspace.keyboard-open .chat-page .pip-root {
+    border-radius: 12px 12px 0 0;
+    border-bottom: 0;
+  }
+  .pip-workspace.keyboard-open .pip-empty {
+    padding-block: 12px;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+  .pip-workspace.keyboard-open .pip-empty-hero {
+    width: 46px;
+    height: 46px;
+  }
+  .pip-workspace.keyboard-open .pip-empty-sub {
+    display: none;
   }
   .pip-workspace .chat-page {
     padding: 12px;
@@ -385,8 +417,13 @@
   }
 }
 
+html:has(.pip-workspace),
 body:has(.pip-workspace) {
   overflow: hidden;
+  overscroll-behavior: none;
+}
+#root:has(.pip-workspace) {
+  min-height: 0;
 }
 .pip-workspace {
   min-height: 0;

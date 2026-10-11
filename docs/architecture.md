@@ -44,6 +44,10 @@ Desktop uses a sidebar, tablet uses bottom navigation, and phone screens stack d
 
 The browser sends conversation messages and the Supabase access token to the same-origin /api/chat endpoint. The server verifies the token with Supabase, validates message roles and lengths, and calls the provider using GROQ_API_KEY. Its in-memory request cap is per running server instance; a shared rate limiter is needed if a deployment requires a global quota across instances. Production chat configuration and provider access are separate from the frontend build.
 
+`lib/chat.js` shares request limits between the browser and API. Only the context sent to the provider is shortened: the latest question is preserved, earlier long messages are clipped, and oldest context is dropped to fit the serialized request budget. Full messages remain in Supabase and on screen.
+
+`hooks/useChatViewport.js` tracks visible viewport height and vertical offset on resize, scroll, and focus changes, with a window-resize fallback. On phones and tablets, the chat shell stays within that viewport; typing hides the outer toolbar and bottom navigation and removes their reserved space. Chat scrolling targets the message container, and resizing follows the latest message only when the reader is already at the bottom. Keyboard simulation tests cover panning, closing, rotation, both-viewport resizing, and pinch zoom; real-device visual checks are still needed.
+
 ## Extending the tools
 
 The existing large feature tools retain their original workflows, while their styling and dialogs are shared. Further extraction should move one cohesive feature at a time into a subfolder. Keep state and mutations in the owning tool, keep date/progress rules in shared helpers, and preserve Supabase row-level security. The existing procedure library remains shared under its existing schema; introducing private procedure ownership needs an explicit database migration.

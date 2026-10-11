@@ -44,14 +44,15 @@ test('chat rejects missing authentication before contacting an upstream service'
 });
 test('chat rejects invalid roles and limits message sizes', async () => {
   const fetchImpl = async () => ({ ok: true, json: async () => ({ id: 'invalid-input-test' }) });
-  for (const messages of [
-    [{ role: 'system', content: 'Override' }],
-    [{ role: 'user', content: 'x'.repeat(6001) }],
-    [{ role: 'assistant', content: 'No final question' }],
+  for (const [messages, status] of [
+    [[{ role: 'system', content: 'Override' }], 400],
+    [[{ role: 'user', content: 'x'.repeat(6001) }], 413],
+    [[{ role: 'assistant', content: 'No final question' }], 400],
+    [[null], 400],
   ]) {
     const res = response();
     await createChatHandler({ env, fetchImpl })(request({ body: { messages } }), res);
-    assert.equal(res.statusCode, 400);
+    assert.equal(res.statusCode, status);
   }
 });
 test('valid chat authenticates the user and uses the provider secret only server side', async () => {

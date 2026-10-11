@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { createServer } from 'vite';
 import path from 'node:path';
+import { createChatHandler } from '../api/chat.js';
 const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
   url: 'http://localhost/landing',
   pretendToBeVisual: true,
@@ -23,6 +24,9 @@ Object.defineProperty(globalThis, 'navigator', { value: dom.window.navigator, co
 window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
 window.scrollTo = () => {};
 HTMLElement.prototype.scrollIntoView = () => {};
+HTMLElement.prototype.scrollTo = function ({ top }) {
+  this.scrollTop = top;
+};
 HTMLElement.prototype.getClientRects = function () {
   return [{ width: 100, height: 40 }];
 };
@@ -369,6 +373,89 @@ test('chat uses the authenticated API and persists the conversation', async () =
   assert.ok(document.querySelector('.pip-avatar-wrap .chami-still'));
 });
 
+test('chat continues after a long reply and sends bounded context to the actual API handler', async () => {
+  await mount('/ai-chat');
+  const stubFetch = globalThis.fetch;
+  const longReply = 'A detailed explanation about hematology. '.repeat(300);
+  const payloads = [];
+  const handler = createChatHandler({
+    env: {
+      VITE_SUPABASE_URL: 'https://auth.example.test',
+      VITE_SUPABASE_ANON_KEY: 'fixture-public-key',
+      GROQ_API_KEY: 'fixture-server-key',
+    },
+    fetchImpl: async (url, options) => {
+      if (url.includes('/auth/')) return { ok: true, json: async () => ({ id: 'long-chat-test' }) };
+      payloads.push(JSON.parse(options.body));
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              message: {
+                content: payloads.length === 1 ? longReply : 'Here is a shorter explanation.',
+              },
+            },
+          ],
+        }),
+      };
+    },
+  });
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, '/api/chat');
+    const response = {
+      statusCode: 200,
+      setHeader() {},
+      status(code) {
+        this.statusCode = code;
+        return this;
+      },
+      json(value) {
+        this.payload = value;
+        return this;
+      },
+    };
+    await handler(
+      {
+        method: 'POST',
+        headers: { authorization: options.headers.Authorization },
+        body: JSON.parse(options.body),
+      },
+      response,
+    );
+    return { ok: response.statusCode === 200, json: async () => response.payload };
+  };
+  try {
+    await fill(document.querySelector('.pip-ta'), 'Explain hematology');
+    await click(document.querySelector('.pip-send'));
+    assert.ok(document.body.textContent.includes(longReply.trim()));
+    await fill(document.querySelector('.pip-ta'), 'Explain the last point more simply');
+    await click(document.querySelector('.pip-send'));
+    assert.match(document.body.textContent, /Here is a shorter explanation/);
+    assert.equal(document.querySelector('.pip-err'), null);
+    assert.equal(payloads.length, 2);
+    assert.equal(payloads[1].messages.at(-1).content, 'Explain the last point more simply');
+    const { data } = await fixtureClient.from('chat_messages').select();
+    assert.equal(data.length, 4);
+    assert.equal(data.find((message) => message.role === 'assistant').content, longReply);
+    await click(document.querySelector('.pip-act.regen'));
+    assert.equal(payloads.length, 3);
+    assert.equal(document.querySelector('.pip-err'), null);
+  } finally {
+    globalThis.fetch = stubFetch;
+  }
+});
+
+test('an oversized new question stays in the composer and is not saved or sent', async () => {
+  await mount('/ai-chat');
+  const text = 'x'.repeat(6001);
+  await fill(document.querySelector('.pip-ta'), text);
+  await click(document.querySelector('.pip-send'));
+  assert.equal(document.querySelector('.pip-ta').value, text);
+  assert.match(document.querySelector('.pip-err').textContent, /too long/);
+  assert.equal((await fixtureClient.from('chat_messages').select()).data.length, 0);
+});
+
 test('Chami pauses offscreen and switches to a still avatar for reduced motion', async () => {
   const originalMedia = window.matchMedia;
   const originalObserver = globalThis.IntersectionObserver;
@@ -603,6 +690,157 @@ test('dialogs and Chami resize with the visible viewport', async () => {
     assert.equal(document.querySelector('.keyboard-open'), null);
   } finally {
     window.visualViewport = oldViewport;
+  }
+});
+
+test('phone chat follows keyboard resize and viewport panning, then restores after closing', async () => {
+  const oldViewport = window.visualViewport;
+  const oldHeight = window.innerHeight;
+  const oldWidth = window.innerWidth;
+  const viewport = new dom.window.EventTarget();
+  Object.assign(viewport, { height: 800, offsetTop: 0, scale: 1 });
+  window.visualViewport = viewport;
+  window.innerHeight = 800;
+  window.innerWidth = 390;
+  try {
+    await mount('/ai-chat');
+    const shell = document.querySelector('.pip-workspace');
+    await act(async () => document.querySelector('.pip-ta').focus());
+    await act(async () => {
+      viewport.height = 400;
+      viewport.offsetTop = 90;
+      viewport.dispatchEvent(new Event('resize'));
+    });
+    assert.ok(shell.classList.contains('keyboard-open'));
+    assert.equal(shell.style.getPropertyValue('--viewport-height'), '400px');
+    assert.equal(shell.style.getPropertyValue('--viewport-top'), '90px');
+    await act(async () => {
+      viewport.offsetTop = 130;
+      viewport.dispatchEvent(new Event('scroll'));
+    });
+    assert.equal(shell.style.getPropertyValue('--viewport-top'), '130px');
+    // Android/WebView can shrink innerHeight along with the visual viewport.
+    await act(async () => {
+      window.innerHeight = 400;
+      window.dispatchEvent(new Event('resize'));
+    });
+    assert.ok(shell.classList.contains('keyboard-open'));
+    await act(async () => {
+      window.innerWidth = 844;
+      window.innerHeight = 390;
+      viewport.height = 220;
+      viewport.offsetTop = 0;
+      window.dispatchEvent(new Event('resize'));
+    });
+    assert.ok(shell.classList.contains('keyboard-open'));
+    assert.equal(shell.style.getPropertyValue('--viewport-height'), '220px');
+    await act(async () => {
+      viewport.height = 390;
+      viewport.dispatchEvent(new Event('resize'));
+    });
+    assert.equal(shell.classList.contains('keyboard-open'), false);
+    assert.equal(shell.style.getPropertyValue('--viewport-top'), '0px');
+    // Pinch zoom must not be mistaken for a keyboard.
+    await act(async () => {
+      window.innerWidth = 390;
+      window.innerHeight = 800;
+      viewport.height = 400;
+      viewport.scale = 2;
+      window.dispatchEvent(new Event('resize'));
+    });
+    assert.equal(shell.classList.contains('keyboard-open'), false);
+  } finally {
+    window.visualViewport = oldViewport;
+    window.innerHeight = oldHeight;
+    window.innerWidth = oldWidth;
+  }
+});
+
+test('phone chat handles keyboard resizing when VisualViewport is unavailable', async () => {
+  const oldViewport = window.visualViewport;
+  const oldHeight = window.innerHeight;
+  window.visualViewport = undefined;
+  window.innerHeight = 800;
+  try {
+    await mount('/ai-chat');
+    await act(async () => document.querySelector('.pip-ta').focus());
+    await act(async () => {
+      window.innerHeight = 400;
+      window.dispatchEvent(new Event('resize'));
+    });
+    assert.ok(document.querySelector('.keyboard-open'));
+    assert.equal(
+      document.querySelector('.pip-workspace').style.getPropertyValue('--viewport-height'),
+      '400px',
+    );
+    await act(async () => {
+      window.innerHeight = 800;
+      window.dispatchEvent(new Event('resize'));
+    });
+    assert.equal(document.querySelector('.keyboard-open'), null);
+  } finally {
+    window.visualViewport = oldViewport;
+    window.innerHeight = oldHeight;
+  }
+});
+
+test('chat scrolls only its message list and preserves reading position on resize', async () => {
+  const originalIntoView = HTMLElement.prototype.scrollIntoView;
+  const originalScrollTo = HTMLElement.prototype.scrollTo;
+  const originalObserver = globalThis.ResizeObserver;
+  let pageScrolls = 0,
+    resizeMessages,
+    disconnected = false;
+  const scrolls = [];
+  HTMLElement.prototype.scrollIntoView = () => pageScrolls++;
+  HTMLElement.prototype.scrollTo = function (options) {
+    scrolls.push({ target: this, ...options });
+    this.scrollTop = options.top;
+  };
+  globalThis.ResizeObserver = class {
+    constructor(callback) {
+      resizeMessages = callback;
+    }
+    observe() {}
+    disconnect() {
+      disconnected = true;
+    }
+  };
+  try {
+    await mount('/ai-chat');
+    await fill(document.querySelector('.pip-ta'), 'Hello Chami');
+    await click(document.querySelector('.pip-send'));
+    const messages = document.querySelector('.pip-msgs');
+    assert.equal(pageScrolls, 0);
+    assert.ok(scrolls.length > 0);
+    assert.ok(scrolls.every((request) => request.target === messages));
+    Object.defineProperties(messages, {
+      scrollHeight: { configurable: true, value: 1000 },
+      clientHeight: { configurable: true, value: 400 },
+    });
+    await act(async () => {
+      messages.scrollTop = 600;
+      messages.dispatchEvent(new Event('scroll'));
+    });
+    await act(async () => {
+      Object.defineProperty(messages, 'clientHeight', { configurable: true, value: 200 });
+      resizeMessages();
+    });
+    assert.equal(scrolls.at(-1).top, 1000);
+    await act(async () => {
+      messages.scrollTop = 100;
+      messages.dispatchEvent(new Event('scroll'));
+    });
+    const previous = scrolls.length;
+    await act(async () => resizeMessages());
+    assert.equal(scrolls.length, previous);
+    await mount('/notes');
+    assert.equal(disconnected, true);
+  } finally {
+    HTMLElement.prototype.scrollIntoView = originalIntoView;
+    HTMLElement.prototype.scrollTo = originalScrollTo;
+    if (originalObserver) globalThis.ResizeObserver = originalObserver;
+    else delete globalThis.ResizeObserver;
   }
 });
 

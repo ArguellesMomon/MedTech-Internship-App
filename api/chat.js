@@ -1,3 +1,5 @@
+import { CHAT_LIMITS } from '../src/lib/chat.js';
+
 const SYSTEM_PROMPT =
   'You are Chami, a warm study companion for medical technology interns in the Philippines. Your mascot is a female Persian calico cat named after the app creator?s girlfriend?s pet. Keep that gentle, affectionate personality while giving clear, useful answers; introduce yourself as Chami when asked and use cat references sparingly. Focus on hematology, clinical chemistry, microbiology, blood banking, histopathology, study organization, and encouragement. Use friendly plain language and Taglish when the user does. Discuss educational concepts; do not diagnose patients, prescribe drugs, provide patient-specific treatment, or replace the laboratory SOP or clinical supervisor. Never request identifiable patient data. For clinical topics remind the learner to verify with their instructor and approved local protocols. Be honest about uncertainty.';
 const DEFAULT_MODEL = 'openai/gpt-oss-120b';
@@ -51,7 +53,7 @@ export function createChatHandler({
         let raw = '';
         for await (const chunk of req) {
           raw += chunk;
-          if (raw.length > 24000)
+          if (raw.length > CHAT_LIMITS.requestCharacters)
             return reply(413, 'That message is a little too long. Please shorten it.');
         }
         try {
@@ -71,18 +73,25 @@ export function createChatHandler({
       if (
         !Array.isArray(messages) ||
         !messages.length ||
-        messages.length > 8 ||
         messages.some(
           (m) =>
-            !['user', 'assistant'].includes(m.role) ||
+            !['user', 'assistant'].includes(m?.role) ||
             typeof m.content !== 'string' ||
-            !m.content.trim() ||
-            m.content.length > 6000,
-        ) ||
-        messages.at(-1).role !== 'user' ||
-        JSON.stringify(messages).length > 24000
+            !m.content.trim(),
+        )
       )
-        return reply(400, 'Please send a shorter conversation with a question at the end.');
+        return reply(400, 'Please send a valid chat message.');
+      if (messages.at(-1).role !== 'user')
+        return reply(400, 'Please end the conversation with your message for Chami.');
+      if (
+        messages.length > CHAT_LIMITS.messages ||
+        messages.some((m) => m.content.length > CHAT_LIMITS.messageCharacters) ||
+        JSON.stringify({ messages }).length > CHAT_LIMITS.requestCharacters
+      )
+        return reply(
+          413,
+          'This chat request is too large. Please shorten your message or start a new conversation.',
+        );
       const time = now();
       for (const [id, entry] of requests) {
         if (time - entry.start > 60000) requests.delete(id);

@@ -22,9 +22,9 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase.js';
 import ChamiAvatar from './ui/ChamiAvatar';
+import { buildChatMessages, CHAT_LIMITS } from '../lib/chat.js';
 
 /* ─── Constants ──────────────────────────────────────────────────────────────── */
-const MAX_CTX = 8;
 
 const SUGGESTIONS = [
   { text: 'Help me plan my study week' },
@@ -263,7 +263,6 @@ export default function AIChatbot() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
 
-  const endRef = useRef(null);
   const taRef = useRef(null);
   const msgsRef = useRef(null);
 
@@ -419,7 +418,7 @@ export default function AIChatbot() {
         Authorization: 'Bearer ' + session.access_token,
       },
       body: JSON.stringify({
-        messages: history.slice(-MAX_CTX).map((m) => ({ role: m.role, content: m.content })),
+        messages: buildChatMessages(history),
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -432,6 +431,15 @@ export default function AIChatbot() {
     async (textArg) => {
       const text = (textArg !== undefined ? textArg : input).trim();
       if (!text || loading) return;
+
+      let history;
+      try {
+        const previous = convs.find((c) => c.id === activeId)?.messages || [];
+        history = buildChatMessages([...previous, { role: 'user', content: text }]);
+      } catch (err) {
+        setError(err.message);
+        return;
+      }
 
       let cid = activeId;
       if (!cid) {
@@ -484,11 +492,6 @@ export default function AIChatbot() {
                 },
           ),
         );
-
-        // Build history for Groq
-        const currentConv = convs.find((c) => c.id === cid);
-        const prevMsgs = currentConv?.messages.slice(-MAX_CTX) || [];
-        const history = [...prevMsgs, { ...tempUserMsg, dbId: userDbId }];
 
         const reply = await callGroq(history);
         const replyDbId = await saveMessage(cid, 'assistant', reply);
@@ -555,8 +558,7 @@ export default function AIChatbot() {
     setError(null);
 
     try {
-      const history = trimmed.slice(-MAX_CTX);
-      const reply = await callGroq(history);
+      const reply = await callGroq(trimmed);
       const replyDbId = await saveMessage(activeId, 'assistant', reply);
       const botMsg = { id: uid(), dbId: replyDbId, role: 'assistant', content: reply, ts: now() };
 
@@ -606,7 +608,8 @@ export default function AIChatbot() {
   }, []);
 
   const scrollToBottom = useCallback(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = msgsRef.current;
+    container?.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
   }, []);
 
   /* ── Effects ── */
@@ -624,8 +627,26 @@ export default function AIChatbot() {
 
   const activeMessageCount = convs.find((c) => c.id === activeId)?.messages?.length || 0;
   useEffect(() => {
-    if (!showScrollBtn) endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeMessageCount, loading, showScrollBtn]);
+    if (!showScrollBtn) scrollToBottom();
+  }, [activeMessageCount, loading, showScrollBtn, scrollToBottom]);
+
+  useEffect(() => {
+    const container = msgsRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') return;
+    let followingLatest = true;
+    const rememberPosition = () => {
+      followingLatest = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+    };
+    const observer = new ResizeObserver(() => {
+      if (followingLatest) container.scrollTo({ top: container.scrollHeight, behavior: 'instant' });
+    });
+    observer.observe(container);
+    container.addEventListener('scroll', rememberPosition);
+    return () => {
+      observer.disconnect();
+      container.removeEventListener('scroll', rememberPosition);
+    };
+  }, []);
 
   /* ── Derived values ── */
   const activeConv = convs.find((c) => c.id === activeId);
@@ -877,7 +898,7 @@ export default function AIChatbot() {
                       </button>
                     </div>
                   )}
-                  <div ref={endRef} style={{ height: 12 }} />
+                  <div style={{ height: 12 }} />
                 </div>
               )}
             </div>
@@ -906,7 +927,7 @@ export default function AIChatbot() {
                   ref={taRef}
                   className="pip-ta"
                   aria-label="Message Chami"
-                  maxLength={6000}
+                  maxLength={CHAT_LIMITS.messageCharacters}
                   placeholder="Ask Chami a study question…"
                   value={input}
                   rows={1}
