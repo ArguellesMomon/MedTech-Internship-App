@@ -78,6 +78,9 @@ test('valid chat authenticates the user and uses the provider secret only server
   assert.equal(sent.reasoning_format, undefined);
   assert.equal(sent.messages[0].role, 'system');
   assert.match(sent.messages[0].content, /medical technology/);
+  assert.match(sent.messages[0].content, /You are Chami/);
+  assert.match(sent.messages[0].content, /female Persian calico cat/);
+  assert.doesNotMatch(sent.messages[0].content, /\bPip\b/);
   assert.equal(res.headers['Cache-Control'], 'no-store');
 });
 test('expired sessions cannot use the AI endpoint', async () => {

@@ -522,38 +522,31 @@
   color: var(--sage);
   min-height: 16px;
 }
-.care-pip {
+.care-chami {
   width: 165px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-.care-pip img {
-  width: 120px;
-  height: 120px;
-  object-fit: contain;
-  animation: pipFloat 5s ease-in-out infinite;
+.care-chami > .chami-avatar {
+  --chami-size: 120px;
 }
-.care-pip > span {
+.care-chami > span {
   font-family: var(--font-display);
   font-style: italic;
   font-size: 13px;
   color: var(--sage);
   margin: 5px 0;
 }
-.care-pip a {
+.care-chami a {
   display: flex;
   align-items: center;
   gap: 7px;
   font-size: 9px;
   min-height: 30px;
 }
-@keyframes pipFloat {
-  50% {
-    transform: translateY(-5px) rotate(2deg);
-  }
-}
+
 .overview-skeleton {
   display: grid;
   grid-template-columns: 1fr 1fr;

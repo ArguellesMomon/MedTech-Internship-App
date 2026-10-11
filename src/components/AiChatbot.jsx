@@ -21,7 +21,7 @@ import {
   ArrowUp,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase.js';
-import hamsterLogo from '../assets/Hamster.webp';
+import ChamiAvatar from './ui/ChamiAvatar';
 
 /* ─── Constants ──────────────────────────────────────────────────────────────── */
 const MAX_CTX = 8;
@@ -160,26 +160,13 @@ function MD({ content }) {
   return <div className="pip-md">{out}</div>;
 }
 
-/* ─── Pip Avatar ──────────────────────────────────────────────────────────────── */
-function PipAvatar({ size = 34 }) {
-  return (
-    <div className="pip-avatar-wrap" style={{ width: size, height: size }}>
-      <img
-        src={hamsterLogo}
-        alt="Pip"
-        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-      />
-    </div>
-  );
-}
-
 /* ─── Typing indicator ────────────────────────────────────────────────────────── */
 function TypingIndicator() {
   return (
     <div className="pip-row bot">
-      <PipAvatar size={34} />
+      <ChamiAvatar size={34} className="pip-avatar-wrap" />
       <div className="pip-bubble bot pip-typing-bubble">
-        <span className="pip-typing-label">Pip is thinking</span>
+        <span className="pip-typing-label">Chami is thinking</span>
         <div className="pip-typing-dots">
           <span />
           <span />
@@ -200,12 +187,12 @@ function EmptyState({ onSend }) {
       <div className="pip-orb pip-orb-3" />
 
       <div className="pip-empty-hero">
-        <img src={hamsterLogo} alt="Pip" className="pip-hero-img" />
+        <ChamiAvatar size="100%" animate />
       </div>
 
       <div className="pip-empty-text">
         <h2 className="pip-empty-h">
-          Hi! I'm <span className="pip-name-accent">Pip</span> <ThemedIcon name="Hand" />
+          Hi! I'm <span className="pip-name-accent">Chami</span> <ThemedIcon name="Hand" />
         </h2>
         <p className="pip-empty-sub">
           A little help with study plans, lab rotations, or a tough day. One small step at a time.{' '}
@@ -230,7 +217,7 @@ function Bubble({ msg, copied, onCopy, showRegen, onRegen, loading }) {
   const bot = msg.role === 'assistant';
   return (
     <div className={`pip-row ${bot ? 'bot' : 'user'}`}>
-      {bot && <PipAvatar size={34} />}
+      {bot && <ChamiAvatar size={34} className="pip-avatar-wrap" />}
       <div className="pip-bwrap">
         <div className={`pip-bubble ${bot ? 'bot' : 'user'}`}>
           {bot ? <MD content={msg.content} /> : <span>{msg.content}</span>}
@@ -315,7 +302,7 @@ export default function AIChatbot() {
         }
         const conv = convMap.get(cid);
         conv.messages.push({
-          id: `${cid}_${msg.created_at}`,
+          id: msg.id,
           dbId: msg.id, // ← store DB row id for regenerate
           role: msg.role,
           content: msg.content,
@@ -424,7 +411,7 @@ export default function AIChatbot() {
     const {
       data: { session },
     } = await supabase.auth.getSession();
-    if (!session?.access_token) throw new Error('Please sign in again to chat with Pip.');
+    if (!session?.access_token) throw new Error('Please sign in again to chat with Chami.');
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: {
@@ -436,7 +423,7 @@ export default function AIChatbot() {
       }),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Pip couldn’t connect. Please try again.');
+    if (!res.ok) throw new Error(data.error || 'Chami couldn’t connect. Please try again.');
     return data.content;
   }, []);
 
@@ -664,10 +651,10 @@ export default function AIChatbot() {
       <div className="pip-sb-head">
         <div className="pip-brand">
           <div className="pip-brand-img">
-            <img src={hamsterLogo} alt="Pip" />
+            <ChamiAvatar size="100%" label="" />
           </div>
           <div className="pip-brand-text">
-            <span className="pip-brand-name">Pip</span>
+            <span className="pip-brand-name">Chami</span>
             <span className="pip-brand-tagline">MedTech Companion</span>
           </div>
         </div>
@@ -843,9 +830,9 @@ export default function AIChatbot() {
                 <PanelLeft size={16} />
               </button>
               <div className="pip-topbar-title">
-                <img src={hamsterLogo} alt="" className="pip-topbar-avatar" />
+                <ChamiAvatar size={32} className="pip-topbar-avatar" label="" />
                 <div>
-                  <div className="pip-topbar-name">Pip</div>
+                  <div className="pip-topbar-name">Chami</div>
                   <div className="pip-topbar-conv">{activeConv?.title || 'New Conversation'}</div>
                 </div>
               </div>
@@ -918,9 +905,9 @@ export default function AIChatbot() {
                 <textarea
                   ref={taRef}
                   className="pip-ta"
-                  aria-label="Message Pip"
+                  aria-label="Message Chami"
                   maxLength={6000}
-                  placeholder="Ask Pip a study question…"
+                  placeholder="Ask Chami a study question…"
                   value={input}
                   rows={1}
                   onChange={(e) => {

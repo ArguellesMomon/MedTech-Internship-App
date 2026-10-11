@@ -186,7 +186,7 @@
   color: var(--accent);
   background: var(--rose-soft);
 }
-.preview-workspace > aside > img {
+.preview-workspace > aside > .chami-avatar {
   margin-top: auto;
   width: 33px;
   object-fit: contain;
@@ -521,18 +521,15 @@
   gap: 50px;
   align-items: center;
 }
-.personal-pip {
+.personal-chami {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-.personal-pip img {
-  width: 170px;
-  height: 170px;
-  object-fit: contain;
-  animation: pipFloat 5s ease-in-out infinite;
+.personal-chami > .chami-avatar {
+  --chami-size: 170px;
 }
-.personal-pip span {
+.personal-chami span {
   font-family: var(--font-display);
   color: var(--sage);
   font-style: italic;

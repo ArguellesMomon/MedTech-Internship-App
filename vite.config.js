@@ -4,6 +4,8 @@ import { createChatHandler } from './api/chat.js';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
+    // UI tests use different aliases and must not overwrite the browser's optimized dependencies.
+    cacheDir: 'node_modules/.vite-dev',
     plugins: [
       react(),
       {

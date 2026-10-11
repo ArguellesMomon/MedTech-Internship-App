@@ -38,7 +38,7 @@ Custom section settings only become writable after a successful initial read, pr
 
 The CSS token palette defines surfaces, ink, muted text, borders, and rose/sage/lavender/peach accents. The initial document applies the saved theme before React starts. System mode follows media-query changes. Extracted feature CSS lives in the legacy layer; shared unlayered styles provide the consistent final treatment.
 
-Desktop uses a sidebar, tablet uses bottom navigation, and phone screens stack dashboard cards. Forms use 16px inputs on small screens, safe-area spacing, and viewport-based modal heights. The original fixed body and disabled zoom were removed. Animation respects prefers-reduced-motion. Pip’s original PNG is retained as source; the shipped WebP is 55,284 bytes.
+Desktop uses a sidebar, tablet uses bottom navigation, and phone screens stack dashboard cards. Forms use 16px inputs on small screens, safe-area spacing, and viewport-based modal heights. The original fixed body and disabled zoom were removed. Animation respects prefers-reduced-motion. Chami’s original PNG is retained as source; the shipped WebP is 55,284 bytes.
 
 ## Study chat
 

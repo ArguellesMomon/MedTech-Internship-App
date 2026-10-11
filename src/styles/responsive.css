@@ -179,9 +179,8 @@
   .landing-personal h2 {
     font-size: 31px;
   }
-  .personal-pip img {
-    width: 130px;
-    height: 130px;
+  .personal-chami > .chami-avatar {
+    --chami-size: 130px;
   }
 }
 @media (max-width: 767px) {
@@ -365,23 +364,24 @@
     font-size: 8px;
     max-width: 70%;
   }
-  .care-pip {
+  .care-chami {
     position: absolute;
     top: 38px;
     right: 12px;
     width: 76px;
   }
-  .care-pip img {
-    height: 72px;
-    width: 72px;
+  .care-chami > .chami-avatar {
+    --chami-size: 72px;
   }
-  .care-pip > span {
+  .care-chami > span {
     display: none;
   }
-  .care-pip a {
-    font-size: 0;
+  .care-chami a {
+    font-size: 10px;
+    text-align: center;
+    line-height: 1.4;
   }
-  .care-pip a svg {
+  .care-chami a svg {
     display: none;
   }
   .care-mood > div {
@@ -756,11 +756,10 @@
     text-align: center;
     border-radius: 20px;
   }
-  .personal-pip img {
-    width: 115px;
-    height: 115px;
+  .personal-chami > .chami-avatar {
+    --chami-size: 115px;
   }
-  .personal-pip span {
+  .personal-chami span {
     font-size: 15px;
   }
   .landing-personal .eyebrow {

@@ -1,5 +1,5 @@
 const SYSTEM_PROMPT =
-  'You are Pip, a warm study companion for medical technology interns in the Philippines. Focus on hematology, clinical chemistry, microbiology, blood banking, histopathology, study organization, and encouragement. Use friendly plain language and Taglish when the user does. Discuss educational concepts; do not diagnose patients, prescribe drugs, provide patient-specific treatment, or replace the laboratory SOP or clinical supervisor. Never request identifiable patient data. For clinical topics remind the learner to verify with their instructor and approved local protocols. Be honest about uncertainty.';
+  'You are Chami, a warm study companion for medical technology interns in the Philippines. Your mascot is a female Persian calico cat named after the app creator?s girlfriend?s pet. Keep that gentle, affectionate personality while giving clear, useful answers; introduce yourself as Chami when asked and use cat references sparingly. Focus on hematology, clinical chemistry, microbiology, blood banking, histopathology, study organization, and encouragement. Use friendly plain language and Taglish when the user does. Discuss educational concepts; do not diagnose patients, prescribe drugs, provide patient-specific treatment, or replace the laboratory SOP or clinical supervisor. Never request identifiable patient data. For clinical topics remind the learner to verify with their instructor and approved local protocols. Be honest about uncertainty.';
 const DEFAULT_MODEL = 'openai/gpt-oss-120b';
 const PROVIDER_CODES = new Set([
   'invalid_api_key',
@@ -33,10 +33,11 @@ export function createChatHandler({
     if (!groqKey || !url || !key)
       return reply(
         503,
-        'Pip’s study chat is being set up. Your notes and other tools are still here.',
+        'Chami’s study chat is being set up. Your notes and other tools are still here.',
       );
     const authorization = req.headers.authorization || '';
-    if (!authorization.startsWith('Bearer ')) return reply(401, 'Please sign in to chat with Pip.');
+    if (!authorization.startsWith('Bearer '))
+      return reply(401, 'Please sign in to chat with Chami.');
     try {
       const verified = await fetchImpl(url + '/auth/v1/user', {
         headers: { apikey: key, Authorization: authorization },
@@ -113,26 +114,26 @@ export function createChatHandler({
         // Log only known error codes and HTTP status, never provider messages or credentials.
         const failure = await upstream.json?.().catch(() => null);
         const code = PROVIDER_CODES.has(failure?.error?.code) ? failure.error.code : 'unknown';
-        logger.error('Pip provider request failed', { status: upstream.status, code });
+        logger.error('Chami provider request failed', { status: upstream.status, code });
         if (upstream.status === 401)
           return reply(
             503,
-            'Pip’s AI connection needs a valid API key. Please ask the app owner to check the setup.',
+            'Chami’s AI connection needs a valid API key. Please ask the app owner to check the setup.',
           );
         if (['model_not_found', 'model_decommissioned'].includes(code) || upstream.status === 404)
           return reply(
             503,
-            'Pip’s AI model is unavailable. Please ask the app owner to update its setup.',
+            'Chami’s AI model is unavailable. Please ask the app owner to update its setup.',
           );
         if (upstream.status === 403)
           return reply(
             503,
-            'Pip’s AI model is not enabled for this app. Please ask the app owner to check model access.',
+            'Chami’s AI model is not enabled for this app. Please ask the app owner to check model access.',
           );
         if (['insufficient_quota', 'billing_hard_limit_reached'].includes(code))
           return reply(
             503,
-            'Pip’s AI usage allowance has been reached. Please ask the app owner to check the account.',
+            'Chami’s AI usage allowance has been reached. Please ask the app owner to check the account.',
           );
         if (upstream.status === 429) {
           const retry = Number(upstream.headers?.get('retry-after'));
@@ -142,23 +143,23 @@ export function createChatHandler({
           );
           return reply(
             429,
-            'Pip is receiving too many messages right now. Please try again shortly.',
+            'Chami is receiving too many messages right now. Please try again shortly.',
           );
         }
         if (code === 'context_length_exceeded' || upstream.status === 413)
           return reply(
             400,
-            'This conversation is too long for Pip. Please start a new chat or send a shorter message.',
+            'This conversation is too long for Chami. Please start a new chat or send a shorter message.',
           );
-        return reply(502, 'Pip couldn’t answer right now. Please try again in a moment.');
+        return reply(502, 'Chami couldn’t answer right now. Please try again in a moment.');
       }
       const data = await upstream.json();
       const content = data.choices?.[0]?.message?.content;
-      if (!content) return reply(502, 'Pip couldn’t find the words. Please try again.');
+      if (!content) return reply(502, 'Chami couldn’t find the words. Please try again.');
       return res.status(200).json({ content });
     } catch (error) {
       logger.error('Study chat failed:', error.name);
-      return reply(502, 'Pip couldn’t connect. Please try again in a moment.');
+      return reply(502, 'Chami couldn’t connect. Please try again in a moment.');
     }
   };
 }

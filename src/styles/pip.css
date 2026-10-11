@@ -1,4 +1,4 @@
-/* Pip uses the available viewport; the composer stays above mobile navigation. */
+/* Chami uses the available viewport; the composer stays above mobile navigation. */
 .pip-workspace .workspace-body {
   height: var(--viewport-height, 100dvh);
   display: flex;

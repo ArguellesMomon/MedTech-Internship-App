@@ -33,6 +33,7 @@ let server,
   act,
   createRoot,
   RootApp,
+  ChamiAvatar,
   AuthProvider,
   ThemeProvider,
   BrowserRouter,
@@ -50,6 +51,7 @@ test.before(async () => {
     };
   };
   server = await createServer({
+    cacheDir: path.resolve('node_modules/.vite-ui-tests'),
     resolve: {
       alias: [
         {
@@ -79,6 +81,7 @@ test.before(async () => {
   ({ createRoot } = await import('react-dom/client'));
   ({ BrowserRouter } = await server.ssrLoadModule('/node_modules/react-router-dom/dist/index.mjs'));
   ({ default: RootApp } = await server.ssrLoadModule('/src/App.jsx'));
+  ({ default: ChamiAvatar } = await server.ssrLoadModule('/src/components/ui/ChamiAvatar.jsx'));
   ({ AuthProvider } = await server.ssrLoadModule('/src/auth/AuthProvider.jsx'));
   ({ ThemeProvider } = await server.ssrLoadModule('/src/theme/ThemeProvider.jsx'));
   ({ fixtureClient } = await server.ssrLoadModule('/tests/fixtures/workspace.js'));
@@ -105,9 +108,9 @@ test.after(async () => {
   dom.window.close();
   globalThis.fetch = originalFetch;
 });
-async function mount(route = '/') {
+async function mount(route = '/', { resetData = true } = {}) {
   if (root) await act(async () => root.unmount());
-  localStorage.removeItem('test-workspace-data');
+  if (resetData) localStorage.removeItem('test-workspace-data');
   window.history.replaceState({}, '', route);
   root = createRoot(document.getElementById('root'));
   await act(async () => {
@@ -163,6 +166,9 @@ test('landing describes all six tools and directs visitors to account signup', a
   assert.ok(document.querySelector('a[href="/signup"]'));
   assert.doesNotMatch(document.body.textContent, /demo/i);
   assert.match(document.body.textContent, /illustrative sample data/);
+  assert.match(document.body.textContent, /MEET CHAMI/);
+  assert.doesNotMatch(document.body.textContent, /\bPip\b|hamster/i);
+  assert.ok(document.querySelector('.personal-chami .chami-sprite'));
 });
 test('overview loads current rotation, quotas, schedule, and personal notes', async () => {
   await mount('/');
@@ -172,6 +178,8 @@ test('overview loads current rotation, quotas, schedule, and personal notes', as
   assert.equal(document.querySelectorAll('.agenda-row').length, 3);
   assert.equal(document.querySelectorAll('.notebook-list>a').length, 2);
   assert.equal(document.querySelector('.demo-notice'), null);
+  assert.match(document.querySelector('.care-chami').textContent, /Say hello to Chami/);
+  assert.ok(document.querySelector('.care-chami .chami-sprite'));
 });
 test('quick-add dialog traps focus, closes with Escape, and restores focus', async () => {
   await mount('/');
@@ -331,6 +339,9 @@ test('document removal uses a confirmation dialog and keeps canceled records', a
 });
 test('chat uses the authenticated API and persists the conversation', async () => {
   await mount('/ai-chat');
+  assert.match(document.querySelector('.pip-empty-h').textContent, /Chami/);
+  assert.ok(document.querySelector('textarea[aria-label="Message Chami"]'));
+  assert.doesNotMatch(document.body.textContent, /\bPip\b/);
   await fill(document.querySelector('.pip-ta'), 'Help me plan my study week');
   await click(document.querySelector('.pip-send'));
   for (let i = 0; i < 4; i++) await act(async () => delay(20));
@@ -339,6 +350,75 @@ test('chat uses the authenticated API and persists the conversation', async () =
   const { data } = await fixtureClient.from('chat_messages').select();
   assert.equal(data.length, 2);
   assert.equal(data[1].role, 'assistant');
+  // Two messages may share a timestamp; their database IDs must keep them distinct.
+  await fixtureClient
+    .from('chat_messages')
+    .update({ created_at: data[0].created_at })
+    .eq('id', data[1].id);
+  const originalError = console.error;
+  const warnings = [];
+  console.error = (...args) => warnings.push(args.join(' '));
+  try {
+    await mount('/ai-chat', { resetData: false });
+  } finally {
+    console.error = originalError;
+  }
+  assert.doesNotMatch(warnings.join('\n'), /same key/);
+  assert.match(document.body.textContent, /Choose one topic at a time/);
+  assert.equal(document.querySelectorAll('.pip-row').length, 2);
+  assert.ok(document.querySelector('.pip-avatar-wrap .chami-still'));
+});
+
+test('Chami pauses offscreen and switches to a still avatar for reduced motion', async () => {
+  const originalMedia = window.matchMedia;
+  const originalObserver = globalThis.IntersectionObserver;
+  const listeners = new Set();
+  const preference = {
+    matches: false,
+    addEventListener: (_type, callback) => listeners.add(callback),
+    removeEventListener: (_type, callback) => listeners.delete(callback),
+  };
+  let observeVisibility,
+    disconnected = false;
+  window.matchMedia = () => preference;
+  globalThis.IntersectionObserver = class {
+    constructor(callback) {
+      observeVisibility = callback;
+    }
+    observe() {}
+    disconnect() {
+      disconnected = true;
+    }
+  };
+  try {
+    await act(async () => root.unmount());
+    root = createRoot(document.getElementById('root'));
+    await act(async () => root.render(React.createElement(ChamiAvatar, { animate: true })));
+    assert.ok(document.querySelector('.chami-sprite'));
+    await act(async () => observeVisibility([{ isIntersecting: false }]));
+    assert.equal(document.querySelector('.chami-avatar').dataset.paused, 'true');
+    await act(async () => observeVisibility([{ isIntersecting: true }]));
+    assert.equal(document.querySelector('.chami-avatar').dataset.paused, undefined);
+    await act(async () => {
+      preference.matches = true;
+      listeners.forEach((callback) => callback());
+    });
+    assert.equal(document.querySelector('.chami-sprite'), null);
+    assert.ok(document.querySelector('.chami-still'));
+    await act(async () => {
+      preference.matches = false;
+      listeners.forEach((callback) => callback());
+    });
+    assert.ok(document.querySelector('.chami-sprite'));
+    await act(async () => root.unmount());
+    root = undefined;
+    assert.equal(listeners.size, 0);
+    assert.equal(disconnected, true);
+  } finally {
+    window.matchMedia = originalMedia;
+    if (originalObserver) globalThis.IntersectionObserver = originalObserver;
+    else delete globalThis.IntersectionObserver;
+  }
 });
 
 test('calendar expands, switches to month, and preserves selected dates', async () => {
@@ -417,7 +497,7 @@ test('multi-day exam repeats the title and section, and cancel leaves records un
   await click(document.querySelector('.m-cancel'));
   assert.equal((await fixtureClient.from('exams').select()).data.length, rows.length);
 });
-test('mobile Pip history traps focus, restores the opener, and confirms deletion', async () => {
+test('mobile Chami history traps focus, restores the opener, and confirms deletion', async () => {
   const oldWidth = window.innerWidth;
   window.innerWidth = 390;
   try {
@@ -480,7 +560,7 @@ test('a failed multi-day save keeps the form and dates available for retry', asy
   assert.equal(document.querySelector('.m-sheet'), null);
   assert.equal((await fixtureClient.from('shifts').select()).data.length, before + 2);
 });
-test('dialogs and Pip resize with the visible viewport', async () => {
+test('dialogs and Chami resize with the visible viewport', async () => {
   const oldViewport = window.visualViewport;
   const viewport = new dom.window.EventTarget();
   viewport.height = 700;
@@ -589,18 +669,16 @@ test('Notes uses a labeled toolbar action on phones and opens its editor', async
 });
 test('saved emoji safety reminders render as icons and can use the labeled selector', async () => {
   await mount('/rotations');
-  await fixtureClient
-    .from('user_settings')
-    .upsert(
-      [
-        {
-          user_id: 'test-intern',
-          key: 'rotation_guide.safety.Hematology',
-          value: [{ icon: '\u{1f9e4}', text: 'Existing glove reminder' }],
-        },
-      ],
-      { onConflict: 'user_id,key' },
-    );
+  await fixtureClient.from('user_settings').upsert(
+    [
+      {
+        user_id: 'test-intern',
+        key: 'rotation_guide.safety.Hematology',
+        value: [{ icon: '\u{1f9e4}', text: 'Existing glove reminder' }],
+      },
+    ],
+    { onConflict: 'user_id,key' },
+  );
   await click(document.querySelectorAll('.rg-main-tab')[1]);
   await click(buttons('Safety Reminders')[0]);
   for (let i = 0; i < 3; i++) await act(async () => delay(20));

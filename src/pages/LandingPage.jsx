@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from '../theme/ThemeProvider';
 import Brand from '../components/layout/Brand';
-import Hamster from '../assets/Hamster.webp';
+import ChamiAvatar from '../components/ui/ChamiAvatar';
 const features = [
   {
     icon: Microscope,
@@ -58,9 +58,9 @@ const features = [
   {
     icon: Sparkles,
     title: 'A friend in your corner.',
-    label: 'MEET PIP',
+    label: 'MEET CHAMI',
     description:
-      'Your little hamster companion for study questions, encouragement, and a kinder day.',
+      'Chami, your fluffy Persian cat companion for study questions, encouragement, and a kinder day.',
     color: 'sage',
   },
 ];
@@ -87,7 +87,7 @@ function WorkspacePreview() {
               </span>
             ),
           )}
-          <img src={Hamster} alt="" />
+          <ChamiAvatar size={33} label="" />
         </aside>
         <div className="preview-main">
           <div className="preview-heading">
@@ -283,10 +283,10 @@ export default function LandingPage() {
           </div>
         </section>
         <section className="landing-personal">
-          <div className="personal-pip">
-            <img src={Hamster} alt="Pip, the MedTech Mate hamster" />
+          <div className="personal-chami">
+            <ChamiAvatar animate />
             <span>
-              Hi, I’m Pip. <ThemedIcon name="Heart" />
+              Hi, I’m Chami. <ThemedIcon name="Heart" />
             </span>
           </div>
           <div>

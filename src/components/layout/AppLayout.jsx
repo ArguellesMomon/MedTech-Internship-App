@@ -8,7 +8,7 @@ import { useAuth } from '../../auth/useAuth';
 import { ThemeToggle } from '../../theme/ThemeProvider';
 import GlobalSearch from '../GlobalSearch';
 import Dialog from '../ui/Dialog';
-import Hamster from '../../assets/Hamster.webp';
+import ChamiAvatar from '../ui/ChamiAvatar';
 
 function Navigation({ onNavigate }) {
   return (
@@ -46,7 +46,7 @@ export default function AppLayout({ children }) {
     {
       '/profile': 'Your profile',
       '/about': 'The story behind Mate',
-      '/ai-chat': 'Pip, your study buddy',
+      '/ai-chat': 'Chami, your study buddy',
     }[location.pathname] ||
     'MedTech Mate';
   useEffect(() => {
@@ -92,10 +92,10 @@ export default function AppLayout({ children }) {
         <Brand />
         <p className="nav-eyebrow">YOUR WORKSPACE</p>
         <Navigation />
-        <Link to="/ai-chat" className="pip-sidebar">
-          <img src={Hamster} alt="" />
+        <Link to="/ai-chat" className="chami-sidebar">
+          <ChamiAvatar size={38} label="" />
           <span>
-            <strong>A little help from Pip</strong>
+            <strong>A little help from Chami</strong>
             <small>Your friendly study buddy</small>
           </span>
           <ArrowUpRight size={16} />
@@ -222,7 +222,7 @@ export default function AppLayout({ children }) {
             <Navigation onNavigate={() => setMenuOpen(false)} />
             <div className="navigation-extras">
               {[
-                ['/ai-chat', 'Chat with Pip'],
+                ['/ai-chat', 'Chat with Chami'],
                 ['/profile', 'Profile & preferences'],
                 ['/about', 'The story behind Mate'],
               ].map(([to, label]) => (

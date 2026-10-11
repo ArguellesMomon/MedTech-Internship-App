@@ -1,0 +1,61 @@
+.chami-avatar {
+  width: var(--chami-size, 34px);
+  height: var(--chami-size, 34px);
+  display: inline-flex;
+  flex: 0 0 auto;
+  overflow: hidden;
+  position: relative;
+  vertical-align: middle;
+  isolation: isolate;
+}
+.chami-avatar > .chami-still,
+.chami-avatar > .chami-sprite {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(1.25);
+  transform-origin: center;
+  flex: none;
+}
+.chami-sprite {
+  background-size: 400% 200%;
+  background-position: 0% 0%;
+  background-repeat: no-repeat;
+  animation: chami-companion 4920ms step-end infinite;
+}
+.chami-avatar[data-paused='true'] > .chami-sprite {
+  animation-play-state: paused;
+}
+@keyframes chami-companion {
+  0%,
+  100% {
+    background-position: 0% 0%;
+  }
+  32.520325% {
+    background-position: 33.333333% 0%;
+  }
+  34.349593% {
+    background-position: 66.666667% 0%;
+  }
+  37.195122% {
+    background-position: 100% 0%;
+  }
+  39.024390% {
+    background-position: 0% 100%;
+  }
+  56.300813% {
+    background-position: 33.333333% 100%;
+  }
+  69.512195% {
+    background-position: 66.666667% 100%;
+  }
+  82.723577% {
+    background-position: 100% 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chami-sprite {
+    animation: none;
+    background-position: 0% 0%;
+  }
+}

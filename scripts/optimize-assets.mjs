@@ -1,11 +1,16 @@
 import sharp from 'sharp';
 import fs from 'node:fs/promises';
-const source = 'src/assets/Hamster.png',
-  target = 'src/assets/Hamster.webp';
-await sharp(source)
-  .resize({ width: 384, height: 384, fit: 'inside', withoutEnlargement: true })
-  .webp({ quality: 90, alphaQuality: 100 })
-  .toFile(target);
-console.log(
-  JSON.stringify({ before: (await fs.stat(source)).size, after: (await fs.stat(target)).size }),
-);
+// Preserve the sprite grid dimensions; only compress the runtime assets.
+// The PNGs remain the source and the delivery bundle retains the lossless sheet.
+for (const name of ['chami-avatar', 'chami-spritesheet']) {
+  const source = `src/assets/chami/${name}.png`;
+  const target = `src/assets/chami/${name}.webp`;
+  await sharp(source).webp({ quality: 90, alphaQuality: 100, effort: 6 }).toFile(target);
+  console.log(
+    JSON.stringify({
+      name,
+      before: (await fs.stat(source)).size,
+      after: (await fs.stat(target)).size,
+    }),
+  );
+}

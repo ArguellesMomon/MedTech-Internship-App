@@ -4,7 +4,7 @@ import { Heart, ArrowUpRight, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth/useAuth';
 import { supabase } from '../../lib/supabase';
-import Hamster from '../../assets/Hamster.webp';
+import ChamiAvatar from '../ui/ChamiAvatar';
 const words = [
   'You don’t have to have it all figured out. Just take the next little step.',
   'You are learning, even on the days that feel slow. I’m proud of you.',
@@ -77,11 +77,11 @@ export default function CareCard() {
           <p role="status">{message}</p>
         </div>
       </div>
-      <div className="care-pip">
-        <img src={Hamster} alt="Pip, your hamster study companion" />
+      <div className="care-chami">
+        <ChamiAvatar animate />
         <span>In your corner. Always.</span>
         <Link to="/ai-chat">
-          Say hello to Pip
+          Say hello to Chami
           <ArrowUpRight size={15} />
         </Link>
       </div>
