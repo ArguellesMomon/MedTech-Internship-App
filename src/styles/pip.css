@@ -333,8 +333,6 @@
   .pip-workspace.keyboard-open .workspace-body {
     padding-bottom: 0;
   }
-  .pip-workspace.keyboard-open .mobile-bottom-nav,
-  .pip-workspace.keyboard-open .workspace-topbar,
   .pip-workspace.keyboard-open .pip-hint {
     display: none;
   }

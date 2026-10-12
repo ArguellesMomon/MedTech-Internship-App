@@ -10,6 +10,7 @@ import GlobalSearch from '../GlobalSearch';
 import Dialog from '../ui/Dialog';
 import ChamiAvatar from '../ui/ChamiAvatar';
 import useChatViewport from '../../hooks/useChatViewport';
+import useViewportLock from '../../hooks/useViewportLock';
 
 function Navigation({ onNavigate }) {
   return (
@@ -34,7 +35,9 @@ export default function AppLayout({ children }) {
   const { user, profile, signOut } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { height: viewportHeight, top: viewportTop, keyboardOpen } = useChatViewport();
+  const viewport = useChatViewport();
+  const { height: viewportHeight, top: viewportTop, keyboardOpen } = viewport;
+  const shellRef = useViewportLock(viewport, location.pathname === '/ai-chat');
   const [error, setError] = useState('');
   const shellFree = ['/landing', '/login', '/signup'].includes(location.pathname);
   const name = profile?.full_name?.trim() || 'Your profile';
@@ -58,15 +61,29 @@ export default function AppLayout({ children }) {
       setError(err.message);
     }
   }
-  if (shellFree) return <>{children}</>;
+  const viewportStyle = {
+    '--viewport-height': viewportHeight + 'px',
+    '--viewport-top': viewportTop + 'px',
+  };
+  if (shellFree)
+    return (
+      <div
+        ref={shellRef}
+        className={'auth-shell' + (keyboardOpen ? ' keyboard-open' : '')}
+        style={viewportStyle}
+      >
+        {children}
+      </div>
+    );
   return (
     <div
+      ref={shellRef}
       className={
         'workspace-shell' +
         (keyboardOpen ? ' keyboard-open' : '') +
         (location.pathname === '/ai-chat' ? ' pip-workspace' : '')
       }
-      style={{ '--viewport-height': viewportHeight + 'px', '--viewport-top': viewportTop + 'px' }}
+      style={viewportStyle}
     >
       <a className="skip-link" href="#main-content">
         Skip to content

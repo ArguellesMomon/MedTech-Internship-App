@@ -1,6 +1,6 @@
 import ThemedIcon from '../components/ui/ThemedIcon';
 import '../styles/features/Login.css';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
 import { Sparkles, Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
@@ -15,33 +15,9 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   const cardRef = useRef(null);
   const passwordRef = useRef(null);
-
-  /* Keyboard detection */
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    function onResize() {
-      const shrinkRatio = vv.height / window.innerHeight;
-      setKeyboardOpen(shrinkRatio < 0.75);
-    }
-    vv.addEventListener('resize', onResize);
-    return () => vv.removeEventListener('resize', onResize);
-  }, []);
-
-  /* Scroll active input into view */
-  useEffect(() => {
-    if (!keyboardOpen) return;
-    const active = document.activeElement;
-    if (active && active !== document.body) {
-      setTimeout(() => {
-        active.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
-    }
-  }, [keyboardOpen]);
 
   function updateField(e) {
     setForm((cur) => ({ ...cur, [e.target.name]: e.target.value }));
@@ -63,7 +39,7 @@ export default function Login() {
 
   return (
     <>
-      <div className={`login-page${keyboardOpen ? ' keyboard-open' : ''}`}>
+      <div className="login-page">
         <div className="auth-theme">
           <ThemeToggle />
         </div>

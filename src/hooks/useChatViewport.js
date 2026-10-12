@@ -29,10 +29,14 @@ export default function useChatViewport() {
         focused || keyboardOpen ? Math.max(restingHeight, window.innerHeight) : window.innerHeight;
       const obscured = referenceHeight - next.height * next.scale;
       keyboardOpen = obscured > Math.max(120, referenceHeight * 0.15);
-      if (!keyboardOpen) restingHeight = window.innerHeight;
+      if (!keyboardOpen) {
+        restingHeight = window.innerHeight;
+        if (next.scale === 1) next.top = 0;
+      }
       setState((previous) =>
         previous.height === next.height &&
         previous.top === next.top &&
+        previous.scale === next.scale &&
         previous.keyboardOpen === keyboardOpen
           ? previous
           : { ...next, keyboardOpen },

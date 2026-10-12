@@ -1,5 +1,6 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import useChatViewport from '../../hooks/useChatViewport';
 const focusables =
   'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex="0"]';
 export default function Dialog({
@@ -9,22 +10,7 @@ export default function Dialog({
   label = 'Dialog',
 }) {
   const ref = useRef(null);
-  const [viewport, setViewport] = useState(() => ({
-    height: window.visualViewport?.height || window.innerHeight,
-    top: window.visualViewport?.offsetTop || 0,
-  }));
-  useEffect(() => {
-    const vv = window.visualViewport;
-    const update = () =>
-      setViewport({ height: vv?.height || window.innerHeight, top: vv?.offsetTop || 0 });
-    const target = vv || window;
-    target.addEventListener('resize', update);
-    vv?.addEventListener('scroll', update);
-    return () => {
-      target.removeEventListener('resize', update);
-      vv?.removeEventListener('scroll', update);
-    };
-  }, []);
+  const viewport = useChatViewport();
   const id = useId();
   const close = useRef(onClose);
   close.current = onClose;

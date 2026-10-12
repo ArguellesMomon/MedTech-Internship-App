@@ -1,6 +1,6 @@
 import ThemedIcon from '../components/ui/ThemedIcon';
 import '../styles/features/Signup.css';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
 import {
@@ -51,25 +51,6 @@ export default function Signup() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
-
-  /* ── Keyboard detection ── */
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const onResize = () => setKeyboardOpen(vv.height / window.innerHeight < 0.75);
-    vv.addEventListener('resize', onResize);
-    return () => vv.removeEventListener('resize', onResize);
-  }, []);
-
-  useEffect(() => {
-    if (!keyboardOpen) return;
-    const active = document.activeElement;
-    if (active && active !== document.body) {
-      setTimeout(() => active.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
-    }
-  }, [keyboardOpen]);
-
   function set(field) {
     return (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
   }
@@ -144,7 +125,7 @@ export default function Signup() {
 
   return (
     <>
-      <div className={`su-page${keyboardOpen ? ' keyboard-open' : ''}`}>
+      <div className="su-page">
         <div className="auth-theme">
           <ThemeToggle />
         </div>

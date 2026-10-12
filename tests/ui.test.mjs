@@ -112,7 +112,7 @@ test.after(async () => {
   dom.window.close();
   globalThis.fetch = originalFetch;
 });
-async function mount(route = '/', { resetData = true } = {}) {
+async function mount(route = '/', { resetData = true, strict = false } = {}) {
   if (root) await act(async () => root.unmount());
   if (resetData) localStorage.removeItem('test-workspace-data');
   window.history.replaceState({}, '', route);
@@ -120,12 +120,16 @@ async function mount(route = '/', { resetData = true } = {}) {
   await act(async () => {
     root.render(
       React.createElement(
-        BrowserRouter,
+        strict ? React.StrictMode : React.Fragment,
         null,
         React.createElement(
-          ThemeProvider,
+          BrowserRouter,
           null,
-          React.createElement(AuthProvider, null, React.createElement(RootApp)),
+          React.createElement(
+            ThemeProvider,
+            null,
+            React.createElement(AuthProvider, null, React.createElement(RootApp)),
+          ),
         ),
       ),
     );
@@ -940,4 +944,115 @@ test('saved emoji safety reminders render as icons and can use the labeled selec
     .maybeSingle();
   assert.equal(data.value[0].icon, 'Thermometer');
   assert.equal(data.value[0].text, 'Existing glove reminder');
+});
+
+test('all keyboard routes contain touch drags inside content and release the document on dismissal', async () => {
+  const oldViewport = window.visualViewport,
+    oldHeight = window.innerHeight,
+    oldWidth = window.innerWidth;
+  const viewport = new dom.window.EventTarget();
+  Object.assign(viewport, { height: 800, offsetTop: 0, scale: 1 });
+  window.visualViewport = viewport;
+  window.innerHeight = 800;
+  window.innerWidth = 390;
+  const swipe = (target, delta, fingers = 1) => {
+    const points = (y) =>
+      Array.from({ length: fingers }, (_, identifier) => ({
+        identifier,
+        clientX: 100 + identifier * 30,
+        clientY: y,
+      }));
+    const dispatch = (name, touches) => {
+      const event = new Event(name, { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'touches', { value: touches });
+      target.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    dispatch('touchstart', points(200));
+    const prevented = dispatch('touchmove', points(200 - delta));
+    dispatch('touchend', []);
+    return prevented;
+  };
+  try {
+    for (const route of [
+      '/login',
+      '/signup',
+      '/profile',
+      '/ai-chat',
+      '/notes?new=1',
+      '/shifts?new=1',
+      '/reports?new=1',
+    ]) {
+      viewport.height = 800;
+      viewport.offsetTop = 0;
+      await mount(route, { strict: true });
+      if (route === '/profile') await click(buttons('Edit Profile')[0]);
+      const shell = document.querySelector('.workspace-shell, .auth-shell');
+      const scope = document.querySelector('[data-app-dialog]') || document;
+      const input = scope.querySelector(
+        'input:not([type=hidden]):not([type=checkbox]):not([type=file]):not([disabled]), textarea',
+      );
+      assert.ok(input, route + ' needs a keyboard field');
+      const content =
+        document.querySelector('.nm-body, .m-body, .lm-body, .pip-msgs, .workspace-main') || shell;
+      content.style.overflowY = 'auto';
+      Object.defineProperties(content, {
+        scrollHeight: { configurable: true, value: 1000 },
+        clientHeight: { configurable: true, value: 300 },
+      });
+      content.getBoundingClientRect = () => ({ top: 0, bottom: 300, height: 300 });
+      input.getBoundingClientRect = () => ({ top: 20, bottom: 60, height: 40 });
+      await act(async () => {
+        input.focus();
+        viewport.height = 400;
+        viewport.offsetTop = 80;
+        viewport.dispatchEvent(new Event('resize'));
+        await delay(30);
+      });
+      assert.ok(document.documentElement.classList.contains('keyboard-viewport'), route);
+      assert.equal(shell.dataset.viewportLocked, 'true');
+      assert.equal(shell.style.getPropertyValue('--viewport-height'), '400px');
+      assert.equal(swipe(document.body, 100), true, route + ' must not pan its root');
+      assert.equal(
+        swipe(document.querySelector('.mobile-bottom-nav') || document.body, -100),
+        true,
+      );
+      content.scrollTop = 0;
+      assert.equal(swipe(content, -100), true);
+      assert.equal(content.scrollTop, 0);
+      assert.equal(swipe(content, 100), true);
+      assert.equal(content.scrollTop, 100);
+      content.scrollTop = 700;
+      assert.equal(swipe(content, 100), true);
+      assert.equal(content.scrollTop, 700);
+      assert.equal(swipe(document.body, 100, 2), false, 'pinch zoom stays available');
+      const draft =
+        input.type === 'number'
+          ? '3'
+          : input.type === 'date'
+            ? '2026-10-12'
+            : input.type === 'time'
+              ? '09:00'
+              : 'A draft survives keyboard resizing';
+      await fill(input, draft);
+      assert.equal(input.value, draft);
+      await act(async () => {
+        viewport.height = 800;
+        viewport.offsetTop = 80;
+        viewport.dispatchEvent(new Event('resize'));
+      });
+      assert.equal(shell.style.getPropertyValue('--viewport-top'), '0px');
+      if (route !== '/ai-chat') {
+        assert.equal(document.documentElement.classList.contains('keyboard-viewport'), false);
+        assert.equal(swipe(document.body, 100), false, 'normal page gestures return');
+      }
+    }
+  } finally {
+    await act(async () => root.unmount());
+    root = null;
+    window.visualViewport = oldViewport;
+    window.innerHeight = oldHeight;
+    window.innerWidth = oldWidth;
+    assert.equal(document.documentElement.classList.contains('keyboard-viewport'), false);
+  }
 });

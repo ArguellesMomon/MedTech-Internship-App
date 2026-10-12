@@ -1,0 +1,150 @@
+/* Safari's keyboard must not hand content drags to its native root viewport. */
+html.keyboard-viewport {
+  height: var(--locked-viewport-height, 100dvh);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.keyboard-viewport body {
+  position: fixed;
+  inset: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.keyboard-viewport #root {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+[data-viewport-locked='true'] {
+  position: fixed;
+  top: var(--viewport-top, 0px);
+  left: 0;
+  width: 100%;
+  height: var(--viewport-height, 100dvh);
+  min-height: 0;
+  overflow: hidden;
+}
+.workspace-shell[data-viewport-locked='true'] {
+  display: flex;
+  flex-direction: column;
+}
+.workspace-shell[data-viewport-locked='true'] .workspace-body {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+.workspace-shell[data-viewport-locked='true'] .workspace-sidebar {
+  position: absolute;
+  height: 100%;
+}
+.workspace-shell[data-viewport-locked='true'] .workspace-topbar {
+  position: static;
+  display: flex;
+  flex-shrink: 0;
+}
+.workspace-shell[data-viewport-locked='true'] .workspace-main {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  margin-block: 0;
+  overflow-y: auto;
+  overscroll-behavior: none;
+}
+.workspace-shell[data-viewport-locked='true'] .workspace-footer {
+  display: none;
+}
+.workspace-shell[data-viewport-locked='true'] .chat-page {
+  overflow: hidden;
+}
+.auth-shell[data-viewport-locked='true'] {
+  overflow-y: auto;
+  overscroll-behavior: none;
+}
+.auth-shell[data-viewport-locked='true'] :is(.login-page, .su-page) {
+  min-height: 100%;
+  justify-content: flex-start;
+  padding-top: 64px;
+  padding-bottom: 20px;
+}
+.keyboard-viewport :is(.pip-msgs, .m-body, .nm-body, .lm-body, .rm-body, textarea) {
+  overscroll-behavior: none;
+}
+@media (max-width: 1023px) {
+  .workspace-shell[data-viewport-locked='true'] .workspace-topbar {
+    height: auto;
+    min-height: calc(48px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) max(12px, env(safe-area-inset-right)) 0
+      max(12px, env(safe-area-inset-left));
+  }
+  .workspace-shell[data-viewport-locked='true'] .workspace-main {
+    padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
+  }
+  .workspace-shell[data-viewport-locked='true'] .chat-page {
+    padding: 6px 8px;
+  }
+  .workspace-shell[data-viewport-locked='true'] .mobile-bottom-nav {
+    position: static;
+    display: grid;
+    flex-shrink: 0;
+    padding: 4px max(8px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
+  }
+  .workspace-shell[data-viewport-locked='true'].keyboard-open .mobile-bottom-nav {
+    padding-bottom: 4px;
+  }
+  .workspace-shell[data-viewport-locked='true'] .mobile-bottom-nav > :is(a, button) {
+    min-height: 40px;
+    padding: 3px 2px;
+    gap: 3px;
+  }
+  .workspace-shell[data-viewport-locked='true'][data-compact='true']
+    .mobile-bottom-nav
+    > :is(a, button) {
+    flex-direction: row;
+    min-height: 34px;
+    gap: 4px;
+  }
+  .workspace-shell[data-viewport-locked='true'][data-compact='true'] .workspace-topbar {
+    min-height: calc(40px + env(safe-area-inset-top));
+  }
+}
+
+@media (max-width: 1023px) {
+  .pip-workspace[data-compact='true'] .pip-topbar {
+    padding: 3px 10px;
+  }
+  .pip-workspace[data-compact='true'] :is(.pip-toggle-btn, .pip-clear-btn) {
+    width: 30px;
+    height: 30px;
+  }
+  .pip-workspace[data-compact='true'] .pip-topbar-conv {
+    display: none;
+  }
+  .pip-workspace[data-compact='true'] .pip-disclaimer {
+    padding: 3px 10px;
+    font-size: 9px;
+    line-height: 1.4;
+  }
+  .pip-workspace[data-compact='true'] .pip-input-area {
+    padding: 4px 10px;
+  }
+  .pip-workspace[data-compact='true'] .pip-input-box {
+    padding: 4px 6px 4px 10px;
+    align-items: center;
+  }
+  .pip-workspace[data-compact='true'] .pip-ta {
+    height: 36px;
+    min-height: 36px;
+    max-height: 44px;
+    padding: 4px 0;
+  }
+  .pip-workspace[data-compact='true'] .pip-send {
+    width: 36px;
+    height: 36px;
+  }
+}
