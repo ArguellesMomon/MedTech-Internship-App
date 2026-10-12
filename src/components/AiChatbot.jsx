@@ -38,6 +38,13 @@ const trunc = (s, n = 46) => (s.length > n ? s.slice(0, n) + '…' : s);
 const fmt = (ts) =>
   new Date(ts).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
 
+function focusComposerLater(ref, delay) {
+  setTimeout(() => {
+    // A reply must not reopen the keyboard behind an active dialog.
+    if (!document.querySelector('[data-app-dialog]')) ref.current?.focus({ preventScroll: true });
+  }, delay);
+}
+
 function groupConvs(convs) {
   const todayMs = new Date().setHours(0, 0, 0, 0);
   const yesterMs = todayMs - 86400000;
@@ -354,7 +361,7 @@ export default function AIChatbot() {
     setInput('');
     setError(null);
     setSbOpen(false);
-    setTimeout(() => taRef.current?.focus(), 120);
+    focusComposerLater(taRef, 120);
   }, []);
 
   /* ── Delete conversation ── */
@@ -387,7 +394,7 @@ export default function AIChatbot() {
     setActiveId(id);
     setError(null);
     setSbOpen(false);
-    setTimeout(() => taRef.current?.focus(), 120);
+    focusComposerLater(taRef, 120);
   }, []);
 
   /* ── Copy message ── */
@@ -514,7 +521,7 @@ export default function AIChatbot() {
         // Keep the saved question visible so history and the conversation agree.
       } finally {
         setLoading(false);
-        setTimeout(() => taRef.current?.focus(), 100);
+        focusComposerLater(taRef, 100);
       }
     },
     [input, loading, activeId, convs, saveMessage, callGroq],

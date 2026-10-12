@@ -601,6 +601,7 @@ test('mobile Chami history traps focus, restores the opener, and confirms deleti
     await click(opener);
     let dialog = document.querySelector('[role="dialog"]');
     assert.ok(dialog);
+    await act(async () => delay(150)); // Allow the pending reply-focus timer to fire.
     assert.ok(dialog.contains(document.activeElement));
     await escape();
     assert.equal(document.activeElement, opener);
