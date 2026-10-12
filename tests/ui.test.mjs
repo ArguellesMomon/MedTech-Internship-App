@@ -1056,3 +1056,111 @@ test('all keyboard routes contain touch drags inside content and release the doc
     assert.equal(document.documentElement.classList.contains('keyboard-viewport'), false);
   }
 });
+
+test('keyboard animation does not fight native scrolling or repeatedly reveal the focused field', async () => {
+  const oldViewport = window.visualViewport,
+    oldHeight = window.innerHeight,
+    oldWidth = window.innerWidth;
+  const oldScrollTo = window.scrollTo,
+    oldScrollY = window.scrollY;
+  const viewport = new dom.window.EventTarget();
+  Object.assign(viewport, { height: 800, offsetTop: 0, scale: 1 });
+  window.visualViewport = viewport;
+  window.innerHeight = 800;
+  window.innerWidth = 390;
+  const rootScrolls = [];
+  window.scrollTo = (...args) => rootScrolls.push(args);
+  try {
+    await mount('/login', { strict: true });
+    const shell = document.querySelector('.auth-shell');
+    const input = shell.querySelector('input');
+    shell.style.overflowY = 'auto';
+    shell.getBoundingClientRect = () => ({ top: 0, bottom: 300, height: 300 });
+    let scrollTop = 0;
+    const fieldScrolls = [];
+    Object.defineProperty(shell, 'scrollTop', {
+      configurable: true,
+      get: () => scrollTop,
+      set: (value) => {
+        scrollTop = value;
+        fieldScrolls.push(value);
+      },
+    });
+    input.getBoundingClientRect = () => ({
+      top: 450 - scrollTop,
+      bottom: 490 - scrollTop,
+      height: 40,
+    });
+    await act(async () => input.focus());
+    rootScrolls.length = 0;
+    for (const height of [760, 700, 600]) {
+      await act(async () => {
+        window.innerHeight = height;
+        viewport.height = height;
+        viewport.offsetTop = 40;
+        viewport.dispatchEvent(new Event('resize'));
+        await delay(15);
+      });
+    }
+    assert.ok(
+      shell.classList.contains('keyboard-open'),
+      'retain the resting height when both viewports animate',
+    );
+    fieldScrolls.length = 0;
+    window.scrollY = 30;
+    for (const height of [590, 525, 490, 505, 488, 400]) {
+      await act(async () => {
+        window.innerHeight = height;
+        viewport.height = height;
+        viewport.offsetTop++;
+        viewport.dispatchEvent(new Event('resize'));
+        window.dispatchEvent(new Event('scroll'));
+        await delay(15);
+      });
+      assert.equal(shell.dataset.compact, 'true', 'compact layout does not toggle around 500px');
+    }
+    assert.equal(rootScrolls.length, 0, 'the app never resets Safari caret panning');
+    assert.equal(
+      fieldScrolls.length,
+      0,
+      'do not reposition the field in intermediate resize frames',
+    );
+    await act(async () => delay(220));
+    assert.equal(fieldScrolls.length, 1, 'reveal the field once after animation settles');
+    fieldScrolls.length = 0;
+    await act(async () => {
+      for (const top of [90, 91, 89, 100]) {
+        viewport.offsetTop = top;
+        viewport.dispatchEvent(new Event('scroll'));
+      }
+      window.dispatchEvent(new Event('scroll'));
+      await delay(220);
+    });
+    assert.equal(rootScrolls.length, 0);
+    assert.equal(fieldScrolls.length, 0, 'offset changes do not trigger another field scroll');
+    // Keep keyboard mode through small threshold oscillations during dismissal.
+    for (const height of [665, 690, 675, 680]) {
+      await act(async () => {
+        window.innerHeight = height;
+        viewport.height = height;
+        viewport.dispatchEvent(new Event('resize'));
+      });
+      assert.ok(shell.classList.contains('keyboard-open'));
+    }
+    await act(async () => {
+      window.innerHeight = 800;
+      viewport.height = 800;
+      viewport.dispatchEvent(new Event('resize'));
+    });
+    assert.equal(shell.classList.contains('keyboard-open'), false);
+    assert.equal(rootScrolls.length, 1, 'restore normal document scrolling only after dismissal');
+  } finally {
+    await act(async () => root.unmount());
+    root = null;
+    window.visualViewport = oldViewport;
+    window.innerHeight = oldHeight;
+    window.innerWidth = oldWidth;
+    window.scrollTo = oldScrollTo;
+    window.scrollY = oldScrollY;
+  }
+});

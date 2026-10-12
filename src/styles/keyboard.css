@@ -1,6 +1,7 @@
-/* Safari's keyboard must not hand content drags to its native root viewport. */
+/* Keep root geometry stable while only the shell follows the visible viewport.
+   Safari's keyboard must not hand content drags to its native root viewport. */
 html.keyboard-viewport {
-  height: var(--locked-viewport-height, 100dvh);
+  height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
 }
@@ -147,4 +148,23 @@ html.keyboard-viewport {
     width: 36px;
     height: 36px;
   }
+}
+
+/* Animated padding and smooth scroll must not compete with keyboard resizing. */
+.keyboard-viewport
+  :is(
+    .login-page,
+    .su-page,
+    .workspace-main,
+    .pip-msgs,
+    .m-body,
+    .nm-body,
+    .lm-body,
+    .rm-body,
+    .auth-shell
+  ) {
+  scroll-behavior: auto;
+}
+.auth-shell.keyboard-open :is(.login-page, .su-page) {
+  transition: none;
 }

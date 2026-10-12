@@ -15,22 +15,35 @@ export default function useChatViewport() {
     const viewport = window.visualViewport;
     let restingHeight = window.innerHeight;
     let restingWidth = window.innerWidth;
+    // Browser toolbars can obscure some of the layout viewport without a keyboard.
+    const normalInset = () =>
+      Math.min(100, Math.max(0, window.innerHeight - readViewport().height * readViewport().scale));
+    let restingInset = normalInset();
     let keyboardOpen = false;
     const update = () => {
       const next = readViewport();
       const focused = document.activeElement?.matches('input, textarea, [contenteditable="true"]');
       if (window.innerWidth !== restingWidth) {
+        restingHeight = keyboardOpen
+          ? Math.max(window.innerHeight, restingWidth)
+          : window.innerHeight;
         restingWidth = window.innerWidth;
-        restingHeight = window.innerHeight;
-        keyboardOpen = false;
+        restingInset = 0;
       }
       // Some browsers resize both viewports. Retain the pre-keyboard height while typing.
       const referenceHeight =
         focused || keyboardOpen ? Math.max(restingHeight, window.innerHeight) : window.innerHeight;
-      const obscured = referenceHeight - next.height * next.scale;
-      keyboardOpen = obscured > Math.max(120, referenceHeight * 0.15);
+      const obscured = referenceHeight - next.height * next.scale - restingInset;
+      // Keep the opening baseline through intermediate animation frames, and
+      // use separate open/close thresholds so small viewport oscillations do not
+      // repeatedly switch between the document and the keyboard layout.
+      const threshold = keyboardOpen ? 60 : Math.max(120, referenceHeight * 0.15);
+      keyboardOpen = next.scale === 1 && obscured > threshold;
       if (!keyboardOpen) {
-        restingHeight = window.innerHeight;
+        if (!focused) {
+          restingHeight = window.innerHeight;
+          restingInset = normalInset();
+        }
         if (next.scale === 1) next.top = 0;
       }
       setState((previous) =>

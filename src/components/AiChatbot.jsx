@@ -936,7 +936,6 @@ export default function AIChatbot() {
                     resizeTA();
                   }}
                   onKeyDown={isMobile ? undefined : handleKey}
-                  onFocus={() => setTimeout(scrollToBottom, 300)}
                 />
                 <button
                   className={`pip-send ${input.trim() && !loading ? 'active' : ''}`}
