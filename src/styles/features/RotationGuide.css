@@ -128,7 +128,7 @@
 
   .rs-stats {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 1px;
     background: var(--surface-subtle);
     border-radius: 20px;
@@ -180,7 +180,7 @@
   }
   .rt-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
     gap: 16px;
   }
 
@@ -1084,7 +1084,7 @@
   }
   .safety-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
   .safety-card {
@@ -1550,7 +1550,7 @@
       grid-template-columns: 1fr;
     }
     .rs-stats {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .rs-stat-n {
       font-size: 1.6rem;
@@ -1617,7 +1617,7 @@
       font-size: 1.8rem;
     }
     .rt-cards-grid {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .safety-grid {
       grid-template-columns: 1fr;

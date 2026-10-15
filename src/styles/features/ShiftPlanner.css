@@ -4,7 +4,7 @@
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
     font-family: var(--font-sans);
     background: var(--surface);
     border: 1px solid rgba(255, 220, 232, 0.55);
@@ -149,7 +149,7 @@
   /* ── Grid ── */
   .sp-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 20px;
     margin-top: 20px;
   }
@@ -281,7 +281,7 @@
   /* ── Shift Calendar ── */
   .sp-cal-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 8px;
   }
   .sp-cal-day {
@@ -417,7 +417,7 @@
   }
   .ec-month-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 6px;
   }
   .ec-dow-header {
@@ -1427,7 +1427,7 @@
       font-size: 1.7rem;
     }
     .sp-page-tabs {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
     }
     .sp-page-tab {
@@ -1444,7 +1444,7 @@
       grid-template-columns: 1fr;
     }
     .sp-cal-grid {
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 6px;
     }
     .sp-cal-day {
@@ -1510,7 +1510,7 @@
       grid-template-columns: 1fr;
     }
     .sp-cal-grid {
-      grid-template-columns: repeat(7, 1fr);
+      grid-template-columns: repeat(7, minmax(0, 1fr));
       gap: 6px;
     }
     .sp-cal-day {
@@ -1523,7 +1523,7 @@
 
   @media (min-width: 1024px) {
     .sp-grid {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
   }
 }

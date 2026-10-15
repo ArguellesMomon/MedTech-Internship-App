@@ -1,9 +1,12 @@
+import ManageSectionsModal from './ui/SectionManager';
 import ThemedIcon from './ui/ThemedIcon';
+import PageHeader from './ui/PageHeader';
 import ScheduleCalendar from './schedule/ScheduleCalendar';
 import BatchDates from './schedule/BatchDates';
 import { uniqueDates } from '../lib/calendar';
 import useQuickCreate from '../hooks/useQuickCreate';
 import Dialog from './ui/Dialog';
+import CardScrollRegion from './ui/CardScrollRegion';
 import '../styles/features/ShiftPlanner.css';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
@@ -760,140 +763,6 @@ function ExamModal({ editing, defaultDate, onClose, onSaved, sections, sectionMa
 /* ─────────────────────────────────────────────
    MANAGE SECTIONS MODAL
 ───────────────────────────────────────────── */
-function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose }) {
-  const [name, setName] = useState('');
-  const [error, setError] = useState('');
-  const [removing, setRemoving] = useState(null);
-
-  const handleAdd = () => {
-    const label = name.trim();
-    if (!label) {
-      setError('Please enter a section name.');
-      return;
-    }
-    if (sections.some((s) => s.id.toLowerCase() === label.toLowerCase())) {
-      setError('That section already exists.');
-      return;
-    }
-    onAdd(label);
-    setName('');
-    setError('');
-  };
-
-  return (
-    <Dialog className="msm-overlay" onClose={onClose}>
-      <div className="msm-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="msm-head">
-          <div className="msm-head-left">
-            <div className="msm-head-icon">
-              <Settings2 size={18} />
-            </div>
-            <div>
-              <h3 className="msm-title">Manage Sections</h3>
-              <p className="msm-sub">Add, remove, and color sections for shifts and exams</p>
-            </div>
-          </div>
-          <button aria-label="Close" className="msm-close" onClick={onClose}>
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="msm-add-box">
-          <p className="msm-box-label">New Section</p>
-          <div className="msm-add-row">
-            <input
-              className="msm-input"
-              placeholder="e.g. Immunology, Parasitology…"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setError('');
-              }}
-              onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-              maxLength={40}
-              autoFocus
-            />
-            <button className="msm-add-btn" onClick={handleAdd}>
-              <Plus size={14} /> Add
-            </button>
-          </div>
-          {error && <p className="msm-error">{error}</p>}
-        </div>
-
-        <div>
-          <p className="msm-box-label">
-            Sections
-            {sections.length > 0 && <span className="msm-count">{sections.length}</span>}
-          </p>
-          {sections.length === 0 ? (
-            <div className="msm-empty">
-              <span style={{ fontSize: 28 }}>
-                <ThemedIcon name="Layers" />
-              </span>
-              <p>No sections yet.</p>
-            </div>
-          ) : (
-            <div className="msm-list">
-              {sections.map((sec) => {
-                const isRem = removing === sec.id;
-                return (
-                  <div key={sec.id} className={`msm-row ${isRem ? 'msm-row-rem' : ''}`}>
-                    <div className="msm-row-main">
-                      <div className="msm-sec-pill">
-                        <span className="msm-dot" style={{ background: sec.color }} />
-                        {sec.id}
-                      </div>
-                      <label
-                        htmlFor="field-shiftplanner-9"
-                        className="msm-color-ctrl"
-                        title={`Change ${sec.id} color`}
-                      >
-                        <span className="msm-color-swatch" style={{ background: sec.color }} />
-                        <input
-                          id="field-shiftplanner-9"
-                          type="color"
-                          value={sec.color}
-                          onChange={(e) => onColorChange(sec.id, e.target.value)}
-                        />
-                      </label>
-                    </div>
-                    {isRem ? (
-                      <div className="msm-confirm">
-                        <span>Remove?</span>
-                        <button
-                          className="msm-yes"
-                          onClick={() => {
-                            onRemove(sec.id);
-                            setRemoving(null);
-                          }}
-                        >
-                          Yes
-                        </button>
-                        <button className="msm-no" onClick={() => setRemoving(null)}>
-                          No
-                        </button>
-                      </div>
-                    ) : (
-                      <button className="msm-rm-btn" onClick={() => setRemoving(sec.id)}>
-                        <Trash2 size={12} /> Remove
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="msm-note">
-          <Sparkles size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-          Removing a section hides it from new shifts, exams, and filters. Existing records keep
-          their saved label.
-        </div>
-      </div>
-    </Dialog>
-  );
-}
 
 /* ─────────────────────────────────────────────
    EXAM CALENDAR
@@ -992,11 +861,11 @@ function ExamHistoryList({ allExams, onEdit, onDelete }) {
               ? `No exams match "${search}"`
               : filterTab === 'past'
                 ? 'No past exams yet.'
-                : "No upcoming exams — you're clear!"}
+                : 'No upcoming exams.'}
           </p>
         </div>
       ) : (
-        <div className="ehl-list">
+        <CardScrollRegion className="ehl-list" label="Exam schedule entries">
           {grouped.map(([monthKey, monthExams]) => (
             <div key={monthKey}>
               <p className="sp-month-label">
@@ -1073,7 +942,11 @@ function ExamHistoryList({ allExams, onEdit, onDelete }) {
                         </div>
                       ) : (
                         <>
-                          <button className="sp-icon-btn" onClick={() => onEdit(exam)}>
+                          <button
+                            aria-label="Edit exam"
+                            className="sp-icon-btn"
+                            onClick={() => onEdit(exam)}
+                          >
                             <Edit3 size={13} />
                           </button>
                           <button
@@ -1091,7 +964,7 @@ function ExamHistoryList({ allExams, onEdit, onDelete }) {
               })}
             </div>
           ))}
-        </div>
+        </CardScrollRegion>
       )}
     </div>
   );
@@ -1187,8 +1060,7 @@ function ExamStudyWellness({ exams }) {
           <Brain size={20} />
         </div>
         <div>
-          <h3>Study & Wellness</h3>
-          <p>Prepare smart, not just hard</p>
+          <h3>Study</h3>
         </div>
       </div>
       {nextExam ? (
@@ -1338,21 +1210,23 @@ function ExamStudyWellness({ exams }) {
           </p>
         )}
       </div>
-      <div className="sp-tip-card">
-        <div className="sp-tip-icon">
-          <ThemedIcon name={tip.icon} size={24} />
+      <details className="schedule-tip">
+        <summary>Study tip</summary>
+        <div className="sp-tip-card">
+          <div className="sp-tip-icon">
+            <ThemedIcon name={tip.icon} size={24} />
+          </div>
+          <div>
+            <p className="sp-tip-text">{tip.tip}</p>
+          </div>
         </div>
-        <div>
-          <p className="sp-tip-label">Study Tip</p>
-          <p className="sp-tip-text">{tip.tip}</p>
-        </div>
-      </div>
-      <button
-        className="sp-next-tip-btn"
-        onClick={() => setTipIndex((i) => (i + 1) % STUDY_TIPS.length)}
-      >
-        Next tip →
-      </button>
+        <button
+          className="sp-next-tip-btn"
+          onClick={() => setTipIndex((i) => (i + 1) % STUDY_TIPS.length)}
+        >
+          Next tip <ChevronRight size={14} />
+        </button>
+      </details>
     </div>
   );
 }
@@ -1398,8 +1272,7 @@ function ExamsPanel({
           <strong>
             {stats.urgent} exam{stats.urgent > 1 ? 's' : ''}
           </strong>
-          {stats.urgent > 1 ? ' are' : ' is'} happening within 3 days — study hard!{' '}
-          <ThemedIcon name="HeartPulse" />
+          within 3 days
         </div>
       )}
       <ScheduleCalendar
@@ -1514,7 +1387,7 @@ function AllShiftsList({ allShifts, onEdit, onDelete }) {
           </p>
         </div>
       ) : (
-        <div className="sp-shift-list">
+        <CardScrollRegion className="sp-shift-list" label="Shift history entries">
           {grouped.map(([month, monthShifts]) => (
             <div key={month}>
               <p className="sp-month-label">
@@ -1578,7 +1451,7 @@ function AllShiftsList({ allShifts, onEdit, onDelete }) {
               })}
             </div>
           ))}
-        </div>
+        </CardScrollRegion>
       )}
     </div>
   );
@@ -1623,8 +1496,7 @@ function WellnessPanel({ weekShifts }) {
           <Heart size={20} />
         </div>
         <div>
-          <h3>Wellness Check</h3>
-          <p>Stay healthy during internship</p>
+          <h3>Wellness</h3>
         </div>
       </div>
       <div
@@ -1656,7 +1528,7 @@ function WellnessPanel({ weekShifts }) {
             {hydration}/{HYDRATION_GOAL} glasses
           </span>
         </div>
-        <p className="sp-hydration-help">Tap the number of glasses you’ve had today.</p>
+        <p className="sp-hydration-help">Tap your total for today.</p>
         <div className="sp-hydration-cups" role="group" aria-label="Water intake today">
           {Array.from({ length: HYDRATION_GOAL }).map((_, i) => (
             <button
@@ -1686,21 +1558,23 @@ function WellnessPanel({ weekShifts }) {
           </p>
         )}
       </div>
-      <div className="sp-tip-card">
-        <div className="sp-tip-icon">
-          <ThemedIcon name={tip.icon} size={24} />
+      <details className="schedule-tip">
+        <summary>Wellness tip</summary>
+        <div className="sp-tip-card">
+          <div className="sp-tip-icon">
+            <ThemedIcon name={tip.icon} size={24} />
+          </div>
+          <div>
+            <p className="sp-tip-text">{tip.tip}</p>
+          </div>
         </div>
-        <div>
-          <p className="sp-tip-label">Wellness Tip</p>
-          <p className="sp-tip-text">{tip.tip}</p>
-        </div>
-      </div>
-      <button
-        className="sp-next-tip-btn"
-        onClick={() => setTipIndex((i) => (i + 1) % WELLNESS_TIPS.length)}
-      >
-        Next tip →
-      </button>
+        <button
+          className="sp-next-tip-btn"
+          onClick={() => setTipIndex((i) => (i + 1) % WELLNESS_TIPS.length)}
+        >
+          Next tip <ChevronRight size={14} />
+        </button>
+      </details>
     </div>
   );
 }
@@ -1919,41 +1793,40 @@ export default function ShiftPlanner() {
   return (
     <>
       <div className="sp-page">
-        <h1 className="sp-page-title">
-          Shift <span className="sp-title-accent">Planner</span>
-        </h1>
-        <p className="tool-page-description">
-          Plan your duty days and exams. Leave a little room to breathe.
-        </p>
+        <PageHeader description="Plan your shifts and exams in one place.">
+          Shifts &amp; <span className="sp-title-accent">Exams</span>
+        </PageHeader>
 
-        <div className="sp-page-tabs">
-          <button
-            className={`sp-page-tab ${activeTab === 'shifts' ? 'active' : ''}`}
-            onClick={() => setActiveTab('shifts')}
-          >
-            <CalendarDays size={16} />
-            <span className="sp-page-tab-copy">
-              <span className="sp-page-tab-title">Shifts</span>
-              <span className="sp-page-tab-sub">Weekly schedule and history</span>
-            </span>
-          </button>
-          <button
-            className={`sp-page-tab ${activeTab === 'exams' ? 'active' : ''}`}
-            onClick={() => setActiveTab('exams')}
-          >
-            <GraduationCap size={16} />
-            <span className="sp-page-tab-copy">
-              <span className="sp-page-tab-title">Exam Dates</span>
-              <span className="sp-page-tab-sub">Upcoming tests and reminders</span>
-            </span>
-            {upcomingExamCount > 0 && <span className="sp-tab-badge">{upcomingExamCount}</span>}
-          </button>
-        </div>
+        <div className="sp-page-controls">
+          <div className="sp-page-tabs" role="group" aria-label="Schedule view">
+            <button
+              className={`sp-page-tab ${activeTab === 'shifts' ? 'active' : ''}`}
+              aria-pressed={activeTab === 'shifts'}
+              onClick={() => setActiveTab('shifts')}
+            >
+              <CalendarDays size={16} />
+              <span className="sp-page-tab-copy">
+                <span className="sp-page-tab-title">Shifts</span>
+              </span>
+            </button>
+            <button
+              className={`sp-page-tab ${activeTab === 'exams' ? 'active' : ''}`}
+              aria-pressed={activeTab === 'exams'}
+              onClick={() => setActiveTab('exams')}
+            >
+              <GraduationCap size={16} />
+              <span className="sp-page-tab-copy">
+                <span className="sp-page-tab-title">Exams</span>
+              </span>
+              {upcomingExamCount > 0 && <span className="sp-tab-badge">{upcomingExamCount}</span>}
+            </button>
+          </div>
 
-        <div className="sp-sections-toolbar">
-          <button className="sp-manage-sec-btn" onClick={() => setShowSectionManage(true)}>
-            <Settings2 size={13} /> Manage Sections
-          </button>
+          <div className="sp-sections-toolbar">
+            <button className="sp-manage-sec-btn" onClick={() => setShowSectionManage(true)}>
+              <Settings2 size={13} /> Manage Sections
+            </button>
+          </div>
         </div>
 
         {activeTab === 'shifts' && (
@@ -2039,6 +1912,7 @@ export default function ShiftPlanner() {
       {showSectionManage && (
         <ManageSectionsModal
           sections={sections}
+          getSectionMeta={generateSectionMeta}
           onAdd={handleAddSection}
           onRemove={handleRemoveSection}
           onColorChange={handleSectionColorChange}

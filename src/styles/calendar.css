@@ -3,11 +3,31 @@
   min-width: 0;
   margin-bottom: 24px;
 }
+.schedule-tip {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.schedule-tip summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding-block: 6px;
+}
+.schedule-tip[open] summary {
+  margin-bottom: 10px;
+}
+.schedule-tip .sp-next-tip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
 .schedule-heading {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 .schedule-heading > div {
   flex: 1;
@@ -39,7 +59,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 .schedule-views {
   display: inline-flex;
@@ -199,7 +219,8 @@
   white-space: nowrap;
 }
 .schedule-selection {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -207,6 +228,17 @@
   border-radius: 14px;
   padding: 14px;
   margin-top: 16px;
+}
+.schedule-selection > div {
+  min-width: 0;
+}
+.schedule-selection .schedule-continue {
+  min-width: 112px;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1.2;
 }
 .schedule-selection strong {
   font-size: 13px;
@@ -339,7 +371,7 @@
 @media (max-width: 767px) {
   .schedule-heading {
     gap: 10px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
   .schedule-heading h3 {
     font-size: 22px;
@@ -362,19 +394,19 @@
     margin-left: 0;
   }
   .schedule-nav {
-    grid-template-columns: 36px minmax(0, 1fr) 36px;
+    grid-template-columns: 32px minmax(0, 1fr) 32px auto;
     gap: 6px;
   }
   .schedule-nav .icon-button {
-    width: 36px;
+    width: 32px;
     height: 40px;
   }
   .schedule-nav h4 {
     font-size: 13px;
   }
   .schedule-today {
-    grid-column: 2;
-    justify-self: center;
+    grid-column: auto;
+    justify-self: end;
     min-height: 32px;
     padding: 4px 12px;
   }

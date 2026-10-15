@@ -1,4 +1,5 @@
 import ThemedIcon from './ui/ThemedIcon';
+import PageHeader from './ui/PageHeader';
 import Dialog from './ui/Dialog';
 import '../styles/features/DocumentsPage.css';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
@@ -492,11 +493,9 @@ export default function DocumentsPage() {
     <>
       <div className="dp-page">
         {/* Header */}
-        <div>
-          <h1 className="dp-title">
-            My <span className="dp-title-accent">Documents</span>
-          </h1>
-        </div>
+        <PageHeader description="Keep your internship files in one place.">
+          My <span className="dp-title-accent">Documents</span>
+        </PageHeader>
 
         {/* Storage usage bar — always visible */}
         <StorageBar usedBytes={usedBytes} />

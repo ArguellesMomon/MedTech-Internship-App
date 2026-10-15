@@ -61,11 +61,7 @@ export default function BatchDates({ date, onChange, extras, onExtrasChange, edi
               Add day
             </button>
           </div>
-          <p className="batch-date-help">
-            {dates.length > 1
-              ? 'The same details will be saved to all ' + dates.length + ' dates.'
-              : 'Choose more days to repeat these details.'}
-          </p>
+          {dates.length > 1 && <p className="batch-date-help">Repeat on {dates.length} dates.</p>}
         </>
       )}
     </div>

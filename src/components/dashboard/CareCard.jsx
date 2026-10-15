@@ -1,5 +1,6 @@
 import ThemedIcon from '../ui/ThemedIcon';
-import { useState } from 'react';
+import { useId, useState } from 'react';
+import '../../styles/care-card.css';
 import { Heart, ArrowUpRight, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth/useAuth';
@@ -19,6 +20,8 @@ const moods = [
 ];
 export default function CareCard() {
   const { user } = useAuth();
+  const headingId = useId();
+  const moodLabelId = useId();
   const [index, setIndex] = useState(0);
   const [mood, setMood] = useState('');
   const [saving, setSaving] = useState(false);
@@ -44,46 +47,48 @@ export default function CareCard() {
     }
   }
   return (
-    <section className="care-card">
-      <div className="care-message">
-        <p className="eyebrow">
-          <Heart size={13} />A LITTLE NOTE FOR YOU
-        </p>
-        <h2>{words[index]}</h2>
-        <button
-          className="care-refresh"
-          onClick={() => setIndex((value) => (value + 1) % words.length)}
-        >
-          <RefreshCw size={13} />
-          Another little reminder
-        </button>
-        <div className="care-mood">
-          <span>How’s your heart today?</span>
-          <div>
-            {moods.map(([value, symbol, label]) => (
-              <button
-                key={value}
-                disabled={saving}
-                aria-pressed={mood === value}
-                onClick={() => checkIn(value)}
-                title={label}
-                aria-label={label}
-              >
-                <ThemedIcon name={symbol} size={20} />
-                <small>{label}</small>
-              </button>
-            ))}
+    <section className="overview-card care-card" aria-labelledby={headingId}>
+      <div className="care-intro">
+        <div className="care-header">
+          <ChamiAvatar animate size={52} label="" />
+          <div className="care-heading">
+            <h2 id={headingId}>A moment for you</h2>
+            <Link to="/ai-chat">
+              Chat with Chami <ArrowUpRight size={14} aria-hidden="true" />
+            </Link>
           </div>
-          <p role="status">{message}</p>
+        </div>
+        <div className="care-reminder">
+          <Heart size={16} aria-hidden="true" />
+          <p>{words[index]}</p>
+          <button
+            className="care-refresh"
+            aria-label="Another little reminder"
+            title="Another little reminder"
+            onClick={() => setIndex((value) => (value + 1) % words.length)}
+          >
+            <RefreshCw size={16} aria-hidden="true" />
+          </button>
         </div>
       </div>
-      <div className="care-chami">
-        <ChamiAvatar animate />
-        <span>In your corner. Always.</span>
-        <Link to="/ai-chat">
-          Say hello to Chami
-          <ArrowUpRight size={15} />
-        </Link>
+      <div className="care-mood" role="group" aria-labelledby={moodLabelId}>
+        <span id={moodLabelId}>How are you feeling today?</span>
+        <div>
+          {moods.map(([value, symbol, label]) => (
+            <button
+              key={value}
+              disabled={saving}
+              aria-pressed={mood === value}
+              onClick={() => checkIn(value)}
+              title={label}
+              aria-label={label}
+            >
+              <ThemedIcon name={symbol} size={18} />
+              <small>{label}</small>
+            </button>
+          ))}
+        </div>
+        {(saving || message) && <p role="status">{saving ? 'Saving your check-in…' : message}</p>}
       </div>
     </section>
   );

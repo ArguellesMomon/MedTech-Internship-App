@@ -1,0 +1,182 @@
+.section-manager {
+  width: min(100%, 520px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 24px 80px #160d2530;
+}
+.section-manager-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  background: linear-gradient(130deg, var(--rose-soft), var(--surface));
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.section-manager-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: var(--rose-soft);
+  color: var(--accent);
+}
+.section-manager-header h3 {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.section-manager-header h3 > span {
+  display: inline-block;
+  font: 600 11px var(--font-sans);
+  color: var(--muted);
+  margin-left: 5px;
+}
+.section-manager-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px;
+}
+.section-manager-add {
+  margin-bottom: 18px;
+}
+.section-manager-add > label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+.section-manager-add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+.section-manager-add-row input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface-subtle);
+  color: var(--ink);
+  font-size: 16px;
+}
+.section-manager .button {
+  min-height: 44px;
+  white-space: nowrap;
+}
+.section-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.section-manager-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+}
+.section-manager-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  font-weight: 600;
+}
+.section-manager-name i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.section-manager-color {
+  width: 40px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.section-manager-color > span {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+.section-manager-color input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.section-manager-color:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.section-manager .section-manager-remove {
+  padding-inline: 10px;
+  color: var(--danger);
+}
+.section-manager-confirm {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.section-manager-confirm p {
+  width: 100%;
+  color: var(--muted);
+  font-size: 12px;
+}
+.section-manager-error {
+  color: var(--danger);
+  font-size: 12px;
+  margin-top: 8px;
+}
+.section-manager-empty {
+  color: var(--muted);
+  font-size: 13px;
+  padding-block: 16px;
+}
+@media (max-width: 479px) {
+  .section-manager-header {
+    padding: 14px;
+    gap: 9px;
+  }
+  .section-manager-header h3 {
+    font-size: 19px;
+  }
+  .section-manager-body {
+    padding: 14px;
+  }
+  .section-manager .section-manager-remove {
+    padding-inline: 8px;
+    gap: 5px;
+  }
+}

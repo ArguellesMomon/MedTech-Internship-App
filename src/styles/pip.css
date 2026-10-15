@@ -50,11 +50,11 @@
 .pip-empty-h {
   font-style: normal;
   font-weight: 500;
-  font-size: 30px;
+  font-size: var(--text-page);
 }
 .pip-empty-sub {
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--text-support);
   max-width: 350px;
   line-height: 1.6;
 }
@@ -157,6 +157,11 @@
   font-size: 16px;
   min-width: 0;
   padding: 7px 0;
+}
+/* The surrounding composer supplies the focus indicator. */
+.pip-ta:focus {
+  outline: none;
+  box-shadow: none;
 }
 .pip-send,
 .pip-send.active,
@@ -375,11 +380,9 @@
     height: 76px;
   }
   .pip-empty-h {
-    font-size: 26px;
     margin-bottom: 6px;
   }
   .pip-empty-sub {
-    font-size: 12px;
     max-width: 280px;
   }
   .pip-input-area {

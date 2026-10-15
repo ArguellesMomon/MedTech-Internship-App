@@ -1,10 +1,12 @@
+import ManageSectionsModal from './ui/SectionManager';
 import ThemedIcon from './ui/ThemedIcon';
+import PageHeader from './ui/PageHeader';
 import { countLoggedProcedures, quotaKey, withLoggedProgress } from '../lib/progress';
 import { localDate } from '../lib/dates';
 import useQuickCreate from '../hooks/useQuickCreate';
 import Dialog from './ui/Dialog';
 import '../styles/features/QuotaTracker.css';
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { supabase } from '../lib/supabase';
 import {
@@ -14,7 +16,6 @@ import {
   X,
   Check,
   ClipboardList,
-  BarChart2,
   AlertCircle,
   Filter,
   ChevronDown,
@@ -211,133 +212,6 @@ function getDayLabel(dateStr) {
 /* ─────────────────────────────────────────────
     MANAGE SECTIONS MODAL
   ───────────────────────────────────────────── */
-function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose }) {
-  const [name, setName] = useState('');
-  const [error, setError] = useState('');
-  const [removing, setRemoving] = useState(null);
-  const inputRef = useRef(null);
-
-  useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 80);
-  }, []);
-
-  const handleAdd = () => {
-    const label = name.trim();
-    if (!label) {
-      setError('Please enter a section name.');
-      return;
-    }
-    if (sections.some((s) => s.id.toLowerCase() === label.toLowerCase())) {
-      setError('That section already exists.');
-      return;
-    }
-    onAdd(label);
-    setName('');
-    setError('');
-  };
-
-  return (
-    <Dialog className="ms-overlay" onClose={onClose}>
-      <div className="ms-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="ms-head">
-          <div className="ms-head-left">
-            <div className="ms-head-icon">
-              <Settings2 size={18} />
-            </div>
-            <div>
-              <h3 className="ms-title">Manage Sections</h3>
-              <p className="ms-sub">Add custom sections, change colors, or remove extras</p>
-            </div>
-          </div>
-          <button aria-label="Close" className="ms-close" onClick={onClose}>
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="ms-add-box">
-          <p className="ms-box-label">New Section</p>
-          <div className="ms-add-row">
-            <input
-              ref={inputRef}
-              className="ms-input"
-              placeholder="e.g. Immunology, Parasitology…"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setError('');
-              }}
-              onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-              maxLength={40}
-            />
-            <button className="ms-add-btn" onClick={handleAdd}>
-              <Plus size={14} /> Add
-            </button>
-          </div>
-          {error && <p className="ms-error">{error}</p>}
-        </div>
-
-        <div>
-          <p className="ms-box-label">
-            All Sections
-            <span className="ms-count">{sections.length}</span>
-          </p>
-          <div className="ms-list">
-            {sections.map((sec) => {
-              const meta = { ...generateSectionMeta(sec.id), ...sec };
-              const isRem = removing === sec.id;
-
-              return (
-                <div key={sec.id} className={`ms-row ${isRem ? 'ms-row-rem' : ''}`}>
-                  <div className="ms-row-main">
-                    <div className="ms-sec-pill">
-                      <span className="ms-dot" style={{ background: meta.color }} />
-                      {sec.id}
-                    </div>
-                    <label
-                      htmlFor="field-quotatracker-1"
-                      className="ms-color-control"
-                      title={`Change ${sec.id} color`}
-                    >
-                      <span className="ms-color-swatch" style={{ background: meta.color }} />
-                      <input
-                        id="field-quotatracker-1"
-                        type="color"
-                        value={meta.color}
-                        onChange={(e) => onColorChange(sec.id, e.target.value)}
-                      />
-                    </label>
-                  </div>
-
-                  {isRem ? (
-                    <div className="ms-confirm">
-                      <span>Remove?</span>
-                      <button
-                        className="ms-yes"
-                        onClick={() => {
-                          onRemove(sec.id);
-                          setRemoving(null);
-                        }}
-                      >
-                        Yes
-                      </button>
-                      <button className="ms-no" onClick={() => setRemoving(null)}>
-                        No
-                      </button>
-                    </div>
-                  ) : (
-                    <button className="ms-rm-btn" onClick={() => setRemoving(sec.id)}>
-                      <Trash2 size={12} /> Remove
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </Dialog>
-  );
-}
 
 /* ─────────────────────────────────────────────
     HERO STATS BAR — clean 3‑stat grid
@@ -1532,12 +1406,9 @@ export default function DailyReportTracker() {
   return (
     <>
       <div className="qtr-page">
-        <h1 className="qtr-title">
+        <PageHeader description="Log procedures and track your quota progress.">
           Daily Logbook &amp; <span className="qtr-title-accent">Quota Tracker</span>
-        </h1>
-        <p className="tool-page-description">
-          Capture your procedures, reflect on your day, and watch your progress add up.
-        </p>
+        </PageHeader>
 
         {dbError && (
           <div className="qtr-error">
@@ -1559,10 +1430,11 @@ export default function DailyReportTracker() {
             <div className="qtr-tabs">
               <button
                 className={`qtr-tab ${activeTab === 'log' ? 'active' : ''}`}
+                aria-pressed={activeTab === 'log'}
                 onClick={() => setActiveTab('log')}
               >
-                <span className="qtr-tab-icon">
-                  <ClipboardList size={18} />
+                <span className="qtr-tab-icon" aria-hidden="true">
+                  <ClipboardList size={20} />
                 </span>
                 <span className="qtr-tab-copy">
                   <span className="qtr-tab-title">Daily Log</span>
@@ -1572,10 +1444,11 @@ export default function DailyReportTracker() {
               </button>
               <button
                 className={`qtr-tab quota ${activeTab === 'quota' ? 'active' : ''}`}
+                aria-pressed={activeTab === 'quota'}
                 onClick={() => setActiveTab('quota')}
               >
-                <span className="qtr-tab-icon">
-                  <BarChart2 size={18} />
+                <span className="qtr-tab-icon" aria-hidden="true">
+                  <Target size={20} />
                 </span>
                 <span className="qtr-tab-copy">
                   <span className="qtr-tab-title">Quota Board</span>
@@ -1630,6 +1503,7 @@ export default function DailyReportTracker() {
       {showManage && (
         <ManageSectionsModal
           sections={sections}
+          getSectionMeta={generateSectionMeta}
           onAdd={handleAddSection}
           onRemove={handleRemoveSection}
           onColorChange={handleSectionColorChange}

@@ -10,8 +10,10 @@ import {
   Clock,
   GraduationCap,
   Edit3,
+  ArrowRight,
 } from 'lucide-react';
 import Dialog from '../ui/Dialog';
+import CardScrollRegion from '../ui/CardScrollRegion';
 import { localDate, displayDate, displayTime } from '../../lib/dates';
 import { WEEKDAYS, calendarDates, moveCalendar } from '../../lib/calendar';
 import '../../styles/calendar.css';
@@ -104,10 +106,12 @@ export default function ScheduleCalendar({
           <Check size={14} />
           {selecting ? 'Cancel selection' : 'Select days'}
         </button>
-        <button className="button primary small schedule-add" onClick={() => add(focused)}>
-          <Plus size={14} />
-          {kind === 'exam' ? 'Add exam' : 'Add shift'}
-        </button>
+        {!selecting && (
+          <button className="button primary small schedule-add" onClick={() => add(focused)}>
+            <Plus size={14} />
+            {kind === 'exam' ? 'Add exam' : 'Add shift'}
+          </button>
+        )}
       </div>
       <div className="schedule-nav">
         <button
@@ -135,11 +139,7 @@ export default function ScheduleCalendar({
           Today
         </button>
       </div>
-      <p className="schedule-instruction">
-        {selecting
-          ? 'Choose up to 31 days. The same details will be saved for each date.'
-          : 'Choose a day to see its plans. Expand for a roomier calendar.'}
-      </p>
+      {selecting && <p className="schedule-instruction">Select up to 31 dates.</p>}
       <div className={'schedule-grid ' + view} aria-label={title}>
         {WEEKDAYS.map((d) => (
           <span className="schedule-weekday" key={d}>
@@ -216,17 +216,14 @@ export default function ScheduleCalendar({
       {selecting ? (
         <div className="schedule-selection" role="status">
           <div>
-            <strong>
-              {selected.length} day{selected.length === 1 ? '' : 's'} selected
-            </strong>
-            <small>One {kind}, repeated on your chosen dates.</small>
+            <strong>{selected.length} selected</strong>
           </div>
           <button
-            className="button primary small"
+            className="button primary small schedule-continue"
             disabled={!selected.length}
             onClick={() => add([...selected].sort())}
           >
-            Continue <Plus size={14} />
+            Continue <ArrowRight size={16} />
           </button>
         </div>
       ) : (
@@ -238,31 +235,33 @@ export default function ScheduleCalendar({
             </span>
           </div>
           {dayEvents.length ? (
-            dayEvents.map((e) => (
-              <div className="schedule-agenda-row" key={e.kind + e.id}>
-                <span className={'schedule-agenda-icon ' + e.kind}>
-                  {e.kind === 'exam' ? <GraduationCap size={17} /> : <Clock size={17} />}
-                </span>
-                <div>
-                  <strong>{e.title}</strong>
-                  <small>{e.subtitle}</small>
+            <CardScrollRegion label="Plans for the selected day">
+              {dayEvents.map((e) => (
+                <div className="schedule-agenda-row" key={e.kind + e.id}>
+                  <span className={'schedule-agenda-icon ' + e.kind}>
+                    {e.kind === 'exam' ? <GraduationCap size={17} /> : <Clock size={17} />}
+                  </span>
+                  <div>
+                    <strong>{e.title}</strong>
+                    <small>{e.subtitle}</small>
+                  </div>
+                  {e.kind === kind && (
+                    <button
+                      className="icon-button"
+                      aria-label={'Edit ' + e.title}
+                      onClick={() => {
+                        setExpanded(false);
+                        onEdit(e);
+                      }}
+                    >
+                      <Edit3 size={15} />
+                    </button>
+                  )}
                 </div>
-                {e.kind === kind && (
-                  <button
-                    className="icon-button"
-                    aria-label={'Edit ' + e.title}
-                    onClick={() => {
-                      setExpanded(false);
-                      onEdit(e);
-                    }}
-                  >
-                    <Edit3 size={15} />
-                  </button>
-                )}
-              </div>
-            ))
+              ))}
+            </CardScrollRegion>
           ) : (
-            <p className="schedule-free">A little breathing room. No plans for this day yet.</p>
+            <p className="schedule-free">No plans for this day.</p>
           )}
         </section>
       )}
@@ -275,12 +274,7 @@ export default function ScheduleCalendar({
           <CalendarDays size={22} />
         </span>
         <div>
-          <h3>{title}</h3>
-          <p>
-            {kind === 'exam'
-              ? 'Revision dates, with room to prepare.'
-              : 'Duty days, exams, and a little breathing room.'}
-          </p>
+          <h3>Calendar</h3>
         </div>
         <button
           className="icon-button"

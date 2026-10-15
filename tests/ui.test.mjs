@@ -4,6 +4,7 @@ import { JSDOM } from 'jsdom';
 import { createServer } from 'vite';
 import path from 'node:path';
 import { createChatHandler } from '../api/chat.js';
+import { dateOffset } from '../src/lib/dates.js';
 const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
   url: 'http://localhost/landing',
   pretendToBeVisual: true,
@@ -186,8 +187,10 @@ test('overview loads current rotation, quotas, schedule, and personal notes', as
   assert.equal(document.querySelectorAll('.agenda-row').length, 3);
   assert.equal(document.querySelectorAll('.notebook-list>a').length, 2);
   assert.equal(document.querySelector('.demo-notice'), null);
-  assert.match(document.querySelector('.care-chami').textContent, /Say hello to Chami/);
-  assert.ok(document.querySelector('.care-chami .chami-sprite'));
+  const chamiLink = document.querySelector('.care-header a');
+  assert.match(chamiLink.textContent, /Chat with Chami/);
+  assert.equal(chamiLink.getAttribute('href'), '/ai-chat');
+  assert.ok(document.querySelector('.care-card .chami-sprite'));
 });
 test('quick-add dialog traps focus, closes with Escape, and restores focus', async () => {
   await mount('/');
@@ -524,16 +527,84 @@ test('calendar expands, switches to month, and preserves selected dates', async 
   await click(
     [...dialog.querySelectorAll('button')].find((b) => b.textContent.includes('Select days')),
   );
+  assert.equal(dialog.querySelector('.schedule-add'), null);
+  assert.equal(dialog.querySelector('.schedule-continue').disabled, true);
   const days = dialog.querySelectorAll('.schedule-day');
   await click(days[1]);
   await click(days[4]);
   assert.equal(dialog.querySelectorAll('.is-selected').length, 2);
+  assert.equal(dialog.querySelector('.schedule-continue').disabled, false);
   await escape();
   assert.equal(document.querySelector('[role="dialog"]'), null);
   assert.equal(document.querySelectorAll('.schedule-grid .is-selected').length, 2);
   await click(buttons('Cancel selection')[0]);
   assert.equal(document.querySelectorAll('.is-selected').length, 0);
 });
+test('section editors share add, color, validation, removal and persistence behavior on every tool', async () => {
+  const oldWidth = window.innerWidth;
+  window.innerWidth = 393;
+  async function openEditor() {
+    if (document.querySelector('.ns-filter-btn'))
+      await click(document.querySelector('.ns-filter-btn'));
+    if (document.querySelector('.dl-filter-btn'))
+      await click(document.querySelector('.dl-filter-btn'));
+    await click(
+      document.querySelector(
+        '.sp-manage-sec-btn,.ns-manage-link,.rg-manage-btn,.dl-manage-link,.qb-manage-link',
+      ),
+    );
+    return document.querySelector('.section-manager');
+  }
+  try {
+    for (const route of ['/shifts', '/notes', '/reports', '/rotations']) {
+      await mount(route);
+      let editor = await openEditor();
+      assert.ok(editor, route);
+      const initial = editor.querySelectorAll('[role="listitem"]').length;
+      const input = editor.querySelector('.section-manager-add-row input');
+      await click(editor.querySelector('button[type="submit"]'));
+      assert.match(editor.querySelector('[role="alert"]').textContent, /section name/);
+      const duplicate = editor.querySelector('.section-manager-name').textContent;
+      await fill(input, duplicate.toUpperCase());
+      await click(editor.querySelector('button[type="submit"]'));
+      assert.match(editor.querySelector('[role="alert"]').textContent, /already exists/);
+      await fill(input, 'Immunology regression');
+      await click(editor.querySelector('button[type="submit"]'));
+      assert.equal(editor.querySelectorAll('[role="listitem"]').length, initial + 1);
+      const row = [...editor.querySelectorAll('[role="listitem"]')].find((item) =>
+        item.textContent.includes('Immunology regression'),
+      );
+      await fill(row.querySelector('input[type="color"]'), '#2563eb');
+      const fields = [...editor.querySelectorAll('input[id]')];
+      assert.equal(new Set(fields.map((field) => field.id)).size, fields.length);
+      for (const field of fields) assert.ok(field.labels.length, `Missing label in ${route}`);
+      await click(editor.querySelector('[aria-label="Remove Immunology regression"]'));
+      await click(
+        [...editor.querySelectorAll('button')].find((button) => button.textContent === 'Cancel'),
+      );
+      assert.equal(editor.querySelectorAll('[role="listitem"]').length, initial + 1);
+      await click(editor.querySelector('[aria-label="Close sections"]'));
+      await mount(route, { resetData: false });
+      editor = await openEditor();
+      const saved = [...editor.querySelectorAll('[role="listitem"]')].find((item) =>
+        item.textContent.includes('Immunology regression'),
+      );
+      assert.ok(saved, `Section did not persist in ${route}`);
+      assert.equal(saved.querySelector('input[type="color"]').value, '#2563eb');
+      await click(editor.querySelector('[aria-label="Remove Immunology regression"]'));
+      await click(
+        [...editor.querySelectorAll('button')].find(
+          (button) => button.textContent === 'Remove section',
+        ),
+      );
+      assert.equal(editor.querySelectorAll('[role="listitem"]').length, initial);
+      await click(editor.querySelector('[aria-label="Close sections"]'));
+    }
+  } finally {
+    window.innerWidth = oldWidth;
+  }
+});
+
 test('multi-day shift saves identical details to each date and an edit changes only one record', async () => {
   await mount('/shifts');
   const before = (await fixtureClient.from('shifts').select()).data.length;
@@ -572,7 +643,7 @@ test('multi-day shift saves identical details to each date and an edit changes o
 });
 test('multi-day exam repeats the title and section, and cancel leaves records unchanged', async () => {
   await mount('/shifts');
-  await click(buttons('Exam Dates')[0]);
+  await click(buttons('Exams')[0]);
   const before = (await fixtureClient.from('exams').select()).data.length;
   await click(buttons('Select days')[0]);
   const days = document.querySelectorAll('.schedule-day');
@@ -588,6 +659,89 @@ test('multi-day exam repeats the title and section, and cancel leaves records un
   await click(document.querySelector('.m-cancel'));
   assert.equal((await fixtureClient.from('exams').select()).data.length, rows.length);
 });
+test('large shift and exam histories keep every record accessible with filters and edit controls', async () => {
+  const oldWidth = window.innerWidth;
+  window.innerWidth = 390;
+  try {
+    await mount('/shifts');
+    await fixtureClient.from('shifts').delete().eq('user_id', 'test-intern');
+    await fixtureClient.from('exams').delete().eq('user_id', 'test-intern');
+    await fixtureClient.from('shifts').insert(
+      Array.from({ length: 90 }, (_, index) => ({
+        user_id: 'test-intern',
+        shift_date: dateOffset(-index),
+        shift_type: index % 2 ? 'night' : 'morning',
+        start_time: '07:00',
+        end_time: '15:00',
+        section_name: 'LongSectionName'.repeat(12),
+        notes: `History entry ${index}: ` + 'LongUnbrokenNote'.repeat(30),
+      })),
+    );
+    await fixtureClient.from('exams').insert(
+      Array.from({ length: 90 }, (_, index) => ({
+        user_id: 'test-intern',
+        exam_date: dateOffset(index % 5),
+        exam_name: `Assessment ${index} ` + 'LongUnbrokenExamTitle'.repeat(12),
+        section_name: 'LongSectionName'.repeat(12),
+        notes: `Exam ${index}`,
+      })),
+    );
+    await mount('/shifts', { resetData: false });
+    const history = document.querySelector('[role="region"][aria-label="Shift history entries"]');
+    assert.equal(history.querySelectorAll('.sp-shift-row').length, 90);
+    assert.equal(history.tabIndex, 0);
+    assert.equal(history.querySelector('.sp-list-toolbar'), null);
+    assert.ok(history.textContent.includes('History entry 89:'));
+    await click(document.querySelector('.sp-filter-btn'));
+    await click(
+      [...document.querySelectorAll('.sp-filter-opt')].find(
+        (button) => button.textContent === 'Night',
+      ),
+    );
+    assert.equal(history.querySelectorAll('.sp-shift-row').length, 45);
+    await click(document.querySelector('.sp-clear-filter'));
+    assert.equal(history.querySelectorAll('.sp-shift-row').length, 90);
+    await click(history.querySelectorAll('[aria-label="Edit shift"]').item(89));
+    assert.match(document.querySelector('.m-sheet textarea').value, /History entry 89:/);
+    await click(document.querySelector('.m-cancel'));
+
+    await click(buttons('Exams')[0]);
+    const exams = document.querySelector('[role="region"][aria-label="Exam schedule entries"]');
+    assert.equal(exams.querySelectorAll('.ehl-row').length, 90);
+    assert.equal(exams.tabIndex, 0);
+    assert.equal(exams.querySelector('.ehl-search'), null);
+    await fill(document.querySelector('.ehl-search'), 'Assessment 89 ');
+    assert.equal(exams.querySelectorAll('.ehl-row').length, 1);
+    await click(exams.querySelector('[aria-label="Edit exam"]'));
+    assert.match(document.querySelector('.m-sheet input[type="text"]').value, /^Assessment 89 /);
+    await click(document.querySelector('.m-cancel'));
+    await fill(document.querySelector('.ehl-search'), '');
+    assert.equal(exams.querySelectorAll('.ehl-row').length, 90);
+
+    const dayPlans = document.querySelector(
+      '[role="region"][aria-label="Plans for the selected day"]',
+    );
+    assert.equal(dayPlans.querySelectorAll('.schedule-agenda-row').length, 18);
+    assert.equal(dayPlans.querySelector('.schedule-agenda-heading'), null);
+    await act(async () => dayPlans.focus());
+    assert.equal(document.activeElement, dayPlans);
+    await click(document.querySelector('[aria-label="Expand calendar"]'));
+    const expandedPlans = document.querySelector(
+      '[role="dialog"] [aria-label="Plans for the selected day"]',
+    );
+    assert.equal(expandedPlans.querySelectorAll('.schedule-agenda-row').length, 18);
+    const last = expandedPlans.querySelectorAll('.schedule-agenda-row').item(17);
+    const expectedName = last.querySelector('strong').textContent;
+    await click(last.querySelector('button'));
+    assert.equal(document.querySelector('.m-sheet input[type="text"]').value, expectedName);
+    await click(document.querySelector('.m-cancel'));
+    assert.equal((await fixtureClient.from('shifts').select()).data.length, 90);
+    assert.equal((await fixtureClient.from('exams').select()).data.length, 90);
+  } finally {
+    window.innerWidth = oldWidth;
+  }
+});
+
 test('mobile Chami history traps focus, restores the opener, and confirms deletion', async () => {
   const oldWidth = window.innerWidth;
   window.innerWidth = 390;
@@ -873,10 +1027,7 @@ test('phone wellness choices include text labels and save the chosen mood', asyn
     const { data } = await fixtureClient.from('mood_logs').select();
     assert.equal(data.at(-1).mood_tag, 'tired');
     await mount('/shifts');
-    assert.match(
-      document.querySelector('.sp-hydration-help').textContent,
-      /Tap the number of glasses/,
-    );
+    assert.match(document.querySelector('.sp-hydration-help').textContent, /total.*today/);
     const cups = [...document.querySelectorAll('.sp-cup')];
     assert.equal(cups[0].querySelector('.sp-cup-label').textContent, '1 glass');
     assert.match(cups[7].textContent, /8 glasses/);

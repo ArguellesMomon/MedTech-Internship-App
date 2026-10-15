@@ -6,6 +6,8 @@
 @import './styles/responsive.css';
 @import './styles/search-preferences.css';
 @import './styles/consistency.css';
+@import './styles/workspace-rhythm.css';
 @import './styles/pip.css';
 @import './styles/dialogs.css';
 @import './styles/keyboard.css';
+@import './styles/cards.css';

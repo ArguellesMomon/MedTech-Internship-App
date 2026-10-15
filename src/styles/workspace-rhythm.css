@@ -1,0 +1,254 @@
+/* One compact scale for workspace pages. Feature CSS remains in the legacy layer. */
+.tool-page-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-copy);
+  min-width: 0;
+}
+.tool-page-title,
+.overview-heading h1,
+.pf-hero-name {
+  font-family: var(--font-display);
+  font-size: var(--text-page);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -1px;
+  color: var(--ink);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.tool-page-description,
+.overview-heading > div > p:last-child {
+  font-size: var(--text-support);
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0;
+  max-width: 650px;
+}
+:is(.sp-page, .qtr-page, .rg-page, .dp-page, .ns-page, .ab-root, .pf-page, .ex-panel) {
+  gap: var(--space-page);
+}
+.ns-hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-page);
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.overview-heading {
+  margin-bottom: var(--space-page);
+}
+.overview-heading h1 {
+  margin: var(--space-copy) 0;
+}
+:is(.overview-grid, .sp-grid, .ns-grid, .dp-grid, .rt-cards-grid) {
+  gap: var(--space-section);
+}
+:is(.rg-main-tabs, .ns-toolbar, .dl-toolbar, .dp-toolbar, .schedule-card) {
+  margin-bottom: 0;
+}
+:is(.sp-card, .overview-card, .ab-card-inner, .pf-section-card, .qb-detail) {
+  padding: var(--space-card);
+}
+:is(.sp-card, .qb-detail) {
+  gap: var(--space-section);
+}
+:is(
+  .schedule-heading h3,
+  .sp-card-header h3,
+  .section-heading h2,
+  .ab-heading,
+  .qb-detail-title,
+  .panel-header h3,
+  .pf-section-title
+) {
+  font-family: var(--font-display);
+  font-size: var(--text-section);
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+  color: var(--ink);
+}
+.pf-section-title {
+  text-transform: none;
+  margin-bottom: var(--space-section);
+}
+:is(.panel-header, .tab-body, .dc-card, .nc-content) {
+  padding: var(--space-card);
+}
+.dp-preview-note {
+  font-size: var(--text-control);
+  line-height: 1.6;
+  margin: 0;
+}
+:is(.rg-primary-btn, .dl-add-btn, .ns-new-btn, .sp-manage-sec-btn, .uz-browse-btn) {
+  font-size: var(--text-control);
+  line-height: 1.4;
+  min-height: 44px;
+}
+:is(.login-title, .su-title) {
+  font-size: var(--text-page);
+  margin-bottom: var(--space-copy);
+}
+:is(.login-subtitle, .su-subtitle) {
+  font-size: var(--text-support);
+  line-height: 1.6;
+}
+:is(.schedule-heading, .section-heading) {
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.sp-card-header {
+  gap: 12px;
+}
+:is(.schedule-heading-icon, .sp-icon-wrap) {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+:is(.schedule-heading-icon, .sp-icon-wrap) > svg {
+  width: 20px;
+  height: 20px;
+}
+:is(.rg-main-tab, .qtr-tab, .sp-page-tab) {
+  min-height: 56px;
+  padding: 8px 12px;
+  gap: 10px;
+}
+:is(.rg-tab-title, .qtr-tab-title, .sp-page-tab-title) {
+  font-size: var(--text-control);
+  line-height: 1.4;
+}
+:is(.rg-tab-sub, .qtr-tab-sub, .sp-page-tab-sub) {
+  font-size: var(--text-caption);
+  line-height: 1.4;
+}
+:is(.rg-main-tab, .sp-page-tab) > svg {
+  width: 40px;
+  height: 40px;
+  padding: 10px;
+}
+:is(.hs-stat, .rs-stat, .ns-stat) {
+  padding: 14px 16px;
+}
+:is(.hs-stat-n, .rs-stat-n, .ns-stat-n, .overview-stat > strong) {
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+:is(.hs-stat-l, .rs-stat-l, .ns-stat-l, .overview-stat > span) {
+  font-size: var(--text-caption);
+  line-height: 1.4;
+}
+:is(.nc-title, .dc-card-name, .ab-feature-title, .notebook-list strong, .agenda-copy > strong) {
+  font-size: var(--text-body);
+  line-height: 1.4;
+}
+:is(.nc-body, .ab-feature-desc, .ab-body, .ab-footer-note-body, .notebook-list p) {
+  font-size: var(--text-support);
+  line-height: 1.6;
+}
+:is(.dc-card-meta, .notebook-list small, .agenda-copy > span, .quota-preview > small) {
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+.ab-hero {
+  padding: var(--space-card);
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+}
+.ab-hero-title {
+  font-size: var(--text-page);
+}
+.ab-hero-sub {
+  font-size: var(--text-body);
+  line-height: 1.6;
+}
+.ab-hero-eyebrow {
+  font-size: var(--text-caption);
+  margin-bottom: 12px;
+}
+:is(.ab-card, .ab-footer-note) {
+  margin: 0;
+  border-color: var(--border);
+  border-radius: 18px;
+}
+.ab-footer-note {
+  padding: var(--space-card);
+}
+:is(.ab-rule, .ab-footer-sig, .ab-dedication, .ab-contact-chip, .ab-ai-member) {
+  border-color: var(--border);
+}
+.ab-rule {
+  margin-block: var(--space-section);
+}
+.ab-features {
+  gap: var(--space-section);
+}
+.ab-feature {
+  gap: 12px;
+}
+.ab-feature-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+.ab-feature-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.ab-label {
+  font-size: var(--text-caption);
+  margin-bottom: var(--space-copy);
+}
+:is(.ab-ai-member, .ab-dedication) {
+  padding: var(--space-section);
+}
+:is(.ab-ai-team, .ab-footer) {
+  gap: var(--space-section);
+}
+:is(.ab-ai-name, .ab-contact-chip) {
+  font-size: var(--text-body);
+}
+:is(.ab-ai-quote, .ab-team-lead-quote, .ab-footer-sig-role, .ab-maker-role) {
+  font-size: var(--text-support);
+  line-height: 1.6;
+}
+:is(.ab-ai-role-chip, .ab-footer-legal, .ab-team-disclaimer) {
+  font-size: var(--text-caption);
+}
+.ab-dedication-quote {
+  font-family: var(--font-display);
+  font-size: 18px;
+  border-color: var(--accent);
+}
+.ab-maker-name {
+  font-family: var(--font-display);
+  font-size: 18px;
+}
+@media (max-width: 767px) {
+  :is(.rg-main-tab, .qtr-tab, .sp-page-tab) {
+    min-height: 52px;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  :is(.rg-main-tab, .sp-page-tab) > svg {
+    width: 32px;
+    height: 32px;
+    padding: 8px;
+  }
+  .qtr-tab-icon {
+    width: 32px;
+    height: 32px;
+  }
+  .qtr-tab-icon > svg {
+    width: 16px;
+    height: 16px;
+  }
+  :is(.hs-stat, .rs-stat, .ns-stat) {
+    padding: 12px;
+  }
+}

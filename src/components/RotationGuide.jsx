@@ -1,3 +1,5 @@
+import ManageSectionsModal from './ui/SectionManager';
+import PageHeader from './ui/PageHeader';
 import ThemedIcon, { SafetyIconPicker } from './ui/ThemedIcon';
 import useQuickCreate from '../hooks/useQuickCreate';
 import Dialog from './ui/Dialog';
@@ -303,140 +305,6 @@ function getDuration(start, end) {
 /* ─────────────────────────────────────────────
    MANAGE SECTIONS MODAL
 ───────────────────────────────────────────── */
-function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose }) {
-  const [name, setName] = useState('');
-  const [error, setError] = useState('');
-  const [removing, setRemoving] = useState(null);
-
-  const handleAdd = () => {
-    const label = name.trim();
-    if (!label) {
-      setError('Enter a section name.');
-      return;
-    }
-    if (sections.some((s) => s.id.toLowerCase() === label.toLowerCase())) {
-      setError('Section already exists.');
-      return;
-    }
-    onAdd(label);
-    setName('');
-    setError('');
-  };
-
-  return (
-    <Dialog className="msm-overlay" onClose={onClose}>
-      <div className="msm-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="msm-head">
-          <div className="msm-head-left">
-            <div className="msm-head-icon">
-              <Settings2 size={18} />
-            </div>
-            <div>
-              <h3 className="msm-title">Manage Sections</h3>
-              <p className="msm-sub">Add, recolor, or remove rotation sections</p>
-            </div>
-          </div>
-          <button aria-label="Close" className="msm-close" onClick={onClose}>
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="msm-add-box">
-          <p className="msm-box-label">New Section</p>
-          <div className="msm-add-row">
-            <input
-              className="msm-input"
-              placeholder="e.g. Immunology, Parasitology…"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setError('');
-              }}
-              onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-              maxLength={40}
-              autoFocus
-            />
-            <button className="msm-add-btn" onClick={handleAdd}>
-              <Plus size={14} /> Add
-            </button>
-          </div>
-          {error && <p className="msm-error">{error}</p>}
-        </div>
-
-        <div>
-          <p className="msm-box-label">
-            Sections <span className="msm-count">{sections.length}</span>
-          </p>
-
-          {sections.length === 0 ? (
-            <div className="msm-empty">
-              <span style={{ fontSize: 28 }}>
-                <ThemedIcon name="Layers" />
-              </span>
-              <p>No sections yet.</p>
-            </div>
-          ) : (
-            <div className="msm-list">
-              {sections.map((sec) => {
-                const isRem = removing === sec.id;
-                return (
-                  <div key={sec.id} className={`msm-row ${isRem ? 'msm-row-rem' : ''}`}>
-                    <div className="msm-row-main">
-                      <div className="msm-sec-pill">
-                        <span className="msm-dot" style={{ background: sec.color }} />
-                        {sec.id}
-                      </div>
-                      <label
-                        htmlFor="field-rotationguide-1"
-                        className="msm-color-ctrl"
-                        title="Change color"
-                      >
-                        <span className="msm-color-swatch" style={{ background: sec.color }} />
-                        <input
-                          id="field-rotationguide-1"
-                          type="color"
-                          value={sec.color}
-                          onChange={(e) => onColorChange(sec.id, e.target.value)}
-                        />
-                      </label>
-                    </div>
-                    {isRem ? (
-                      <div className="msm-confirm">
-                        <span>Remove?</span>
-                        <button
-                          className="msm-yes"
-                          onClick={() => {
-                            onRemove(sec.id);
-                            setRemoving(null);
-                          }}
-                        >
-                          Yes
-                        </button>
-                        <button className="msm-no" onClick={() => setRemoving(null)}>
-                          No
-                        </button>
-                      </div>
-                    ) : (
-                      <button className="msm-rm-btn" onClick={() => setRemoving(sec.id)}>
-                        <Trash2 size={12} /> Remove
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="msm-note">
-          <Sparkles size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-          Removing a section hides it from new rotations and the procedure guide. Existing records
-          keep their saved label.
-        </div>
-      </div>
-    </Dialog>
-  );
-}
 
 /* ─────────────────────────────────────────────
    ROTATION MODAL — slide-up sheet with colored header
@@ -1879,14 +1747,9 @@ export default function RotationGuide() {
             {loadError}
           </p>
         )}
-        <div className="rg-header">
-          <h1 className="rg-title">
-            Rotation <span className="rg-title-accent">Guide</span>
-          </h1>
-          <p className="tool-page-description">
-            Your training, one section at a time. Keep your rotations and learning guides together.
-          </p>
-        </div>
+        <PageHeader description="Track rotations and review your procedure guides.">
+          Rotation <span className="rg-title-accent">Guide</span>
+        </PageHeader>
 
         <div className="rg-main-tabs">
           <button
@@ -1971,6 +1834,7 @@ export default function RotationGuide() {
       {showSectionModal && (
         <ManageSectionsModal
           sections={sections}
+          getSectionMeta={generateSectionMeta}
           onAdd={handleAddSection}
           onRemove={handleRemoveSection}
           onColorChange={handleColorChange}

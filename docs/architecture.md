@@ -38,6 +38,8 @@ Custom section settings only become writable after a successful initial read, pr
 
 The CSS token palette defines surfaces, ink, muted text, borders, and rose/sage/lavender/peach accents. The initial document applies the saved theme before React starts. System mode follows media-query changes. Extracted feature CSS lives in the legacy layer; shared unlayered styles provide the consistent final treatment.
 
+`components/ui/PageHeader.jsx` gives the five main tools the same title/description structure. `workspace-rhythm.css` uses the typography and spacing tokens in `tokens.css` for page gaps, card padding, headings, supporting text, statistics and tabs. Phone cards use 18px padding; larger screens use 24px, without separate iPad font inflation. Descriptions belong inside the header so their margins do not compound with page gaps. The About hero uses a uniform rose surface with theme-aware ink and accent text; decorative surfaces must not interrupt text contrast.
+
 Desktop uses a sidebar, tablet uses bottom navigation, and phone screens stack dashboard cards. Forms use 16px inputs on small screens, safe-area spacing, and viewport-based modal heights. The original fixed body and disabled zoom were removed. Animation respects prefers-reduced-motion. Chami’s original PNG is retained as source; the shipped WebP is 55,284 bytes.
 
 ## Study chat
@@ -57,6 +59,10 @@ The existing large feature tools retain their original workflows, while their st
 `components/schedule/ScheduleCalendar.jsx` provides week/month navigation, a focused-day agenda, expansion, and date selection for both shifts and exams. `BatchDates.jsx` reviews and adjusts repeated dates; `lib/calendar.js` handles local date grids, month boundaries, and deduplication. New batches use one insert with a record per date; editing updates only the selected record. No schema migration is needed.
 
 `Dialog.jsx` tracks the visible viewport for mobile keyboards and shares themed styling from `dialogs.css`. Feature headers and controls use theme variables instead of inline section colors. Custom section colors remain on decorative swatches and progress bars. `consistency.css` supplies shared cards, badges, and controls; `pip.css` controls the compact chat layout and mobile history dialog.
+
+`components/ui/CardScrollRegion.jsx` provides a labeled, keyboard-focusable scroll area for shift history, exam schedules, and selected-day agendas. Headers, filters, and search stay outside the scrolling body. `cards.css` limits list height for phones and desktops, keeps month groups from shrinking into each other, and provides shared card sizing and text wrapping. Card grids use zero-minimum tracks so long titles and notes cannot force wider columns. New long lists should use this component rather than a height cap without overflow handling. Regression coverage includes 90 shifts, 90 exams, filtering, editing the last records, and expanded agendas; DOM tests do not measure browser layout.
+
+`components/ui/SectionManager.jsx` and `section-manager.css` provide the same themed section editor for schedules, notes, logbooks, and rotations. Each tool retains its own persistence callbacks and section metadata. The shared editor owns name validation, labeled color controls with unique IDs, and removal confirmation. Its styles load directly with the component instead of relying on another page being visited first. Calendar selection uses a nonwrapping Continue action; schedule tips are collapsed to keep the main workflow compact.
 
 ## Account access and wellness labels
 

@@ -190,6 +190,55 @@ input[type='time']::-webkit-date-and-time-value {
   justify-content: flex-end;
   margin-block: 14px 20px;
 }
+.sp-page-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.sp-page-controls .sp-page-tabs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+.sp-page-controls .sp-sections-toolbar {
+  margin: 0;
+}
+.sp-page-controls .sp-page-tab-title {
+  white-space: nowrap;
+}
+@media (max-width: 767px) {
+  .sp-page-controls {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .sp-page-controls .sp-page-tab {
+    min-height: 52px;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .sp-page-controls .sp-page-tab > svg {
+    width: 32px;
+    height: 32px;
+    padding: 8px;
+  }
+}
+@media (max-width: 374px) {
+  .sp-page-controls .sp-page-tab {
+    padding-inline: 6px;
+    gap: 6px;
+  }
+  .sp-page-controls .sp-page-tab > svg {
+    width: 28px;
+    height: 28px;
+    padding: 6px;
+  }
+  .sp-page-controls .sp-tab-badge {
+    min-width: 22px;
+    height: 22px;
+    padding-inline: 5px;
+  }
+}
 .pf-cancel-btn {
   background: var(--surface-subtle);
   color: var(--ink);
@@ -267,21 +316,6 @@ input[type='time']::-webkit-date-and-time-value {
 }
 .sp-cup.filled {
   color: var(--lavender);
-}
-@media (max-width: 767px) {
-  .care-mood > div {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-  .care-mood button {
-    justify-content: flex-start;
-    min-height: 48px;
-  }
-  .care-mood small {
-    display: inline;
-    font-size: 12px;
-  }
 }
 
 .sp-cup[aria-pressed='true'] {

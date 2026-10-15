@@ -1,9 +1,11 @@
+import ManageSectionsModal from './ui/SectionManager';
 import ThemedIcon from './ui/ThemedIcon';
+import PageHeader from './ui/PageHeader';
 import { useLocation } from 'react-router-dom';
 import useQuickCreate from '../hooks/useQuickCreate';
 import Dialog from './ui/Dialog';
 import '../styles/features/NotesSection.css';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../auth/useAuth';
 import {
@@ -106,148 +108,6 @@ function timeAgo(dateStr) {
 /* ─────────────────────────────────────────────
    MANAGE SECTIONS MODAL
 ───────────────────────────────────────────── */
-function ManageSectionsModal({ sections, onAdd, onRemove, onColorChange, onClose }) {
-  const [name, setName] = useState('');
-  const [error, setError] = useState('');
-  const [removing, setRemoving] = useState(null);
-  const inputRef = useRef(null);
-
-  useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 80);
-  }, []);
-
-  const allIds = sections.map((s) => s.id);
-
-  const handleAdd = () => {
-    const label = name.trim();
-    if (!label) {
-      setError('Please enter a section name.');
-      return;
-    }
-    if (allIds.some((id) => id.toLowerCase() === label.toLowerCase())) {
-      setError('That section already exists.');
-      return;
-    }
-    onAdd(label);
-    setName('');
-    setError('');
-  };
-
-  return (
-    <Dialog className="ms-overlay" onClose={onClose}>
-      <div className="ms-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="ms-head">
-          <div className="ms-head-left">
-            <div className="ms-head-icon">
-              <Settings2 size={18} />
-            </div>
-            <div>
-              <h3 className="ms-title">Manage Sections</h3>
-              <p className="ms-sub">Add, remove, and color your note sections</p>
-            </div>
-          </div>
-          <button aria-label="Close" className="ms-close" onClick={onClose}>
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="ms-add-box">
-          <p className="ms-box-label">New Section</p>
-          <div className="ms-add-row">
-            <input
-              ref={inputRef}
-              className="ms-input"
-              placeholder="e.g. Immunology, Parasitology…"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setError('');
-              }}
-              onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-              maxLength={40}
-            />
-            <button className="ms-add-btn" onClick={handleAdd}>
-              <Plus size={15} /> Add
-            </button>
-          </div>
-          {error && <p className="ms-error">{error}</p>}
-        </div>
-
-        <div>
-          <p className="ms-box-label">
-            Sections
-            {sections.length > 0 && <span className="ms-count">{sections.length}</span>}
-          </p>
-          {sections.length === 0 ? (
-            <div className="ms-empty">
-              <span style={{ fontSize: 28 }}>
-                <ThemedIcon name="Layers" />
-              </span>
-              <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>No sections yet.</p>
-            </div>
-          ) : (
-            <div className="ms-list">
-              {sections.map((sec) => {
-                const meta = { ...generateSectionMeta(sec.id), ...sec };
-                const isRem = removing === sec.id;
-                return (
-                  <div key={sec.id} className={`ms-row ${isRem ? 'ms-row-rem' : ''}`}>
-                    <div className="ms-row-main">
-                      <div className="ms-sec-pill">
-                        {' '}
-                        <span className="ms-dot" style={{ background: meta.color }} />
-                        {sec.id}
-                      </div>
-                      <label
-                        htmlFor="field-notessection-1"
-                        className="ms-color-control"
-                        title={`Change ${sec.id} color`}
-                      >
-                        <span className="ms-color-swatch" style={{ background: meta.color }} />
-                        <input
-                          id="field-notessection-1"
-                          type="color"
-                          value={meta.color}
-                          onChange={(e) => onColorChange(sec.id, e.target.value)}
-                        />
-                      </label>
-                    </div>
-                    {isRem ? (
-                      <div className="ms-confirm">
-                        <span>Remove?</span>
-                        <button
-                          className="ms-yes"
-                          onClick={() => {
-                            onRemove(sec.id);
-                            setRemoving(null);
-                          }}
-                        >
-                          Yes
-                        </button>
-                        <button className="ms-no" onClick={() => setRemoving(null)}>
-                          No
-                        </button>
-                      </div>
-                    ) : (
-                      <button className="ms-rm-btn" onClick={() => setRemoving(sec.id)}>
-                        <Trash2 size={12} /> Remove
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="ms-note">
-          <Sparkles size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-          Removing a section hides it from new notes and filters; existing notes keep their label.
-        </div>
-      </div>
-    </Dialog>
-  );
-}
 
 /* ─────────────────────────────────────────────
    NOTE MODAL
@@ -767,14 +627,9 @@ export default function NotesSection() {
           </p>
         )}
         <div className="ns-hero">
-          <div className="ns-hero-top">
-            <h1 className="ns-title">
-              Notes &amp; <span className="ns-title-accent">Tips</span>
-            </h1>
-            <p className="tool-page-description">
-              Little discoveries, staff wisdom, and things you want to remember.
-            </p>
-          </div>
+          <PageHeader description="Keep your notes and staff tips together.">
+            Notes &amp; <span className="ns-title-accent">Tips</span>
+          </PageHeader>
           <div className="ns-stats">
             <div className="ns-stat">
               <span className="ns-stat-n">{totalNotes}</span>
@@ -1024,6 +879,7 @@ export default function NotesSection() {
       {showManage && (
         <ManageSectionsModal
           sections={sections}
+          getSectionMeta={generateSectionMeta}
           onAdd={handleAddSection}
           onRemove={handleRemoveSection}
           onColorChange={handleSectionColorChange}
